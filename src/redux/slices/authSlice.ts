@@ -67,6 +67,36 @@ export const fetchProfile = createAsyncThunk(
   },
 );
 
+// Async thunk for updating profile (JSON fields)
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (payload: Partial<any>, {rejectWithValue}) => {
+    try {
+      const ApiClient = require('../../services/api').default;
+      const data = await ApiClient.updateProfile(payload);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+// Async thunk for uploading avatar (FormData)
+export const updateAvatar = createAsyncThunk(
+  'auth/updateAvatar',
+  async (formData: FormData, {rejectWithValue}) => {
+    try {
+      const ApiClient = require('../../services/api').default;
+      const data = await ApiClient.updateAvatar(formData);
+      return data;
+    } catch (error: any) {
+      // Prefer server-provided response body when available
+      const payload = error?.response?.data ?? error?.message ?? error;
+      return rejectWithValue(payload);
+    }
+  },
+);
+
 // Async thunk for logout
 export const logout = createAsyncThunk(
   'auth/logout',
@@ -89,6 +119,9 @@ const authSlice = createSlice({
     },
     setToken: (state, action) => {
       state.token = action.payload;
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.log('🔐 authSlice.setToken ->', action.payload);
+      }
     },
     setRefreshToken: (state, action) => {
       state.refreshToken = action.payload;
@@ -120,6 +153,9 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.token = action.payload.token ?? null;
         state.refreshToken = action.payload.refreshToken ?? null;
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log('🔐 loginWithTelegram token ->', state.token);
+        }
       })
       .addCase(loginWithTelegram.rejected, (state, action) => {
         state.loading = false;
@@ -136,6 +172,9 @@ const authSlice = createSlice({
         state.token = action.payload.token ?? null;
         if (action.payload.refreshToken) {
           state.refreshToken = action.payload.refreshToken;
+        }
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log('🔐 refreshToken token ->', state.token);
         }
       })
       .addCase(refreshToken.rejected, (state, action) => {
@@ -154,6 +193,33 @@ const authSlice = createSlice({
         } else {
           state.user = action.payload;
         }
+      })
+      // Update Profile (JSON)
+      .addCase(updateProfile.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Update Avatar (multipart)
+      .addCase(updateAvatar.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateAvatar.fulfilled, (state, action) => {
+        state.loading = false;
+        // Merge any updated profile fields returned by the server
+        state.user = {...(state.user ?? {}), ...action.payload};
+      })
+      .addCase(updateAvatar.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       })
       // Logout
       .addCase(logout.pending, state => {
