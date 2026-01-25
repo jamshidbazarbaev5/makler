@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useRef } from 'react';
+import { Text, View, ScrollView, StyleSheet, Animated } from 'react-native';
 import { Listing } from '../data/mockData';
 import SimilarListingCard from './SimilarListingCard';
 
@@ -8,13 +8,12 @@ interface SimilarListingsSectionProps {
 }
 
 const SimilarListingsSection = ({ listings }: SimilarListingsSectionProps) => {
-    const [currentPage, setCurrentPage] = useState(0);
-    const itemsPerPage = 2;
-    const totalPages = Math.ceil(listings.length / itemsPerPage);
+    const scrollViewRef = useRef<ScrollView>(null);
+    const scrollX = useRef(new Animated.Value(0)).current;
 
-    const visibleListings = listings.slice(
-        currentPage * itemsPerPage,
-        (currentPage + 1) * itemsPerPage
+    const handleScroll = Animated.event(
+        [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+        { useNativeDriver: false }
     );
 
     return (
@@ -22,31 +21,20 @@ const SimilarListingsSection = ({ listings }: SimilarListingsSectionProps) => {
             <Text style={styles.title}>Shunga o'xshash e'lonlar</Text>
 
             <ScrollView
+                ref={scrollViewRef}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContainer}
+                scrollEventThrottle={16}
+                onScroll={handleScroll}
+                decelerationRate="fast"
+                snapToInterval={192}
+                snapToAlignment="start"
             >
-                {visibleListings.map((listing) => (
+                {listings.map((listing) => (
                     <SimilarListingCard key={listing.id} listing={listing} />
                 ))}
             </ScrollView>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-                <View style={styles.paginationContainer}>
-                    {Array.from({ length: totalPages }).map((_, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            onPress={() => setCurrentPage(index)}
-                            style={[
-                                styles.paginationButton,
-                                currentPage === index ? styles.paginationButtonActive : styles.paginationButtonInactive,
-                            ]}
-                            activeOpacity={0.7}
-                        />
-                    ))}
-                </View>
-            )}
         </View>
     );
 };
@@ -55,34 +43,19 @@ export default SimilarListingsSection;
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 24,
+        marginBottom: 32,
     },
     title: {
         fontSize: 18,
-        fontWeight: '600',
+        fontWeight: '700',
         color: '#0f172a',
         marginBottom: 16,
+        marginLeft: 16,
+        letterSpacing: -0.3,
     },
     scrollContainer: {
-        paddingRight: 16,
+        paddingHorizontal: 16,
         paddingBottom: 8,
-    },
-    paginationContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 8,
-        marginTop: 16,
-    },
-    paginationButton: {
-        height: 4,
-        borderRadius: 2,
-    },
-    paginationButtonActive: {
-        width: 32,
-        backgroundColor: '#0f172a',
-    },
-    paginationButtonInactive: {
-        width: 16,
-        backgroundColor: 'rgba(100, 116, 139, 0.3)'
+        gap: 0,
     },
 });

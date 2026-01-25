@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Bell } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
 
 const Header = () => {
@@ -19,21 +19,14 @@ const Header = () => {
       ]}
     >
       <View style={styles.leftSection}>
-        <View
-          style={[
-            styles.logo,
-            { backgroundColor: colors.primary },
-          ]}
-        >
-          <Text style={styles.logoEmoji}>🏠</Text>
-        </View>
+     
         <Text
           style={[
             styles.title,
             { color: colors.text },
           ]}
         >
-          JOYMEE
+          MAKLER QARAQALPAQ
         </Text>
       </View>
 
@@ -45,10 +38,10 @@ const Header = () => {
           ]}
         >
           <Text style={[styles.badgeText, { color: colors.card }]}>TOP</Text>
-          <Text style={[styles.badgeNumber, { color: colors.card }]}>10</Text>
+          {/* <Text style={[styles.badgeNumber, { color: colors.card }]}>10</Text> */}
         </View>
         <TouchableOpacity>
-          <Ionicons name="notifications" size={24} color={colors.text} />
+          <Bell size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
     </View>

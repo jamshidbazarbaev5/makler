@@ -10,7 +10,7 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { X, Check } from 'lucide-react-native';
 import { COLORS } from '../constants';
 
 interface ModalPickerItem {
@@ -46,7 +46,7 @@ export const ModalPicker: React.FC<ModalPickerProps> = ({
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Icon name="close" size={24} color={COLORS.gray500} />
+            <X size={24} color={COLORS.gray500} />
           </TouchableOpacity>
           <Text style={styles.title}>{title}</Text>
           <View style={styles.placeholder} />
@@ -74,7 +74,7 @@ export const ModalPicker: React.FC<ModalPickerProps> = ({
                 {item.label}
               </Text>
               {item.value === selectedValue && (
-                <Icon name="checkmark" size={24} color={COLORS.primary} />
+                <Check size={24} color={COLORS.primary} />
               )}
             </TouchableOpacity>
           )}

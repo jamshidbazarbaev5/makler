@@ -77,15 +77,27 @@ export interface PropertyState {
 export interface AuthState {
   user: User | null;
   token: string | null;
+  refreshToken: string | null;
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
 }
 
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  avatar?: string;
+  id: number | string;
+  username?: string;
+  full_name?: string;
+  first_name?: string;
+  last_name?: string;
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  avatar?: string | null;
+  photo_url?: string;
+  telegram_id?: number;
+  is_agent?: boolean;
+  preferred_language?: string;
+  bio?: string;
+  properties_count?: number;
+  views_count?: number;
 }

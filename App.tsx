@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { Provider } from 'react-redux';
-import { store } from './src/redux/store';
+import { store, persistor } from './src/redux/store';
+import { PersistGate } from 'redux-persist/integration/react';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 const MyTheme = {
@@ -19,9 +20,11 @@ const MyTheme = {
 const App = () => {
   return (
     <Provider store={store}>
-      <NavigationContainer theme={MyTheme}>
-        <RootNavigator />
-      </NavigationContainer>
+      <PersistGate loading={null} persistor={persistor}>
+        <NavigationContainer theme={MyTheme}>
+          <RootNavigator />
+        </NavigationContainer>
+      </PersistGate>
     </Provider>
   );
 };

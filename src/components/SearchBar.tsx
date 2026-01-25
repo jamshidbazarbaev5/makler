@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Search, Settings } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
 
 interface SearchBarProps {
@@ -27,8 +27,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
           },
         ]}
       >
-        <Ionicons
-          name="search"
+        <Search
           size={20}
           color={colors.text}
           style={styles.searchIcon}
@@ -47,8 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
           style={[styles.filterButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={onFilterPress}
         >
-          <Ionicons
-            name="options"
+          <Settings
             size={20}
             color={colors.text}
           />

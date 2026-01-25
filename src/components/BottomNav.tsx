@@ -5,11 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Home, Search, PlusCircle, MessageCircle, User, HeartIcon } from 'lucide-react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
 
 interface NavItem {
-  icon: string;
+  icon: any;
   label: string;
   route: string;
 }
@@ -19,11 +19,10 @@ const BottomNav = () => {
   const navigation = useNavigation();
 
   const navItems: NavItem[] = [
-    { icon: 'home', label: 'Bosh sahifa', route: 'HomeTab' },
-    { icon: 'search', label: 'Qidirish', route: 'Search' },
-    { icon: 'add-circle', label: "Qo'shish", route: 'PropertyForm' },
-    { icon: 'chatbubble', label: 'Xabarlar', route: 'Messages' },
-    { icon: 'person', label: 'Profil', route: 'Profile' },
+    { icon: Home, label: 'Bosh sahifa', route: 'HomeTab' },
+    { icon: PlusCircle, label: "Qo'shish", route: 'PropertyForm' },
+    { icon: HeartIcon, label: 'Sevimlilar', route: 'Messages' },
+    { icon: User, label: 'Profil', route: 'Profile' },
   ];
 
   return (
@@ -37,7 +36,9 @@ const BottomNav = () => {
       ]}
     >
       <View style={styles.navContainer}>
-        {navItems.map((item, index) => (
+        {navItems.map((item, index) => {
+          const IconComponent = item.icon;
+          return (
           <TouchableOpacity
             key={index}
             style={styles.navItem}
@@ -47,8 +48,7 @@ const BottomNav = () => {
               }
             }}
           >
-            <Ionicons
-              name={item.icon}
+            <IconComponent
               size={24}
               color={colors.text}
             />
@@ -63,7 +63,8 @@ const BottomNav = () => {
               {item.label}
             </Text>
           </TouchableOpacity>
-        ))}
+          );
+        })}
       </View>
     </View>
   );

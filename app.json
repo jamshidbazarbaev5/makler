@@ -1,4 +1,19 @@
 {
   "name": "maklerapp",
-  "displayName": "maklerapp"
+  "displayName": "MAKLER",
+  "scheme": "maklerapp",
+  "ios": {
+    "scheme": "maklerapp",
+    "bundleIdentifier": "com.maklerapp"
+  },
+  "plugins": [
+    [
+      "expo-build-properties",
+      {
+        "ios": {
+          "useFrameworks": "static"
+        }
+      }
+    ]
+  ]
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, TextInput, Text, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { ChevronDown } from 'lucide-react-native';
 import { COLORS } from '../constants';
 
 interface SelectBoxProps {
@@ -21,12 +21,12 @@ export const SelectBox: React.FC<SelectBoxProps> = ({ label, value, placeholder,
                 activeOpacity={0.7}
             >
                 <View style={styles.selectContent}>
-                    {icon && <Icon name={icon} size={20} color={COLORS.gray500} style={styles.icon} />}
+                    {icon && <ChevronDown size={20} color={COLORS.gray500} style={styles.icon} />}
                     <Text style={[styles.selectText, !value && styles.placeholderText]}>
                         {value || placeholder}
                     </Text>
                 </View>
-                <Icon name="chevron-down" size={20} color={COLORS.gray500} />
+                <ChevronDown size={20} color={COLORS.gray500} />
             </TouchableOpacity>
         </View>
     );

@@ -1079,7 +1079,7 @@ PODS:
     - React-jsi (= 0.73.6)
     - React-logger (= 0.73.6)
     - React-perflogger (= 0.73.6)
-  - RNCAsyncStorage (2.2.0):
+  - RNCAsyncStorage (1.17.11):
     - React-Core
   - RNCMaskedView (0.1.11):
     - React
@@ -1106,7 +1106,7 @@ PODS:
     - RNSound/Core (= 0.11.2)
   - RNSound/Core (0.11.2):
     - React-Core
-  - RNSVG (15.15.1):
+  - RNSVG (13.14.1):
     - React-Core
   - RNVectorIcons (10.3.0):
     - glog
@@ -1385,7 +1385,7 @@ SPEC CHECKSUMS:
   React-runtimescheduler: 9636eee762c699ca7c85751a359101797e4c8b3b
   React-utils: d16c1d2251c088ad817996621947d0ac8167b46c
   ReactCommon: 2aa35648354bd4c4665b9a5084a7d37097b89c10
-  RNCAsyncStorage: 23e56519cc41d3bade3c8d4479f7760cb1c11996
+  RNCAsyncStorage: 8616bd5a58af409453ea4e1b246521bb76578d60
   RNCMaskedView: 0e1bc4bfa8365eba5fbbb71e07fbdc0555249489
   RNDateTimePicker: 4f3c4dbd4f908be32ec8c93f086e8924bd4a2e07
   RNFS: 4ac0f0ea233904cb798630b3c077808c06931688
@@ -1393,7 +1393,7 @@ SPEC CHECKSUMS:
   RNReanimated: cafa0f3c40fc071acdc105df74d5286cbf25a1dc
   RNScreens: 6225b1182ac2845b78e7446b0573ea2afb703338
   RNSound: 6c156f925295bdc83e8e422e7d8b38d33bc71852
-  RNSVG: a6e1768679ba60ec255eeb74e33082ca2085fb02
+  RNSVG: af3907ac5d4fa26a862b75a16d8f15bc74f2ceda
   RNVectorIcons: 48c158e45647a2072579db62f704c09b1dd4ca0f
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   Yoga: d17d2cc8105eed528474683b42e2ea310e1daf61

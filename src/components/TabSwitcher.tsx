@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Grid2X2, Map } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
 
 interface TabSwitcherProps {
@@ -28,8 +28,7 @@ const TabSwitcher = ({ activeTab, onTabChange }: TabSwitcherProps) => {
         ]}
         onPress={() => onTabChange('gallery')}
       >
-        <Ionicons
-          name="grid"
+        <Grid2X2
           size={20}
           color={activeTab === 'gallery' ? colors.primary : colors.text}
         />
@@ -55,8 +54,7 @@ const TabSwitcher = ({ activeTab, onTabChange }: TabSwitcherProps) => {
         ]}
         onPress={() => onTabChange('map')}
       >
-        <Ionicons
-          name="map"
+        <Map
           size={20}
           color={activeTab === 'map' ? colors.primary : colors.text}
         />

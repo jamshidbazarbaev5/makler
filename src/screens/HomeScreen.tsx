@@ -16,7 +16,6 @@ import { useTheme } from '@react-navigation/native';
 import { FilterState } from '../types';
 
 const HomeScreen = () => {
-  const [activeTab, setActiveTab] = useState<'gallery' | 'map'>('gallery');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState<FilterState | null>(null);
   const { colors } = useTheme();
@@ -26,23 +25,18 @@ const HomeScreen = () => {
       style={[styles.container, { backgroundColor: colors.background }]}
     >
       <Header />
-      <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
       <SearchBar onFilterPress={() => setFilterModalVisible(true)} />
 
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {activeTab === 'gallery' ? (
+       
           <View>
-            <VIPSection />
+            {/* <VIPSection /> */}
             <AllListingsSection />
           </View>
-        ) : (
-          <View style={styles.mapPlaceholder}>
-            <View style={styles.mapText} />
-          </View>
-        )}
+       
       </ScrollView>
       <BottomNav/>
       <FilterModal

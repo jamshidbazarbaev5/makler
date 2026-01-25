@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,23 +7,90 @@ import {
   StyleSheet,
   StatusBar,
   SafeAreaView,
+  Alert,
+  Image,
 } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Share2, Edit, Menu, Home, Handshake, Heart } from 'lucide-react-native';
 import { COLORS } from '../constants';
+import BottomSheetMenu from './BottomSheetMenu';
+import LanguageModal from './LanguageModal';
+import BottomNav from './BottomNav';
+import {useSelector, useDispatch} from 'react-redux';
+import {RootState, AppDispatch} from '../redux/store';
+import {fetchProfile, logout} from '../redux/slices/authSlice';
+
+type Props = NativeStackScreenProps<any, 'Profile'>;
 
 const tabs = [
-  { id: 'listings', icon: 'home-outline', activeIcon: 'home' },
-  { id: 'deals', icon: 'hand-left-outline', activeIcon: 'hand-left' },
-  { id: 'favorites', icon: 'heart-outline', activeIcon: 'heart' },
+  { id: 'listings', icon: 'Home', activeIcon: 'Home' },
+  { id: 'favorites', icon: 'Heart', activeIcon: 'Heart' },
 ];
+
+const iconMap: any = {
+  Home,
+  Handshake,
+  Heart,
+};
 
 const filters = [
   ['Status', 'Saralash'],
   ["E'lon maqsadi", 'Mulk toifasi'],
 ];
 
-export default function Profile() {
+export default function Profile({ navigation }: Props) {
+  const dispatch = useDispatch<AppDispatch>();
+  const {user} = useSelector((state: RootState) => state.auth);
+
   const [activeTab, setActiveTab] = useState('listings');
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState<'uz' | 'ru' | 'en'>('uz');
+
+  useEffect(() => {
+    dispatch(fetchProfile());
+  }, [dispatch]);
+
+  const handleLogout = () => {
+    Alert.alert('Chiqish', 'Siz hisobingizdan chiqdingiz', [
+      {
+        text: 'Bekor qilish',
+        style: 'cancel',
+      },
+      {
+        text: 'Chiqish',
+        onPress: () => {
+          dispatch(logout() as any);
+        },
+        style: 'destructive',
+      },
+    ]);
+  };
+
+  const handleLanguageSelect = (language: 'uz' | 'ru' | 'en') => {
+    setCurrentLanguage(language);
+    Alert.alert(
+      'Til o\'zgartirildi',
+      `Tanlangan til: ${language === 'uz' ? "O'zbek" : language === 'ru' ? 'Русский' : 'English'}`
+    );
+  };
+
+  const getInitials = () => {
+      if (user?.full_name) {
+          return user.full_name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+      }
+      if (user?.first_name) {
+          return user.first_name[0].toUpperCase();
+      }
+      if (user?.username) {
+          return user.username[0].toUpperCase();
+      }
+      return 'U';
+  };
+
+  const displayName = user?.full_name || user?.first_name || user?.username || 'Foydalanuvchi';
+  const displayUsername = user?.username ? `@${user.username}` : '';
+  const photoUrl = user?.photo_url || user?.avatar;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -32,16 +99,22 @@ export default function Profile() {
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.username}>jamshid_b</Text>
+            <Text style={styles.username}>{displayUsername}</Text>
             <View style={styles.headerIcons}>
               <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="share-outline" size={20} color={COLORS.gray700} />
+                <Share2 size={20} color={COLORS.gray700} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="pencil-outline" size={20} color={COLORS.gray700} />
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => navigation.navigate('ProfileEdit')}
+              >
+                <Edit size={20} color={COLORS.gray700} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
-                <Ionicons name="menu-outline" size={20} color={COLORS.gray700} />
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={() => setMenuVisible(true)}
+              >
+                <Menu size={20} color={COLORS.gray700} />
               </TouchableOpacity>
             </View>
           </View>
@@ -51,49 +124,33 @@ export default function Profile() {
             <View style={styles.profileHeader}>
               {/* Avatar */}
               <View style={styles.avatarContainer}>
-                <View style={styles.avatarGradient}>
-                  <Text style={styles.avatarText}>JH</Text>
-                </View>
+                {photoUrl ? (
+                    <Image source={{uri: photoUrl}} style={styles.avatarImage} />
+                ) : (
+                    <View style={styles.avatarGradient}>
+                        <Text style={styles.avatarText}>{getInitials()}</Text>
+                    </View>
+                )}
                 {/* Stats */}
                 <View style={styles.statsContainer}>
                   <View style={styles.statItem}>
-                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statValue}>{user?.properties_count || 0}</Text>
                     <Text style={styles.statLabel}>E'lonlar</Text>
                   </View>
                   <View style={styles.statItem}>
-                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statValue}>{user?.views_count || 0}</Text>
                     <Text style={styles.statLabel}>Ko'rishlar</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statValue}>0</Text>
-                    <Text style={styles.statLabel}>Qo'ng'iroqlar</Text>
                   </View>
                 </View>
               </View>
-              <Text style={styles.name}>Jams hid</Text>
-            </View>
-
-            {/* Balance Section */}
-            <View style={styles.balanceSection}>
-              <View style={styles.balanceCard}>
-                <Text style={styles.balanceLabel}>Balans </Text>
-                <Text style={styles.balanceValue}>0 UZS</Text>
-              </View>
-
-              <View style={styles.buttonRow}>
-                <TouchableOpacity style={styles.primaryButton}>
-                  <Text style={styles.primaryButtonText}>To'ldirish</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.secondaryButton}>
-                  <Text style={styles.secondaryButtonText}>Paket</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.name}>{displayName}</Text>
             </View>
 
             {/* Tabs */}
             <View style={styles.tabsContainer}>
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
+                const IconComponent = iconMap[tab.icon];
                 return (
                   <TouchableOpacity
                     key={tab.id}
@@ -103,8 +160,7 @@ export default function Profile() {
                       isActive && styles.activeTab,
                     ]}
                   >
-                    <Ionicons
-                      name={isActive ? tab.activeIcon : tab.icon}
+                    <IconComponent
                       size={24}
                       color={isActive ? COLORS.primary : COLORS.gray500}
                     />
@@ -136,7 +192,7 @@ export default function Profile() {
           {/* Empty State */}
           <View style={styles.emptyState}>
             <View style={styles.emptyStateIcon}>
-              <Ionicons name="home-outline" size={40} color={COLORS.accent} />
+              <Home size={40} color={COLORS.accent} />
               <View style={[styles.dot, styles.dotTopRight]} />
               <View style={[styles.dot, styles.dotBottomLeft]} />
               <View style={[styles.dot, styles.dotTopLeft]} />
@@ -144,7 +200,26 @@ export default function Profile() {
           </View>
         </View>
       </ScrollView>
-      {/*<BottomNav />*/}
+
+      {/* Bottom Sheet Menu */}
+      <BottomSheetMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        onLogout={handleLogout}
+        onLanguagePress={() => {
+          setMenuVisible(false);
+          setLanguageModalVisible(true);
+        }}
+      />
+
+      {/* Language Modal */}
+      <LanguageModal
+        visible={languageModalVisible}
+        onClose={() => setLanguageModalVisible(false)}
+        currentLanguage={currentLanguage}
+        onLanguageSelect={handleLanguageSelect}
+      />
+      <BottomNav />
     </SafeAreaView>
   );
 }
@@ -203,13 +278,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
   avatarText: {
     fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.white,
   },
   statsContainer: {
+    display:"flex",
     flexDirection: 'row',
+    justifyContent:'center',
+    alignItems:"center",
+    alignContent:"center",
     gap: 32,
   },
   statItem: {

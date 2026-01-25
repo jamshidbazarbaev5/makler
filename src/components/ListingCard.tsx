@@ -1,6 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Image, Text, View, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import { TouchableOpacity, Image, Text, View, StyleSheet, Platform } from 'react-native';
+import { ImageIcon } from 'lucide-react-native';
 import { Listing } from '../data/mockData';
 import { useNavigation } from '@react-navigation/native';
 
@@ -37,7 +37,7 @@ const ListingCard = ({ listing, size = 'normal' }: ListingCardProps) => {
           />
         ) : (
           <View style={styles.placeholderContainer}>
-            <Icon name="image" size={24} color="#94a3b8" />
+            <ImageIcon size={24} color="#94a3b8" />
           </View>
         )}
 
@@ -63,13 +63,13 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: '#f1f5f9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: Platform.OS === 'android' ? 3 : 0,
   },
   largeCard: {
     minWidth: 200,
@@ -77,6 +77,8 @@ const styles = StyleSheet.create({
   imageContainer: {
     height: 128,
     overflow: 'hidden',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   largeImageContainer: {
     height: 160,
@@ -146,10 +148,14 @@ const styles = StyleSheet.create({
   content: {
     padding: 12,
     backgroundColor: '#f1f5f9',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   largeContent: {
     padding: 16,
     backgroundColor: '#f1f5f9',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   price: {
     fontSize: 18,

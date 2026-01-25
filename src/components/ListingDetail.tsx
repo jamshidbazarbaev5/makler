@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     ScrollView,
     View,
@@ -7,31 +7,79 @@ import {
     TouchableOpacity,
     StyleSheet,
     Dimensions,
+    PanResponder,
+    ActivityIndicator,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import { ArrowLeft, MapPin, Heart, MessageCircle, Send } from 'lucide-react-native';
 import { listingDetail, similarListings } from '../data/mockData';
 import SimilarListingsSection from './SimilarListingSection';
+import BottomNav from './BottomNav';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants';
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import { toggleLike } from '../redux/slices/likesSlice';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_HEIGHT = 350;
 
 const ListingDetail = () => {
     const navigation = useNavigation<any>();
+    const dispatch = useAppDispatch();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [imageLoading, setImageLoading] = useState(true);
     const listing = listingDetail;
+    const panResponder = useRef<any>(null);
+    const likedIds = useAppSelector(state => state.likes.likedIds);
+    const isLiked = likedIds.includes(listing.id);
+
+    useEffect(() => {
+        setImageLoading(true);
+        panResponder.current = PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderRelease: (evt, gestureState) => {
+                const { dx, vx } = gestureState;
+                const SWIPE_THRESHOLD = 50;
+                const VELOCITY_THRESHOLD = 0.5;
+
+                // Swipe right or left with velocity or distance
+                if (dx > SWIPE_THRESHOLD || vx > VELOCITY_THRESHOLD) {
+                    // Swiped right - go to previous image
+                    setCurrentImageIndex((prevIndex) =>
+                        prevIndex === 0 ? listing.images.length - 1 : prevIndex - 1
+                    );
+                } else if (dx < -SWIPE_THRESHOLD || vx < -VELOCITY_THRESHOLD) {
+                    // Swiped left - go to next image
+                    setCurrentImageIndex((prevIndex) =>
+                        prevIndex === listing.images.length - 1 ? 0 : prevIndex + 1
+                    );
+                }
+            },
+        });
+    }, [listing.images.length]);
 
     return (
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>
                 {/* Image Carousel */}
-                <View style={styles.carouselContainer}>
+                <View
+                    style={styles.carouselContainer}
+                    {...panResponder.current?.panHandlers}
+                >
                     <Image
                         source={{ uri: listing.images[currentImageIndex] }}
                         style={styles.image}
                         resizeMode="cover"
+                        onLoadStart={() => setImageLoading(true)}
+                        onLoadEnd={() => setImageLoading(false)}
+                        onError={() => setImageLoading(false)}
                     />
+
+                    {imageLoading && (
+                        <View style={styles.loadingOverlay}>
+                            <ActivityIndicator size="large" color={COLORS.purple} />
+                        </View>
+                    )}
 
                     {/* Back Button */}
                     <TouchableOpacity
@@ -39,7 +87,7 @@ const ListingDetail = () => {
                         onPress={() => navigation.goBack()}
                         activeOpacity={0.7}
                     >
-                        <Icon name="arrow-left" size={20} color="#0f172a" />
+                        <ArrowLeft size={24} color="#fff" strokeWidth={2.5} />
                     </TouchableOpacity>
 
                     {/* User Badge */}
@@ -78,15 +126,25 @@ const ListingDetail = () => {
                         </View>
 
                         <View style={styles.actionsContainer}>
-                            <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                                <Icon name="heart" size={20} color="#0f172a" />
-                                <Text style={styles.actionText}>{listing.likesCount}</Text>
+                            <TouchableOpacity 
+                                style={styles.actionButton} 
+                                activeOpacity={0.7}
+                                onPress={() => dispatch(toggleLike(listing as any))}
+                            >
+                                <Heart 
+                                    size={20} 
+                                    color={isLiked ? '#dc2626' : '#0f172a'}
+                                    fill={isLiked ? '#dc2626' : 'none'}
+                                />
+                                <Text style={[styles.actionText, isLiked && styles.actionTextActive]}>
+                                    {listing.likesCount}
+                                </Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                                <Icon name="message-circle" size={20} color="#0f172a" />
+                                <MessageCircle size={20} color="#0f172a" />
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                                <Icon name="send" size={20} color="#0f172a" />
+                                <Send size={20} color="#0f172a" />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -118,7 +176,7 @@ const ListingDetail = () => {
                     <View style={styles.locationContainer}>
                         <Text style={styles.locationTitle}>Joylashuv</Text>
                         <View style={styles.locationAddress}>
-                            <Icon name="map-pin" size={16} color="#64748b" />
+                            <MapPin size={16} color="#64748b" />
                             <Text style={styles.locationText}>{listing.locationAddress}</Text>
                         </View>
 
@@ -130,7 +188,7 @@ const ListingDetail = () => {
                                 resizeMode="cover"
                             />
                             <View style={styles.mapOverlay}>
-                                <Icon name="map-pin" size={32} color="#dc2626" />
+                                <MapPin size={32} color="#dc2626" />
                                 <Text style={styles.mapText}>Yandex Maps</Text>
                             </View>
                         </View>
@@ -158,6 +216,7 @@ const ListingDetail = () => {
                     </TouchableOpacity>
                 </View>
             </View>
+            <BottomNav />
         </View>
     );
 };
@@ -180,21 +239,34 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    },
     backButton: {
         position: 'absolute',
         top: 16,
         left: 16,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+        zIndex: 100,
     },
     userBadge: {
         position: 'absolute',
@@ -293,6 +365,10 @@ const styles = StyleSheet.create({
         color: '#0f172a',
         fontSize: 14,
     },
+    actionTextActive: {
+        color: '#dc2626',
+        fontWeight: '600',
+    },
     timePosted: {
         fontSize: 14,
         color: '#64748b',
@@ -387,7 +463,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     bottomSpacer: {
-        height: 140,
+        height: 200,
     },
     bottomActionsContainer: {
         position: 'absolute',

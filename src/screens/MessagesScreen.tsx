@@ -5,6 +5,7 @@ import {
   SafeAreaView,
   StyleSheet,
 } from 'react-native';
+import BottomNav from '../components/BottomNav';
 
 const MessagesScreen = () => {
   return (
@@ -13,6 +14,7 @@ const MessagesScreen = () => {
         <Text style={styles.title}>Xabarlar</Text>
         <Text style={styles.description}>Xabarlar sahifasi</Text>
       </View>
+      <BottomNav />
     </SafeAreaView>
   );
 };
@@ -27,6 +29,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
+    paddingBottom: 80,
   },
   title: {
     fontSize: 24,
