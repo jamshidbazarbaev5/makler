@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
+  Text,
 } from 'react-native';
 import { Search, Settings } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
@@ -13,12 +13,11 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
-  const [searchText, setSearchText] = useState('');
   const { colors } = useTheme();
 
   return (
     <View style={[styles.container, { paddingHorizontal: 16, paddingVertical: 8 }]}>
-      <View
+      <TouchableOpacity
         style={[
           styles.searchContainer,
           {
@@ -26,22 +25,22 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
             borderColor: colors.border,
           },
         ]}
+        onPress={onFilterPress}
+        activeOpacity={0.7}
       >
         <Search
           size={20}
           color={colors.text}
           style={styles.searchIcon}
         />
-        <TextInput
+        <Text
           style={[
-            styles.input,
+            styles.placeholder,
             { color: colors.text },
           ]}
-          placeholder="Nima qidiryapsiz?"
-          placeholderTextColor={colors.text}
-          value={searchText}
-          onChangeText={setSearchText}
-        />
+        >
+          Nima qidiryapsiz?
+        </Text>
         <TouchableOpacity
           style={[styles.filterButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={onFilterPress}
@@ -51,7 +50,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
             color={colors.text}
           />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -72,10 +71,11 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: 8,
   },
-  input: {
+  placeholder: {
     flex: 1,
     fontSize: 16,
     paddingVertical: 8,
+    opacity: 0.6,
   },
   filterButton: {
     borderRadius: 8,

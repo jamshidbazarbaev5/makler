@@ -9,80 +9,76 @@ import {
   Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
+import { ArrowLeft, Clock, FileText, TrendingUp } from 'lucide-react-native';
 import BottomNav from '../components/BottomNav';
 
 interface NavigationProp {
   navigate: (screen: string, params?: object) => void;
+  goBack: () => void;
 }
 
 const AddListingScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { colors } = useTheme();
 
   const sotuvchiSifatida = [
     {
       id: 'daily-rent',
-      icon: '⏰',
+      icon: Clock,
       title: 'Kunlik ijaraga beraman',
       description: 'Kunlik ijaraga berish',
     },
     {
       id: 'monthly-rent',
-      icon: '📋',
+      icon: FileText,
       title: 'Ijaraga beraman',
       description: 'Oylik ijaraga berish',
     },
     {
       id: 'sell',
-      icon: '🤝',
+      icon: TrendingUp,
       title: 'Sotaman',
       description: 'Mulkni sotish',
     },
   ];
 
-  const xaridorSifatida = [
-    {
-      id: 'daily-rent-buy',
-      icon: '📅',
-      title: 'Ijaraga olaman',
-      description: 'Kunlik ijara qidirish',
-    },
-    {
-      id: 'buy',
-      icon: '🤝',
-      title: 'Sotib olaman',
-      description: 'Mulk sotib olish',
-    },
-  ];
-
   const handleSelectOption = (optionId: string) => {
-    navigation.navigate('PropertyForm', { listingType: optionId });
+    navigation.navigate('PropertyType', { listingType: optionId });
   };
 
-  const OptionCard = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={styles.optionCard}
-      onPress={() => handleSelectOption(item.id)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.optionContent}>
-        <Text style={styles.optionIcon}>{item.icon}</Text>
-        <View style={styles.optionTextContainer}>
-          <Text style={styles.optionTitle}>{item.title}</Text>
+  const OptionCard = ({ item }: { item: any }) => {
+    const IconComponent = item.icon;
+    return (
+      <TouchableOpacity
+        style={styles.optionCard}
+        onPress={() => handleSelectOption(item.id)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.optionContent}>
+          <IconComponent size={32} color="#000" strokeWidth={1.5} />
+          <View style={styles.optionTextContainer}>
+            <Text style={styles.optionTitle}>{item.title}</Text>
+          </View>
+          <Text style={styles.optionArrow}>›</Text>
         </View>
-        <Text style={styles.optionArrow}>›</Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>E'lon Qo'shish</Text>
-        </View>
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>E'lon Qo'shish</Text>
+      </View>
 
-        {/* Sotuvchi Sifatida Section */}
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>SOTUVCHI SIFATIDA</Text>
           <View style={styles.optionsContainer}>
@@ -92,15 +88,7 @@ const AddListingScreen = () => {
           </View>
         </View>
 
-        {/* Xaridor Sifatida Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>XARIDOR SIFATIDA</Text>
-          <View style={styles.optionsContainer}>
-            {xaridorSifatida.map((item) => (
-              <OptionCard key={item.id} item={item} />
-            ))}
-          </View>
-        </View>
+      
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -122,14 +110,21 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  backButton: {
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '700',
     color: '#000',
+    flex: 1,
   },
   section: {
     marginTop: 24,
@@ -162,12 +157,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-  optionIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
   optionTextContainer: {
     flex: 1,
+    marginLeft: 12,
   },
   optionTitle: {
     fontSize: 16,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { fetchProfile, setUser, updateProfile, updateAvatar } from '../redux/slices/authSlice';
 import {launchImageLibrary, launchCamera} from 'react-native-image-picker';
+import { useTheme } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -17,7 +18,7 @@ import {
   Platform,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ChevronLeft, User, Mail, Phone, MessageSquare, Camera, Check, Info } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, Phone, MessageSquare, Camera, Check, Info, ArrowLeft } from 'lucide-react-native';
 import { COLORS } from '../constants';
 
 type Props = NativeStackScreenProps<any, 'ProfileEdit'>;
@@ -34,6 +35,8 @@ interface ProfileData {
 export default function ProfileEditScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
+  const { colors } = useTheme();
+  const isDarkMode = false;
 
   const [profileData, setProfileData] = useState<ProfileData>({
     username: '',
@@ -211,22 +214,18 @@ export default function ProfileEditScreen({ navigation }: Props) {
   }
   
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           disabled={isLoading}
         >
-          <ChevronLeft
-            size={28}
-            color={COLORS.gray900}
-          />
+          <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profilni tahrirlash</Text>
-        <View style={{ width: 28 }} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Profilni tahrirlash</Text>
       </View>
 
       <ScrollView
@@ -423,17 +422,17 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray100,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.gray900,
+    flex: 1,
   },
   content: {
     paddingHorizontal: 16,

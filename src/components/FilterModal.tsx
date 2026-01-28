@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, {useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,17 @@ import {
   Modal,
   StyleSheet,
 } from 'react-native';
-import { ChevronDown, ArrowLeft, Clock, Home, Check } from 'lucide-react-native';
-import { FilterState } from '../types';
-import { SelectBox, ToggleChip, NumberInput } from './UiComponent';
-import { COLORS, REGIONS, COUNTRIES, CATEGORIES, PROPERTY_TYPES } from '../constants';
+import {ChevronDown, ArrowLeft, Clock, Home, Check} from 'lucide-react-native';
+import {FilterState} from '../types';
+import {SelectBox, ToggleChip, NumberInput} from './UiComponent';
+import {
+  COLORS,
+  REGIONS,
+  COUNTRIES,
+  CATEGORIES,
+  PROPERTY_TYPES,
+  POSTED_BY_OPTIONS,
+} from '../constants';
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -21,33 +28,37 @@ interface FilterModalProps {
   onApply: (filters: FilterState) => void;
 }
 
-const { height: screenHeight } = Dimensions.get('window');
-const COLLAPSED_HEIGHT = 280;
+const {height: screenHeight} = Dimensions.get('window');
+const COLLAPSED_HEIGHT = 420;
 const EXPANDED_HEIGHT = screenHeight * 0.85;
 
 const INITIAL_STATE: FilterState = {
   category: 'Kunlik',
   propertyType: 'Kvartira',
   country: "O'zbekiston",
-  region: "",
+  region: '',
   apartmentType: 'Ikkilamchi',
   roomCountStart: 2,
   roomCountEnd: 3,
   renovation: "O'rtacha",
-  priceMin: "100",
-  priceMax: "200",
+  priceMin: '100',
+  priceMax: '200',
   currency: 'UZS',
-  postedBy: 'Rieltor',
+  postedBy: 'Agasi',
 };
 
-export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApply }) => {
+export const FilterModal: React.FC<FilterModalProps> = ({
+  isOpen,
+  onClose,
+  onApply,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState<FilterState>(INITIAL_STATE);
   const sheetHeight = useRef(new Animated.Value(COLLAPSED_HEIGHT)).current;
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerData, setPickerData] = useState<{
     title: string;
-    items: { label: string; value: string }[];
+    items: {label: string; value: string}[];
     key: string;
   }>({
     title: '',
@@ -66,8 +77,11 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
     setIsExpanded(!isExpanded);
   };
 
-  const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const updateFilter = <K extends keyof FilterState>(
+    key: K,
+    value: FilterState[K],
+  ) => {
+    setFilters(prev => ({...prev, [key]: value}));
   };
 
   const handleApply = () => {
@@ -88,7 +102,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
   ) => {
     setPickerData({
       title,
-      items: items.map(item => ({ label: item, value: item })),
+      items: items.map(item => ({label: item, value: item})),
       key,
     });
     setPickerVisible(true);
@@ -102,8 +116,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
         visible={isOpen}
         transparent
         animationType="none"
-        onRequestClose={handleClose}
-      >
+        onRequestClose={handleClose}>
         {/* Backdrop */}
         <TouchableOpacity
           style={styles.backdrop}
@@ -112,12 +125,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
         />
 
         {/* Bottom Sheet */}
-        <Animated.View
-          style={[
-            styles.bottomSheet,
-            { height: sheetHeight },
-          ]}
-        >
+        <Animated.View style={[styles.bottomSheet, {height: sheetHeight}]}>
           {/* Handle Bar */}
           <View style={styles.handleBar} />
 
@@ -133,17 +141,15 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
               </View>
 
               {/* Short Content */}
-              <ScrollView 
-                style={styles.shortContent}
-                scrollEnabled={false}
-              >
+              <ScrollView style={styles.shortContent} scrollEnabled={true}>
                 {/* Category Field */}
                 <View style={styles.field}>
                   <Text style={styles.fieldLabel}>Toifasi</Text>
                   <TouchableOpacity
                     style={styles.selectBox}
-                    onPress={() => openPicker('category', 'Toifasi', CATEGORIES)}
-                  >
+                    onPress={() =>
+                      openPicker('category', 'Toifasi', CATEGORIES)
+                    }>
                     <Text style={styles.selectText}>{filters.category}</Text>
                     <ChevronDown size={20} color={COLORS.gray400} />
                   </TouchableOpacity>
@@ -154,23 +160,33 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
                   <Text style={styles.fieldLabel}>Ko'chmas mulk turi</Text>
                   <TouchableOpacity
                     style={styles.selectBox}
-                    onPress={() => openPicker('propertyType', 'Ko\'chmas mulk turi', PROPERTY_TYPES)}
-                  >
-                    <Text style={styles.selectText}>{filters.propertyType}</Text>
+                    onPress={() =>
+                      openPicker(
+                        'propertyType',
+                        "Ko'chmas mulk turi",
+                        PROPERTY_TYPES,
+                      )
+                    }>
+                    <Text style={styles.selectText}>
+                      {filters.propertyType}
+                    </Text>
                     <ChevronDown size={20} color={COLORS.gray400} />
                   </TouchableOpacity>
                 </View>
+
+                {/* Posted By Field */}
               </ScrollView>
 
               {/* Action Buttons */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={styles.moreButton}
-                  onPress={toggleExpand}
-                >
+                  onPress={toggleExpand}>
                   <Text style={styles.moreButtonText}>Ko'proq</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+                <TouchableOpacity
+                  style={styles.applyButton}
+                  onPress={handleApply}>
                   <Text style={styles.applyButtonText}>Qo'llash</Text>
                 </TouchableOpacity>
               </View>
@@ -182,8 +198,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
               <View style={styles.expandedHeader}>
                 <TouchableOpacity
                   style={styles.backButton}
-                  onPress={toggleExpand}
-                >
+                  onPress={toggleExpand}>
                   <ArrowLeft size={24} color={COLORS.gray900} />
                 </TouchableOpacity>
                 <Text style={styles.backTitle}>Orqaga</Text>
@@ -201,15 +216,16 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
                 <Text style={styles.breadcrumbSeparator}>/</Text>
                 <View style={styles.breadcrumbItem}>
                   <Home size={16} color={COLORS.gray400} />
-                  <Text style={styles.breadcrumbText}>{filters.propertyType}</Text>
+                  <Text style={styles.breadcrumbText}>
+                    {filters.propertyType}
+                  </Text>
                 </View>
               </View>
 
               {/* Expanded Content */}
-              <ScrollView 
+              <ScrollView
                 style={styles.expandedContent}
-                showsVerticalScrollIndicator={false}
-              >
+                showsVerticalScrollIndicator={false}>
                 {/* Country */}
                 <SelectBox
                   label="Davlat"
@@ -232,13 +248,17 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
                     <ToggleChip
                       label="Ikkilamchi"
                       isActive={filters.apartmentType === 'Ikkilamchi'}
-                      onPress={() => updateFilter('apartmentType', 'Ikkilamchi')}
+                      onPress={() =>
+                        updateFilter('apartmentType', 'Ikkilamchi')
+                      }
                       fullWidth
                     />
                     <ToggleChip
                       label="Yangi bino"
                       isActive={filters.apartmentType === 'Yangi bino'}
-                      onPress={() => updateFilter('apartmentType', 'Yangi bino')}
+                      onPress={() =>
+                        updateFilter('apartmentType', 'Yangi bino')
+                      }
                       fullWidth
                     />
                   </View>
@@ -249,15 +269,19 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
                   <Text style={styles.sectionLabel}>Xonalar soni</Text>
                   <View style={styles.numberRow}>
                     <NumberInput
-                      style={{ flex: 1 }}
+                      style={{flex: 1}}
                       value={String(filters.roomCountStart)}
-                      onChangeText={(v) => updateFilter('roomCountStart', parseInt(v) || 0)}
+                      onChangeText={v =>
+                        updateFilter('roomCountStart', parseInt(v) || 0)
+                      }
                       placeholder="dan"
                     />
                     <NumberInput
-                      style={{ flex: 1 }}
+                      style={{flex: 1}}
                       value={String(filters.roomCountEnd)}
-                      onChangeText={(v) => updateFilter('roomCountEnd', parseInt(v) || 0)}
+                      onChangeText={v =>
+                        updateFilter('roomCountEnd', parseInt(v) || 0)
+                      }
                       placeholder="gacha"
                     />
                   </View>
@@ -267,11 +291,13 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
                 <SelectBox
                   label="Ta'mirlash"
                   value={filters.renovation}
-                  onPress={() => openPicker('renovation', "Ta'mirlash", [
-                    "O'rtacha",
-                    "Yaxshi",
-                    "Yangi remont",
-                  ])}
+                  onPress={() =>
+                    openPicker('renovation', "Ta'mirlash", [
+                      "O'rtacha",
+                      'Yaxshi',
+                      'Yangi remont',
+                    ])
+                  }
                 />
 
                 {/* Price */}
@@ -279,50 +305,50 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
                   <Text style={styles.sectionLabel}>Narx</Text>
                   <View style={styles.numberRow}>
                     <NumberInput
-                      style={{ flex: 1 }}
+                      style={{flex: 1}}
                       value={filters.priceMin}
-                      onChangeText={(v) => updateFilter('priceMin', v)}
+                      onChangeText={v => updateFilter('priceMin', v)}
                       placeholder="dan"
                     />
                     <NumberInput
-                      style={{ flex: 1 }}
+                      style={{flex: 1}}
                       value={filters.priceMax}
-                      onChangeText={(v) => updateFilter('priceMax', v)}
+                      onChangeText={v => updateFilter('priceMax', v)}
                       placeholder="gacha"
                     />
                   </View>
-                  
+
                   {/* Currency Toggle */}
                   <View style={styles.currencyToggle}>
                     <TouchableOpacity
                       style={[
                         styles.currencyButton,
-                        filters.currency === 'UZS' && styles.currencyButtonActive,
+                        filters.currency === 'UZS' &&
+                          styles.currencyButtonActive,
                       ]}
-                      onPress={() => updateFilter('currency', 'UZS')}
-                    >
+                      onPress={() => updateFilter('currency', 'UZS')}>
                       <Text
                         style={[
                           styles.currencyButtonText,
-                          filters.currency === 'UZS' && styles.currencyButtonTextActive,
-                        ]}
-                      >
+                          filters.currency === 'UZS' &&
+                            styles.currencyButtonTextActive,
+                        ]}>
                         UZS
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
                         styles.currencyButton,
-                        filters.currency === 'Y.E' && styles.currencyButtonActive,
+                        filters.currency === 'Y.E' &&
+                          styles.currencyButtonActive,
                       ]}
-                      onPress={() => updateFilter('currency', 'Y.E')}
-                    >
+                      onPress={() => updateFilter('currency', 'Y.E')}>
                       <Text
                         style={[
                           styles.currencyButtonText,
-                          filters.currency === 'Y.E' && styles.currencyButtonTextActive,
-                        ]}
-                      >
+                          filters.currency === 'Y.E' &&
+                            styles.currencyButtonTextActive,
+                        ]}>
                         Y.E
                       </Text>
                     </TouchableOpacity>
@@ -340,9 +366,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
                       fullWidth
                     />
                     <ToggleChip
-                      label="Egasi"
-                      isActive={filters.postedBy === 'Egasi'}
-                      onPress={() => updateFilter('postedBy', 'Egasi')}
+                      label="Agasi"
+                      isActive={filters.postedBy === 'Agasi'}
+                      onPress={() => updateFilter('postedBy', 'Agasi')}
                       fullWidth
                     />
                   </View>
@@ -354,7 +380,9 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
 
               {/* Sticky Apply Button */}
               <View style={styles.stickyBottom}>
-                <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+                <TouchableOpacity
+                  style={styles.applyButton}
+                  onPress={handleApply}>
                   <Text style={styles.applyButtonText}>Qo'llash</Text>
                 </TouchableOpacity>
               </View>
@@ -368,8 +396,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
         visible={pickerVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setPickerVisible(false)}
-      >
+        onRequestClose={() => setPickerVisible(false)}>
         <View style={styles.pickerContainer}>
           <View style={styles.pickerHeader}>
             <TouchableOpacity onPress={() => setPickerVisible(false)}>
@@ -384,14 +411,15 @@ export const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApp
                 key={item.value}
                 style={styles.pickerItem}
                 onPress={() => {
-                  updateFilter(pickerData.key as keyof FilterState, item.value as any);
+                  updateFilter(
+                    pickerData.key as keyof FilterState,
+                    item.value as any,
+                  );
                   setPickerVisible(false);
-                }}
-              >
+                }}>
                 <Text style={styles.pickerItemText}>{item.label}</Text>
-                {filters[pickerData.key as keyof FilterState] === item.value && (
-                  <Check size={24} color={COLORS.primary} />
-                )}
+                {filters[pickerData.key as keyof FilterState] ===
+                  item.value && <Check size={24} color={COLORS.primary} />}
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -489,7 +517,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: 'row',
     gap: 12,
-    paddingBottom: 20,
+    paddingBottom: 40,
   },
   moreButton: {
     flex: 1,

@@ -2,6 +2,7 @@ import {configureStore, combineReducers} from '@reduxjs/toolkit';
 import propertyReducer from './slices/propertySlice';
 import authReducer from './slices/authSlice';
 import likesReducer from './slices/likesSlice';
+import notificationsReducer from './slices/notificationsSlice';
 import {persistStore, persistReducer} from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER} from 'redux-persist';
@@ -16,6 +17,7 @@ const rootReducer = combineReducers({
   properties: propertyReducer,
   auth: persistReducer(authPersistConfig, authReducer),
   likes: likesReducer,
+  notifications: notificationsReducer,
 });
 
 export const store = configureStore({

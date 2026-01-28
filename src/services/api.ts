@@ -3,7 +3,7 @@ import {Property, PropertyFormData, ApiResponse, PaginatedResponse} from '../typ
 import {store} from '../redux/store';
 import {refreshToken, clearAuth} from '../redux/slices/authSlice';
 
-const API_BASE_URL = 'https://stock-control.uz/api/mobile';
+const API_BASE_URL = 'https://makler-qaraqalpaq.uz/api/mobile';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -216,6 +216,10 @@ class ApiClient {
       console.error('👤 updateAvatar fetch error:', err?.response?.data ?? err?.message ?? err);
       throw err;
     }
+  }
+
+  async deleteAccount(): Promise<void> {
+    await this.client.delete('/users/profile/me/delete/');
   }
 }
 

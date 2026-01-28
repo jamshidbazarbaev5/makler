@@ -65,6 +65,6 @@ export const RENOVATION_TYPES = [
   "Ta'mirsiz",
 ];
 
-export const POSTED_BY_OPTIONS = ['Rieltor', 'Egasi', 'Developer', 'Agent'];
+export const POSTED_BY_OPTIONS = ['Rieltor', 'Agasi', 'Developer', 'Agent'];
 
 export const CURRENCIES = ['UZS', 'USD', 'Y.E.'];

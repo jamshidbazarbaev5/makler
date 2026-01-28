@@ -10,7 +10,7 @@ import {
   PanResponder,
   Alert,
 } from 'react-native';
-import { Globe, Settings, HelpCircle, Info, LogOut, ChevronRight } from 'lucide-react-native';
+import { Globe, Settings, HelpCircle, Info, LogOut, ChevronRight, Trash2 } from 'lucide-react-native';
 import { COLORS } from '../constants';
 
 interface BottomSheetMenuProps {
@@ -18,6 +18,7 @@ interface BottomSheetMenuProps {
   onClose: () => void;
   onLogout: () => void;
   onLanguagePress: () => void;
+  onDeleteAccount: () => void;
 }
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -27,6 +28,7 @@ export default function BottomSheetMenu({
   onClose,
   onLogout,
   onLanguagePress,
+  onDeleteAccount,
 }: BottomSheetMenuProps) {
   const [pan] = useState(new Animated.ValueXY());
 
@@ -193,6 +195,30 @@ export default function BottomSheetMenu({
             <ChevronRight
               size={20}
               color={COLORS.gray400}
+            />
+          </TouchableOpacity>
+
+          {/* Delete Account */}
+          <TouchableOpacity
+            style={[styles.menuItem, { marginTop: 8 }]}
+            onPress={() => {
+              onClose();
+              onDeleteAccount();
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: '#FFE6E6' }]}>
+                <Trash2 size={20} color={COLORS.error} />
+              </View>
+              <View>
+                <Text style={[styles.menuItemTitle, { color: COLORS.error }]}>Hisobni o'chirish</Text>
+                <Text style={styles.menuItemSubtitle}>Bu amalni ortga qaytarib bo'lmaydi</Text>
+              </View>
+            </View>
+            <ChevronRight
+              size={20}
+              color={COLORS.error}
             />
           </TouchableOpacity>
 

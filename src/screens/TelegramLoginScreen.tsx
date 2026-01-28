@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import {WebView, WebViewMessageEvent} from 'react-native-webview';
 import {useNavigation} from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
+import { ArrowLeft } from 'lucide-react-native';
 import {useDispatch} from 'react-redux';
 import {loginWithTelegram} from '../redux/slices/authSlice';
 import {AppDispatch} from '../redux/store';
@@ -53,6 +55,7 @@ const TELEGRAM_WIDGET_HTML = `
 
 export const TelegramLoginScreen = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const dispatch = useDispatch<AppDispatch>();
   const [loading, setLoading] = useState(false);
   const webViewRef = useRef<WebView>(null);
@@ -88,7 +91,7 @@ export const TelegramLoginScreen = () => {
         const match = url.match(regex);
 
         if (match && match[1]) {
-          const base64Data = match[1];
+          const base64Data = decodeURIComponent(match[1]);
           // Decode
           const jsonString = CryptoJS.enc.Base64.parse(base64Data).toString(
             CryptoJS.enc.Utf8,
@@ -105,30 +108,52 @@ export const TelegramLoginScreen = () => {
 
   const onShouldStartLoadWithRequest = (request: any) => {
     const {url} = request;
+    console.log('🔍 Should start load with request:', url);
+    
+    // Allow initial HTML load
+    if (url.startsWith('https://makler-qaraqalpaq.uz/') || 
+        url.startsWith('about:blank') || 
+        url.startsWith('data:')) {
+      return true;
+    }
+    
+    // Allow Telegram OAuth and widget resources
+    if (url.includes('telegram.org') || url.includes('oauth.telegram.org')) {
+      return true;
+    }
+    
+    // Handle Telegram auth result
     if (url.includes('tgAuthResult=')) {
       handleNavigationStateChange({url});
-      return false; // Stop loading
+      return false; // Prevent navigation, handle in-app
     }
+    
+    // Block only deep links to Telegram app, not OAuth URLs
+    if (url.startsWith('telegram://') || url.startsWith('tg://')) {
+      console.log('🚫 Blocking Telegram app deep link');
+      return false;
+    }
+    
     return true;
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container]}>
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>Close</Text>
+          style={styles.backButton}
+        >
+          <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Telegram Login</Text>
-        <View style={{width: 60}} />
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Telegram Login</Text>
       </View>
 
       <WebView
         ref={webViewRef}
         source={{
           html: TELEGRAM_WIDGET_HTML,
-          baseUrl: 'https://stock-control.uz/',
+          baseUrl: 'https://makler-qaraqalpaq.uz/',
         }}
         originWhitelist={['*']}
         onMessage={handleMessage}
@@ -152,6 +177,24 @@ export const TelegramLoginScreen = () => {
         }}
         style={styles.webview}
         incognito={true}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        sharedCookiesEnabled={true}
+        // Allow the OAuth popup to open within WebView
+        setSupportMultipleWindows={false}
+        // Handle popup window requests by loading in same WebView
+        onOpenWindow={syntheticEvent => {
+          const {nativeEvent} = syntheticEvent;
+          console.log('🪟 Opening window URL in same WebView:', nativeEvent.targetUrl);
+          // Navigate to the OAuth URL in the same WebView
+          if (nativeEvent.targetUrl && webViewRef.current) {
+            webViewRef.current.injectJavaScript(`
+              window.location.href = '${nativeEvent.targetUrl}';
+              true;
+            `);
+          }
+        }}
       />
 
       {loading && (
@@ -171,16 +214,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  backButton: {
+    padding: 8,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    flex: 1,
   },
   closeButton: {
     padding: 8,

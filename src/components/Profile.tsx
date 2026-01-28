@@ -19,6 +19,7 @@ import BottomNav from './BottomNav';
 import {useSelector, useDispatch} from 'react-redux';
 import {RootState, AppDispatch} from '../redux/store';
 import {fetchProfile, logout} from '../redux/slices/authSlice';
+import api from '../services/api';
 
 type Props = NativeStackScreenProps<any, 'Profile'>;
 
@@ -72,6 +73,34 @@ export default function Profile({ navigation }: Props) {
     Alert.alert(
       'Til o\'zgartirildi',
       `Tanlangan til: ${language === 'uz' ? "O'zbek" : language === 'ru' ? 'Русский' : 'English'}`
+    );
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Hisobni o\'chirish',
+      'Hisobingizni o\'chirmoqchimisiz? Bu amalni ortga qaytarib bo\'lmaydi.',
+      [
+        {
+          text: 'Bekor qilish',
+          style: 'cancel',
+        },
+        {
+          text: 'O\'chirish',
+          onPress: async () => {
+            try {
+              await api.deleteAccount();
+              Alert.alert('Muvaffaqiyatli', 'Hisobingiz muvaffaqiyatli o\'chirildi');
+              dispatch(logout() as any);
+              navigation.navigate('Login');
+            } catch (error: any) {
+              console.error('Account deletion failed:', error);
+              Alert.alert('Xatolik', 'Hisobni o\'chirishda xatolik yuz berdi');
+            }
+          },
+          style: 'destructive',
+        },
+      ]
     );
   };
 
@@ -206,6 +235,7 @@ export default function Profile({ navigation }: Props) {
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
         onLogout={handleLogout}
+        onDeleteAccount={handleDeleteAccount}
         onLanguagePress={() => {
           setMenuVisible(false);
           setLanguageModalVisible(true);

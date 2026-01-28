@@ -7,9 +7,11 @@ import {
 } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 const Header = () => {
   const { colors } = useTheme();
+  const navigation = useNavigation();
 
   return (
     <View
@@ -20,27 +22,30 @@ const Header = () => {
     >
       <View style={styles.leftSection}>
      
-        <Text
-          style={[
-            styles.title,
-            { color: colors.text },
-          ]}
-        >
-          MAKLER QARAQALPAQ
-        </Text>
+        <TouchableOpacity onPress={() => navigation.getParent()?.navigate('TopPosts' as any)}>
+          <Text
+            style={[
+              styles.title,
+              { color: colors.text },
+            ]}
+          >
+            MAKLER QARAQALPAQ
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.rightSection}>
-        <View
+        <TouchableOpacity
           style={[
             styles.badge,
             { backgroundColor: colors.text },
           ]}
+          onPress={() => navigation.getParent()?.navigate('TopPosts' as any)}
         >
           <Text style={[styles.badgeText, { color: colors.card }]}>TOP</Text>
           {/* <Text style={[styles.badgeNumber, { color: colors.card }]}>10</Text> */}
-        </View>
-        <TouchableOpacity>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.getParent()?.navigate('Notifications' as any)}>
           <Bell size={24} color={colors.text} />
         </TouchableOpacity>
       </View>

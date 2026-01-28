@@ -20,7 +20,7 @@ export interface AuthResponse {
 }
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
-const API_BASE_URL = 'https://stock-control.uz/api/mobile';
+const API_BASE_URL = 'https://makler-qaraqalpaq.uz/api/mobile';
 
 /**
  * Verify Telegram authentication data

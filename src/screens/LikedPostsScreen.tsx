@@ -9,6 +9,8 @@ import {
   Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
+import { ArrowLeft } from 'lucide-react-native';
 import BottomNav from '../components/BottomNav';
 import ListingCard from '../components/ListingCardForLiked';
 
@@ -92,6 +94,7 @@ const initialListings: Listing[] = [
 
 const LikedPostsScreen = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [likedListings, setLikedListings] = useState<Listing[]>(initialListings);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -122,12 +125,20 @@ const LikedPostsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Sevimli</Text>
-          <Text style={styles.headerSubtitle}>
-            {likedListings.length} {likedListings.length === 1 ? 'e\'lon' : 'e\'lon'}
-          </Text>
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <ArrowLeft size={24} color={colors.text} />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Sevimli</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.text }]}>
+              {likedListings.length} {likedListings.length === 1 ? 'e\'lon' : 'e\'lon'}
+            </Text>
+          </View>
         </View>
         <View style={styles.viewModeContainer}>
           <TouchableOpacity
@@ -180,24 +191,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   header: {
-    backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerContent: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#000',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#999',
   },
   viewModeContainer: {
     flexDirection: 'row',

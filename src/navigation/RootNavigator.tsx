@@ -10,8 +10,11 @@ import {loginWithTelegram, fetchProfile, refreshToken as refreshTokenAction} fro
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import PropertyFormScreen from '../screens/PropertyFormScreen';
+import PropertyTypeScreen from '../screens/PropertyTypeScreen';
 import AddListingScreen from '../screens/AddListingScreen';
 import LikedPostsScreen from '../screens/LikedPostsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import TopPostsScreen from '../screens/TopPostsScreen';
 import Profile from '../components/Profile';
 import ListingDetail from '../components/ListingDetail';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
@@ -26,11 +29,14 @@ export type RootStackParamList = {
   ListingDetail: {listingId?: string; id?: string};
   PropertyDetail: {id: string};
   AddListing: undefined;
-  PropertyForm: {listingType?: string};
+  PropertyType: {listingType?: string};
+  PropertyForm: {listingType?: string; propertyType?: string};
   Search: undefined;
   Profile: undefined;
   ProfileEdit: undefined;
   LikedPosts: undefined;
+  TopPosts: undefined;
+  Notifications: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -86,6 +92,13 @@ function AddListingStack() {
         contentStyle: {backgroundColor: '#fff'},
       }}>
       <Stack.Screen name="AddListing" component={AddListingScreen} />
+      <Stack.Screen
+        name="PropertyType"
+        component={PropertyTypeScreen}
+        options={{
+          animation: 'default',
+        }}
+      />
       <Stack.Screen
         name="PropertyForm"
         component={PropertyFormScreen}
@@ -153,6 +166,18 @@ function MainAppNavigator() {
           }}
         />
         <Tab.Screen
+          name="TopPosts"
+          component={TopPostsScreen}
+          options={{
+            tabBarLabel: 'Top',
+            tabBarIcon: ({color}) => (
+              <View style={{width: 24, height: 24, justifyContent: 'center', alignItems: 'center'}}>
+                <Text style={{color, fontSize: 20}}>⭐</Text>
+              </View>
+            ),
+          }}
+        />
+        <Tab.Screen
           name="Profile"
           component={ProfileStack}
           options={{
@@ -160,6 +185,18 @@ function MainAppNavigator() {
             tabBarIcon: ({color}) => (
               <View style={{width: 24, height: 24, justifyContent: 'center', alignItems: 'center'}}>
                 <Text style={{color, fontSize: 20}}>👤</Text>
+              </View>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Notifications"
+          component={NotificationsScreen}
+          options={{
+            tabBarLabel: 'Notifications',
+            tabBarIcon: ({color}) => (
+              <View style={{width: 24, height: 24, justifyContent: 'center', alignItems: 'center'}}>
+                <Text style={{color, fontSize: 20}}>🔔</Text>
               </View>
             ),
           }}

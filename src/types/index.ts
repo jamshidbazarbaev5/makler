@@ -98,6 +98,26 @@ export interface User {
   is_agent?: boolean;
   preferred_language?: string;
   bio?: string;
-  properties_count?: number;
-  views_count?: number;
 }
+
+// Notification Types
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'new_listing' | 'message' | 'like' | 'booking';
+  timestamp: string;
+  read: boolean;
+  actionUrl?: string;
+  data?: any;
+  icon?: string;
+  userId?: string;
+}
+
+export interface NotificationsState {
+  notifications: Notification[];
+  unreadCount: number;
+  loading: boolean;
+  error: string | null;
+}
+

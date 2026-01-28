@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { Home, Search, PlusCircle, MessageCircle, User, HeartIcon } from 'lucide-react-native';
+import { Home, Search, PlusCircle, MessageCircle, User, HeartIcon, Bell } from 'lucide-react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
 
 interface NavItem {

@@ -13,6 +13,9 @@ import {
   Alert,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useTheme } from '@react-navigation/native';
+import { ArrowLeft, MapPin, Camera, ImageIcon, X } from 'lucide-react-native';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import BottomNav from '../components/BottomNav';
 
 interface FormData {
@@ -32,10 +35,17 @@ interface FormData {
   address: string;
   phone: string;
   images: string[];
+  propertyOwner: string; // 'owner' or 'realtor'
+  apartmentType: string; // 'new' or 'secondary'
+  roomsCount: string;
+  totalArea: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 interface RouteParams {
   listingType?: string;
+  propertyType?: string;
 }
 
 const listingTypeMap: { [key: string]: string } = {
@@ -48,9 +58,11 @@ const listingTypeMap: { [key: string]: string } = {
 
 const PropertyFormScreen = () => {
   const route = useRoute();
+  const { colors } = useTheme();
   const navigation = useNavigation();
-  const params = route.params as RouteParams | undefined;
+  const params = route.params as (RouteParams & {propertyType?: string}) | undefined;
   const listingType = params?.listingType || 'sell';
+  const propertyType = params?.propertyType || 'kvartira';
   const headerTitle = listingTypeMap[listingType] || 'Kvartira';
 
   const [formData, setFormData] = useState<FormData>({
@@ -70,9 +82,15 @@ const PropertyFormScreen = () => {
     address: '',
     phone: '',
     images: [],
+    propertyOwner: 'owner',
+    apartmentType: 'new',
+    roomsCount: '',
+    totalArea: '',
   });
 
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showImageSourceModal, setShowImageSourceModal] = useState(false);
 
   const renovationOptions = [
     'Ta\'mirlash tanlang',
@@ -85,6 +103,54 @@ const PropertyFormScreen = () => {
   const countryOptions = ['O\'zbekiston'];
   const regionOptions = ['Tashkent', 'Samarkand', 'Bukhara', 'Andijan'];
 
+  // Property type specific field configurations
+  const getFieldsForPropertyType = () => {
+    const baseFields = {
+      images: true,
+      title: true,
+      description: true,
+      price: true,
+      location: true,
+      phone: true,
+    };
+
+    const propertyTypeConfigs: Record<string, Record<string, boolean>> = {
+      kvartira: {
+        ...baseFields,
+        propertyOwner: true,
+        apartmentType: true,
+        roomsCount: true,
+        totalArea: true,
+        floor: true,
+        totalFloors: true,
+        renovation: true,
+      },
+      'hovli-kottej-dacha': {
+        ...baseFields,
+        propertyOwner: true,
+        totalArea: true,
+        floor: false,
+        totalFloors: false,
+        renovation: true,
+        roomsCount: true,
+      },
+      mehmonxona: {
+        ...baseFields,
+        propertyOwner: true,
+        totalArea: true,
+        roomsCount: true,
+        floor: true,
+        totalFloors: true,
+        renovation: true,
+        apartmentType: false,
+      },
+    };
+
+    return propertyTypeConfigs[propertyType] || baseFields;
+  };
+
+  const visibleFields = getFieldsForPropertyType();
+
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -93,7 +159,57 @@ const PropertyFormScreen = () => {
   };
 
   const handleAddImage = () => {
-    Alert.alert('Rasm qo\'shish', 'Kamera yoki galereyadan rasm tanlang');
+    setShowImageSourceModal(true);
+  };
+
+  const handleCameraPress = () => {
+    setShowImageSourceModal(false);
+    launchCamera(
+      {
+        mediaType: 'photo',
+        cameraType: 'back',
+      },
+      (response) => {
+        if (response.didCancel) {
+          console.log('Camera cancelled');
+        } else if (response.errorCode) {
+          Alert.alert('Xato', 'Kamera xatosi: ' + response.errorMessage);
+        } else if (response.assets && response.assets.length > 0) {
+          const imageUri = response.assets[0].uri;
+          if (imageUri && formData.images.length < 10) {
+            setFormData(prev => ({
+              ...prev,
+              images: [...prev.images, imageUri],
+            }));
+          }
+        }
+      }
+    );
+  };
+
+  const handleGalleryPress = () => {
+    setShowImageSourceModal(false);
+    launchImageLibrary(
+      {
+        mediaType: 'photo',
+        selectionLimit: 10 - formData.images.length,
+      },
+      (response) => {
+        if (response.didCancel) {
+          console.log('Gallery cancelled');
+        } else if (response.errorCode) {
+          Alert.alert('Xato', 'Galereya xatosi: ' + response.errorMessage);
+        } else if (response.assets && response.assets.length > 0) {
+          const newImages = response.assets
+            .map(asset => asset.uri)
+            .filter((uri): uri is string => !!uri);
+          setFormData(prev => ({
+            ...prev,
+            images: [...prev.images, ...newImages].slice(0, 10),
+          }));
+        }
+      }
+    );
   };
 
   const handleRemoveImage = (index: number) => {
@@ -113,14 +229,16 @@ const PropertyFormScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <ArrowLeft size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{headerTitle}</Text>
+      </View>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{headerTitle}</Text>
-        </View>
 
         {/* Images Section */}
         <View style={styles.section}>
@@ -181,116 +299,150 @@ const PropertyFormScreen = () => {
         </View>
 
         {/* Property Details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Kim joylashti</Text>
-          <View style={styles.rowContainer}>
-            <TouchableOpacity
-              style={[styles.optionButton, styles.selectedOption]}
-            >
-              <Text style={styles.optionButtonText}>Egasi</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.optionButton}>
-              <Text style={[styles.optionButtonText, { color: '#999' }]}>
-                Rieltor
-              </Text>
-            </TouchableOpacity>
+        {visibleFields.propertyOwner && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Kim joylashti</Text>
+            <View style={styles.rowContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  formData.propertyOwner === 'owner' && styles.selectedOption,
+                ]}
+                onPress={() => handleInputChange('propertyOwner', 'owner')}
+              >
+                <Text style={styles.optionButtonText}>Egasi</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  formData.propertyOwner === 'realtor' && styles.selectedOption,
+                ]}
+                onPress={() => handleInputChange('propertyOwner', 'realtor')}
+              >
+                <Text style={[styles.optionButtonText, { color: '#999' }]}>
+                  Rieltor
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Apartment Type */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Kvartira turi</Text>
-          <View style={styles.rowContainer}>
-            <TouchableOpacity
-              style={[styles.optionButton, styles.selectedOption]}
-            >
-              <Text style={styles.optionButtonText}>Yangi bino</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.optionButton}>
-              <Text style={[styles.optionButtonText, { color: '#999' }]}>
-                Ikkilamchi
-              </Text>
-            </TouchableOpacity>
+        {visibleFields.apartmentType && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Kvartira turi</Text>
+            <View style={styles.rowContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  formData.apartmentType === 'new' && styles.selectedOption,
+                ]}
+                onPress={() => handleInputChange('apartmentType', 'new')}
+              >
+                <Text style={styles.optionButtonText}>Yangi bino</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.optionButton,
+                  formData.apartmentType === 'secondary' && styles.selectedOption,
+                ]}
+                onPress={() => handleInputChange('apartmentType', 'secondary')}
+              >
+                <Text style={[styles.optionButtonText, { color: '#999' }]}>
+                  Ikkilamchi
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Rooms & Area */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Xonalar soni</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Xonalar sonini kiriting"
-            value={formData.bedrooms}
-            onChangeText={(text) => handleInputChange('bedrooms', text)}
-            placeholderTextColor="#999"
-            keyboardType="number-pad"
-          />
-        </View>
+        {visibleFields.roomsCount && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Xonalar soni</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Xonalar sonini kiriting"
+              value={formData.roomsCount}
+              onChangeText={(text) => handleInputChange('roomsCount', text)}
+              placeholderTextColor="#999"
+              keyboardType="number-pad"
+            />
+          </View>
+        )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Maydon, m²</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Maydonni kiriting"
-            value={formData.area}
-            onChangeText={(text) => handleInputChange('area', text)}
-            placeholderTextColor="#999"
-            keyboardType="decimal-pad"
-          />
-        </View>
+        {visibleFields.totalArea && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Maydon, m²</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Maydonni kiriting"
+              value={formData.totalArea}
+              onChangeText={(text) => handleInputChange('totalArea', text)}
+              placeholderTextColor="#999"
+              keyboardType="decimal-pad"
+            />
+          </View>
+        )}
 
         {/* Floor Details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Qavat</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Qavat raqamini kiriting"
-            value={formData.floor}
-            onChangeText={(text) => handleInputChange('floor', text)}
-            placeholderTextColor="#999"
-            keyboardType="number-pad"
-          />
-        </View>
+        {visibleFields.floor && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Qavat</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Qavat raqamini kiriting"
+              value={formData.floor}
+              onChangeText={(text) => handleInputChange('floor', text)}
+              placeholderTextColor="#999"
+              keyboardType="number-pad"
+            />
+          </View>
+        )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Uyning qavatlari soni</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Jami qavatlari"
-            value={formData.totalFloors}
-            onChangeText={(text) => handleInputChange('totalFloors', text)}
-            placeholderTextColor="#999"
-            keyboardType="number-pad"
-          />
-        </View>
+        {visibleFields.totalFloors && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Uyning qavatlari soni</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Jami qavatlari"
+              value={formData.totalFloors}
+              onChangeText={(text) => handleInputChange('totalFloors', text)}
+              placeholderTextColor="#999"
+              keyboardType="number-pad"
+            />
+          </View>
+        )}
 
         {/* Renovation */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ta'mirlash</Text>
-          <TouchableOpacity
-            style={styles.dropdownButton}
-            onPress={() => setDropdownOpen(dropdownOpen === 'renovation' ? null : 'renovation')}
-          >
-            <Text style={styles.dropdownButtonText}>{formData.renovation}</Text>
-            <Text style={styles.dropdownArrow}>▼</Text>
-          </TouchableOpacity>
-          {dropdownOpen === 'renovation' && (
-            <View style={styles.dropdownMenu}>
-              {renovationOptions.map((option, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    handleInputChange('renovation', option);
-                    setDropdownOpen(null);
-                  }}
-                >
-                  <Text style={styles.dropdownItemText}>{option}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
+        {visibleFields.renovation && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Ta'mirlash</Text>
+            <TouchableOpacity
+              style={styles.dropdownButton}
+              onPress={() => setDropdownOpen(dropdownOpen === 'renovation' ? null : 'renovation')}
+            >
+              <Text style={styles.dropdownButtonText}>{formData.renovation}</Text>
+              <Text style={styles.dropdownArrow}>▼</Text>
+            </TouchableOpacity>
+            {dropdownOpen === 'renovation' && (
+              <View style={styles.dropdownMenu}>
+                {renovationOptions.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      handleInputChange('renovation', option);
+                      setDropdownOpen(null);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{option}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Price Section */}
         <View style={styles.section}>
@@ -367,8 +519,19 @@ const PropertyFormScreen = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Joylashuv</Text>
-          <Text style={styles.mapPlaceholder}>Xaritada joylashuvni tanlang</Text>
-          <View style={styles.mapContainer} />
+          <TouchableOpacity
+            style={styles.mapContainer}
+            onPress={() => setShowLocationModal(true)}
+          >
+            <View style={styles.mapContent}>
+              <MapPin size={24} color="#999" />
+              <Text style={styles.mapPlaceholder}>
+                {formData.latitude && formData.longitude
+                  ? `Tanlangan: ${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)}`
+                  : 'Xaritada joylashuvni tanlang'}
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Phone Section */}
@@ -398,6 +561,137 @@ const PropertyFormScreen = () => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* Image Source Selection Modal */}
+      <Modal
+        visible={showImageSourceModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowImageSourceModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowImageSourceModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Rasm qo'shish</Text>
+              <TouchableOpacity onPress={() => setShowImageSourceModal(false)}>
+                <X size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={handleCameraPress}
+            >
+              <Camera size={24} color="#000" />
+              <Text style={styles.modalOptionText}>Kamera</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={handleGalleryPress}
+            >
+              <ImageIcon size={24} color="#000" />
+              <Text style={styles.modalOptionText}>Galereya</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Location Selection Modal */}
+      <Modal
+        visible={showLocationModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowLocationModal(false)}
+      >
+        <SafeAreaView style={styles.locationModalContainer}>
+          <View style={styles.locationModalHeader}>
+            <TouchableOpacity onPress={() => setShowLocationModal(false)}>
+              <ArrowLeft size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.locationModalTitle}>Joylashuvni tanlang</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          <SafeAreaView style={styles.locationSearchContainer}>
+            <Text style={styles.locationLabel}>Tashkent shahrining ba'zi joylari:</Text>
+            <ScrollView style={styles.locationList}>
+              {[
+                { lat: 41.2995, lon: 69.2401, name: 'Tashkent Markazi' },
+                { lat: 41.3193, lon: 69.2806, name: 'Nukus ko\'chasi' },
+                { lat: 41.3156, lon: 69.1877, name: 'Sergeli tumani' },
+                { lat: 41.2871, lon: 69.2080, name: 'Yunusabad tumani' },
+                { lat: 41.3386, lon: 69.2808, name: 'Mirzo Ulug\'bek tumani' },
+              ].map((location, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.locationOption}
+                  onPress={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      latitude: location.lat,
+                      longitude: location.lon,
+                    }));
+                    setShowLocationModal(false);
+                  }}
+                >
+                  <MapPin size={20} color="#000" />
+                  <Text style={styles.locationOptionText}>{location.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </SafeAreaView>
+
+          <View style={styles.manualLocationContainer}>
+            <Text style={styles.locationLabel}>Yoki koordinatalarni kiriting:</Text>
+            <View style={styles.coordinateInputs}>
+              <TextInput
+                style={styles.coordinateInput}
+                placeholder="Kenglik (Latitude)"
+                placeholderTextColor="#999"
+                keyboardType="decimal-pad"
+                value={formData.latitude?.toString() || ''}
+                onChangeText={(text) => {
+                  const lat = parseFloat(text);
+                  if (!isNaN(lat)) {
+                    setFormData(prev => ({
+                      ...prev,
+                      latitude: lat,
+                    }));
+                  }
+                }}
+              />
+              <TextInput
+                style={styles.coordinateInput}
+                placeholder="Uzunlik (Longitude)"
+                placeholderTextColor="#999"
+                keyboardType="decimal-pad"
+                value={formData.longitude?.toString() || ''}
+                onChangeText={(text) => {
+                  const lon = parseFloat(text);
+                  if (!isNaN(lon)) {
+                    setFormData(prev => ({
+                      ...prev,
+                      longitude: lon,
+                    }));
+                  }
+                }}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.confirmLocationButton}
+              onPress={() => setShowLocationModal(false)}
+            >
+              <Text style={styles.confirmLocationButtonText}>Tayyor</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
       <BottomNav />
     </SafeAreaView>
   );
@@ -413,23 +707,20 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   header: {
-    backgroundColor: '#fff',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
   },
   backButton: {
-    fontSize: 28,
-    color: '#000',
-    marginRight: 12,
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#000',
     flex: 1,
   },
   section: {
@@ -561,9 +852,13 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     height: 200,
-    backgroundColor: '#e8e8e8',
+    backgroundColor: '#f0f0f0',
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   phoneContainer: {
     flexDirection: 'row',
@@ -653,6 +948,128 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000',
     fontWeight: '500',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    gap: 12,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '500',
+  },
+  // Location Modal Styles
+  locationModalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  locationModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  locationModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  locationSearchContainer: {
+    flex: 1,
+    // paddingHorizontal: -120,
+    // paddingVertical: ,
+  },
+  locationLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 12,
+  },
+  locationList: {
+    marginBottom: 20,
+  },
+  locationOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    gap: 12,
+  },
+  locationOptionText: {
+    fontSize: 14,
+    color: '#000',
+    flex: 1,
+  },
+  manualLocationContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  coordinateInputs: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  coordinateInput: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: '#000',
+    backgroundColor: '#f8f8f8',
+  },
+  confirmLocationButton: {
+    backgroundColor: '#000',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confirmLocationButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  mapContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
   },
 });
 

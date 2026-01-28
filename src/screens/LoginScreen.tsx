@@ -5,8 +5,12 @@ import {
   ScrollView,
   Text,
   SafeAreaView,
+  Dimensions,
+  TouchableOpacity,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import {useTheme} from '@react-navigation/native';
+import { ArrowLeft } from 'lucide-react-native';
 import {useSelector} from 'react-redux';
 import {RootState} from '../redux/store';
 import {TelegramLoginButton} from '../components/TelegramLoginButton';
@@ -14,6 +18,8 @@ import {TelegramLoginButton} from '../components/TelegramLoginButton';
 interface LoginScreenProps {
   navigation: any;
 }
+
+const {height} = Dimensions.get('window');
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
   const {colors} = useTheme();
@@ -27,46 +33,55 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 
   return (
     <SafeAreaView style={[styles.container, {backgroundColor: colors.background}]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+     
+      <LinearGradient
+        colors={['rgba(0, 136, 204, 0.05)', 'rgba(0, 136, 204, 0.02)']}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={styles.gradient}
       >
-        <View style={styles.content}>
-          <Text style={[styles.title, {color: colors.text}]}>
-            MAKLER QARAQALPAQ
-          </Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.content}>
+            {/* Logo Section */}
+            {/* <View style={styles.logoSection}>
+              <View style={[styles.logoCircle, {borderColor: colors.primary}]} />
+            </View> */}
 
-          <Text style={[styles.subtitle, {color: colors.text}]}>
-            Login to continue
-          </Text>
+            {/* Title Section */}
+            <View style={styles.titleSection}>
+              <Text style={[styles.title, {color: colors.text}]}>
+                MAKLER
+              </Text>
+              <Text style={[styles.subtitle, {color: colors.text}]}>
+                Qaraqalpaq
+              </Text>
+            </View>
 
-          <View style={styles.divider} />
+            {/* Accent Line */}
+            <View style={styles.accentLine} />
 
-          <TelegramLoginButton
-            onSuccess={() => {
-              navigation.replace('Home');
-            }}
-            onError={(error) => {
-              console.error('Login error:', error);
-            }}
-          />
+            {/* Description */}
+            <Text style={[styles.description, {color: colors.text}]}>
+              Bugun o'zingizning uyingizni toping
+            </Text>
 
-          <View style={styles.infoSection}>
-            <Text style={[styles.infoTitle, {color: colors.text}]}>
-              Why Telegram Login?
-            </Text>
-            <Text style={[styles.infoText, {color: colors.text}]}>
-              • Fast and secure authentication
-            </Text>
-            <Text style={[styles.infoText, {color: colors.text}]}>
-              • No password required
-            </Text>
-            <Text style={[styles.infoText, {color: colors.text}]}>
-              • Your Telegram account is protected
-            </Text>
+            {/* Button Section */}
+            <View style={styles.buttonContainer}>
+              <TelegramLoginButton
+                onSuccess={() => {
+                  navigation.replace('Home');
+                }}
+                onError={(error) => {
+                  console.error('Login error:', error);
+                }}
+              />
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -75,45 +90,67 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 16,
+    zIndex: 10,
+    padding: 8,
+  },
+  gradient: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
+    minHeight: height,
   },
   content: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  logoSection: {
+    marginBottom: 40,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+  },
+  titleSection: {
+    marginBottom: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
+    fontSize: 42,
+    fontWeight: '800',
+    letterSpacing: 2,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    marginBottom: 30,
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '500',
+    letterSpacing: 1,
     opacity: 0.7,
   },
-  divider: {
-    width: 60,
-    height: 3,
+  accentLine: {
+    width: 50,
+    height: 4,
     backgroundColor: '#0088cc',
     borderRadius: 2,
-    marginBottom: 40,
+    marginBottom: 24,
   },
-  infoSection: {
-    marginTop: 60,
-    width: '100%',
-  },
-  infoTitle: {
+  description: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 15,
+    textAlign: 'center',
+    marginBottom: 50,
+    fontWeight: '400',
+    opacity: 0.8,
   },
-  infoText: {
-    fontSize: 14,
-    marginBottom: 8,
-    lineHeight: 20,
+  buttonContainer: {
+    width: '100%',
+    marginBottom: 60,
   },
 });
