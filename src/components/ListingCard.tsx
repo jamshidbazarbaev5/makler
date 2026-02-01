@@ -1,5 +1,5 @@
-import React from 'react';
-import { TouchableOpacity, Image, Text, View, StyleSheet, Platform } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { TouchableOpacity, Image, Text, View, StyleSheet, Platform, Animated } from 'react-native';
 import { ImageIcon } from 'lucide-react-native';
 import { Listing } from '../data/mockData';
 import { useNavigation } from '@react-navigation/native';
@@ -12,48 +12,85 @@ interface ListingCardProps {
 const ListingCard = ({ listing, size = 'normal' }: ListingCardProps) => {
   const navigation = useNavigation<any>();
   const isLarge = size === 'large';
+  
+  // Animation values
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Fade-in animation on mount
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 40,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 40,
+    }).start();
+  };
 
   return (
-    <TouchableOpacity
-      style={[styles.card, isLarge && styles.largeCard]}
-      onPress={() => navigation.navigate('ListingDetail', { listingId: listing.id })}
-      activeOpacity={0.7}
-    >
-      {/* Badge */}
-      {listing.badge && (
-        <View style={styles.badgeContainer}>
-          <View style={styles.badgeCorner} />
-          <Text style={styles.badgeText}>{listing.badge}</Text>
-        </View>
-      )}
+    <Animated.View style={{ opacity: fadeAnim }}>
+      <TouchableOpacity
+        style={[styles.card, isLarge && styles.largeCard]}
+        onPress={() => navigation.navigate('ListingDetail', { listingId: listing.id })}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Animated.View style={{ transform: [{ scale: scaleAnim }], flex: 1 }}>
+          {/* Badge */}
+          {listing.badge && (
+            <View style={styles.badgeContainer}>
+              <View style={styles.badgeCorner} />
+              <Text style={styles.badgeText}>{listing.badge}</Text>
+            </View>
+          )}
 
-      {/* Image Area */}
-      <View style={[styles.imageContainer, isLarge && styles.largeImageContainer]}>
-        {listing.hasImage && listing.imageUrl ? (
-          <Image
-            source={{ uri: listing.imageUrl }}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.placeholderContainer}>
-            <ImageIcon size={24} color="#94a3b8" />
+          {/* Image Area */}
+          <View style={[styles.imageContainer, isLarge && styles.largeImageContainer]}>
+            {listing.hasImage && listing.imageUrl ? (
+              <Image
+                source={{ uri: listing.imageUrl }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.placeholderContainer}>
+                <ImageIcon size={24} color="#94a3b8" />
+              </View>
+            )}
+
+            {/* User Badge */}
+            <View style={styles.userBadge}>
+              <Image source={{ uri: listing.avatar }} style={styles.userAvatar} />
+              <Text style={styles.userText} numberOfLines={1}>{listing.username}</Text>
+            </View>
           </View>
-        )}
 
-        {/* User Badge */}
-        <View style={styles.userBadge}>
-          <Image source={{ uri: listing.avatar }} style={styles.userAvatar} />
-          <Text style={styles.userText} numberOfLines={1}>{listing.username}</Text>
-        </View>
-      </View>
-
-      {/* Content */}
-      <View style={isLarge ? styles.largeContent : styles.content}>
-        <Text style={styles.price}>{listing.price}</Text>
-        <Text style={styles.title} numberOfLines={1}>{listing.title}</Text>
-      </View>
-    </TouchableOpacity>
+          {/* Content */}
+          <View style={isLarge ? styles.largeContent : styles.content}>
+            <Text style={styles.price}>{listing.price}</Text>
+            <Text style={styles.title} numberOfLines={1}>{listing.title}</Text>
+          </View>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 

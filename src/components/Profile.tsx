@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,20 @@ import {
   SafeAreaView,
   Alert,
   Image,
+  Modal,
+  FlatList,
+  ActivityIndicator,
+  useWindowDimensions,
+  RefreshControl,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Share2, Edit, Menu, Home, Handshake, Heart } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { Share2, Edit, Menu, Home, Handshake, Heart, ChevronDown, ImageIcon, Eye } from 'lucide-react-native';
 import { COLORS } from '../constants';
 import BottomSheetMenu from './BottomSheetMenu';
 import LanguageModal from './LanguageModal';
 import BottomNav from './BottomNav';
+import SkeletonLoader from './SkeletonLoader';
 import {useSelector, useDispatch} from 'react-redux';
 import {RootState, AppDispatch} from '../redux/store';
 import {fetchProfile, logout} from '../redux/slices/authSlice';
@@ -34,23 +41,175 @@ const iconMap: any = {
   Heart,
 };
 
+// Status mapping for API
+const STATUS_MAP: Record<string, { label: string; apiKey: string }> = {
+  draft: { label: 'Qoralama', apiKey: 'draft' },
+  active: { label: 'Faol', apiKey: 'active' },
+  processing: { label: 'Tekshiruvda', apiKey: 'processing' },
+  inactive: { label: 'Faol emas', apiKey: 'inactive' },
+  rejected: { label: 'Rad etilgan', apiKey: 'rejected' },
+  completed: { label: 'Yakunlangan', apiKey: 'completed' },
+};
+
+// Filter options based on the images
+const FILTER_OPTIONS = {
+  status: ['Barchasi', ...Object.values(STATUS_MAP).map(s => s.label)],
+  saralash: ['Eng yangi', 'Eng arzon', 'Eng qimmat'],
+  elon_maqsadi: ['Xammasi', 'Kunlik', 'Ijara', 'Sotuv'],
+  mulk_toifasi: ['Xammasi', 'Kvartira', 'Uy', 'Yer', 'Tijorat'],
+};
+
 const filters = [
-  ['Status', 'Saralash'],
-  ["E'lon maqsadi", 'Mulk toifasi'],
+  ['status', 'saralash'],
+  ['elon_maqsadi', 'mulk_toifasi'],
 ];
+
+interface TabCounts {
+  draft: number;
+  active: number;
+  processing: number;
+  inactive: number;
+  rejected: number;
+  completed: number;
+}
 
 export default function Profile({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
-  const {user} = useSelector((state: RootState) => state.auth);
+  const {user, loading} = useSelector((state: RootState) => state.auth);
 
   const [activeTab, setActiveTab] = useState('listings');
   const [menuVisible, setMenuVisible] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState<'uz' | 'ru' | 'en'>('uz');
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState({
+    status: 'Barchasi',
+    saralash: 'Saralash',
+    elon_maqsadi: "E'lon maqsadi",
+    mulk_toifasi: 'Mulk toifasi',
+  });
+  const [tabCounts, setTabCounts] = useState<TabCounts | null>(null);
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [listingsLoading, setListingsLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
+
+  const { width } = useWindowDimensions();
+  const numColumns = 2;
+  const cardWidth = (width - 48) / numColumns;
 
   useEffect(() => {
     dispatch(fetchProfile());
   }, [dispatch]);
+
+  // Refresh listings and counts when screen comes into focus (after delete/edit)
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyAnnouncements(selectedStatus, 1, false);
+      fetchStatusCounts();
+    }, [selectedStatus])
+  );
+
+  const fetchStatusCounts = async () => {
+    try {
+      const response = await api.getMyAnnouncementsCounts();
+      if (response.tab_counts) {
+        setTabCounts(response.tab_counts as TabCounts);
+      }
+    } catch (err: any) {
+      console.error('Error fetching status counts:', err);
+    }
+  };
+
+  const fetchMyAnnouncements = async (status?: string, page = 1, append = false) => {
+    try {
+      if (page === 1) {
+        setListingsLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const apiStatus = status
+        ? Object.entries(STATUS_MAP).find(([_, v]) => v.label === status)?.[1]?.apiKey
+        : undefined;
+
+      const response = await api.getMyAnnouncements(apiStatus, page, 20);
+
+      if (append) {
+        setMyListings(prev => [...prev, ...(response.results || [])]);
+      } else {
+        setMyListings(response.results || []);
+      }
+
+      setTotalCount(response.count || 0);
+      setHasNextPage(!!response.next);
+      setCurrentPage(page);
+    } catch (err: any) {
+      console.error('Error fetching my announcements:', err);
+    } finally {
+      setListingsLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleStatusChange = (status: string) => {
+    const newStatus = status === 'Barchasi' ? undefined : status;
+    setSelectedFilters(prev => ({ ...prev, status }));
+    setSelectedStatus(newStatus);
+    setCurrentPage(1);
+    fetchMyAnnouncements(newStatus, 1, false);
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasNextPage) {
+      fetchMyAnnouncements(selectedStatus, currentPage + 1, true);
+    }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setCurrentPage(1);
+    fetchMyAnnouncements(selectedStatus, 1, false);
+  };
+
+  const getTotalListingsCount = () => {
+    if (tabCounts) {
+      return Object.values(tabCounts).reduce((sum, count) => sum + count, 0);
+    }
+    return totalCount;
+  };
+
+  const getTotalViewsCount = () => {
+    return myListings.reduce((sum, item) => sum + (item.views_count || 0), 0);
+  };
+
+  const formatPrice = (price: string, currency: string) => {
+    const num = parseFloat(price);
+    if (currency === 'usd') {
+      return `$${num.toLocaleString()}`;
+    }
+    return `${num.toLocaleString()} so'm`;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return '#22c55e';
+      case 'draft': return '#94a3b8';
+      case 'pending': return '#f59e0b';
+      case 'rejected': return '#ef4444';
+      case 'inactive': return '#6b7280';
+      default: return '#64748b';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    return STATUS_MAP[status]?.label || status;
+  };
 
   const handleLogout = () => {
     Alert.alert('Chiqish', 'Siz hisobingizdan chiqdingiz', [
@@ -127,128 +286,385 @@ export default function Profile({ navigation }: Props) {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.username}>{displayUsername}</Text>
-            <View style={styles.headerIcons}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Share2 size={20} color={COLORS.gray700} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => navigation.navigate('ProfileEdit')}
-              >
-                <Edit size={20} color={COLORS.gray700} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={() => setMenuVisible(true)}
-              >
-                <Menu size={20} color={COLORS.gray700} />
-              </TouchableOpacity>
+          {loading ? (
+            <View style={styles.header}>
+              <SkeletonLoader width={100} height={20} borderRadius={4} />
+              <View style={styles.headerIcons}>
+                <SkeletonLoader width={40} height={40} borderRadius={8} />
+                <SkeletonLoader width={40} height={40} borderRadius={8} />
+                <SkeletonLoader width={40} height={40} borderRadius={8} />
+              </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.header}>
+              <Text style={styles.username}>{displayUsername}</Text>
+              <View style={styles.headerIcons}>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Share2 size={20} color={COLORS.gray700} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={() => navigation.navigate('ProfileEdit')}
+                >
+                  <Edit size={20} color={COLORS.gray700} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={() => setMenuVisible(true)}
+                >
+                  <Menu size={20} color={COLORS.gray700} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {/* Profile Info */}
-          <View style={styles.profileSection}>
-            <View style={styles.profileHeader}>
-              {/* Avatar */}
-              <View style={styles.avatarContainer}>
-                {photoUrl ? (
-                    <Image source={{uri: photoUrl}} style={styles.avatarImage} />
-                ) : (
-                    <View style={styles.avatarGradient}>
-                        <Text style={styles.avatarText}>{getInitials()}</Text>
+          {loading ? (
+            <View style={styles.profileSection}>
+              <View style={styles.profileHeader}>
+                <View style={styles.avatarContainer}>
+                  <SkeletonLoader width={80} height={80} borderRadius={40} />
+                  <View style={styles.statsContainer}>
+                    <View style={styles.statItem}>
+                      <SkeletonLoader width={30} height={20} borderRadius={4} />
+                      <SkeletonLoader width={60} height={12} borderRadius={4} style={{ marginTop: 8 }} />
                     </View>
-                )}
-                {/* Stats */}
-                <View style={styles.statsContainer}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statValue}>{user?.properties_count || 0}</Text>
-                    <Text style={styles.statLabel}>E'lonlar</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statValue}>{user?.views_count || 0}</Text>
-                    <Text style={styles.statLabel}>Ko'rishlar</Text>
+                    <View style={styles.statItem}>
+                      <SkeletonLoader width={30} height={20} borderRadius={4} />
+                      <SkeletonLoader width={60} height={12} borderRadius={4} style={{ marginTop: 8 }} />
+                    </View>
                   </View>
                 </View>
+                <SkeletonLoader width={200} height={16} borderRadius={4} style={{ marginTop: 12 }} />
               </View>
-              <Text style={styles.name}>{displayName}</Text>
-            </View>
 
-            {/* Tabs */}
-            <View style={styles.tabsContainer}>
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                const IconComponent = iconMap[tab.icon];
-                return (
-                  <TouchableOpacity
-                    key={tab.id}
-                    onPress={() => setActiveTab(tab.id)}
-                    style={[
-                      styles.tabButton,
-                      isActive && styles.activeTab,
-                    ]}
-                  >
-                    <IconComponent
-                      size={24}
-                      color={isActive ? COLORS.primary : COLORS.gray500}
-                    />
-                    {isActive && (
-                      <View style={styles.activeTabIndicator} />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+              {/* Tabs Skeleton */}
+              <View style={styles.tabsContainer}>
+                <SkeletonLoader width={50} height={30} borderRadius={8} />
+                <SkeletonLoader width={50} height={30} borderRadius={8} />
+              </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.profileSection}>
+              <View style={styles.profileHeader}>
+                {/* Avatar */}
+                <View style={styles.avatarContainer}>
+                  {photoUrl ? (
+                      <Image source={{uri: photoUrl}} style={styles.avatarImage} />
+                  ) : (
+                      <View style={styles.avatarGradient}>
+                          <Text style={styles.avatarText}>{getInitials()}</Text>
+                      </View>
+                  )}
+                  {/* Stats */}
+                  <View style={styles.statsContainer}>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statValue}>{getTotalListingsCount()}</Text>
+                      <Text style={styles.statLabel}>E'lonlar</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statValue}>{getTotalViewsCount()}</Text>
+                      <Text style={styles.statLabel}>Ko'rishlar</Text>
+                    </View>
+                  </View>
+                </View>
+                <Text style={styles.name}>{displayName}</Text>
+              </View>
+
+              {/* Tabs */}
+              <View style={styles.tabsContainer}>
+                {tabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const IconComponent = iconMap[tab.icon];
+                  return (
+                    <TouchableOpacity
+                      key={tab.id}
+                      onPress={() => setActiveTab(tab.id)}
+                      style={[
+                        styles.tabButton,
+                        isActive && styles.activeTab,
+                      ]}
+                    >
+                      <IconComponent
+                        size={24}
+                        color={isActive ? COLORS.primary : COLORS.gray500}
+                      />
+                      {isActive && (
+                        <View style={styles.activeTabIndicator} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
 
           {/* Filters */}
-          <View style={styles.filtersContainer}>
-            {filters.map((row, i) => (
-              <View key={i} style={styles.filterRow}>
-                {row.map((filter) => (
-                  <TouchableOpacity
-                    key={filter}
-                    style={styles.filterChip}
-                  >
-                    <Text style={styles.filterText}>{filter}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ))}
-          </View>
-
-          {/* Empty State */}
-          <View style={styles.emptyState}>
-            <View style={styles.emptyStateIcon}>
-              <Home size={40} color={COLORS.accent} />
-              <View style={[styles.dot, styles.dotTopRight]} />
-              <View style={[styles.dot, styles.dotBottomLeft]} />
-              <View style={[styles.dot, styles.dotTopLeft]} />
+          {loading ? (
+            <View style={styles.filtersContainer}>
+              {filters.map((row, i) => (
+                <View key={i} style={styles.filterRow}>
+                  {row.map((filterKey) => (
+                    <SkeletonLoader
+                      key={filterKey}
+                      width="100%"
+                      height={48}
+                      borderRadius={8}
+                      style={{ flex: 1 }}
+                    />
+                  ))}
+                </View>
+              ))}
             </View>
-          </View>
+          ) : (
+            <View style={styles.filtersContainer}>
+              {filters.map((row, i) => (
+                <View key={i} style={styles.filterRow}>
+                  {row.map((filterKey) => (
+                    <TouchableOpacity
+                      key={filterKey}
+                      style={styles.filterChip}
+                      onPress={() => setOpenDropdown(openDropdown === filterKey ? null : filterKey)}
+                    >
+                      <Text style={styles.filterText}>{selectedFilters[filterKey as keyof typeof selectedFilters]}</Text>
+                      <ChevronDown size={16} color={COLORS.gray700} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Dropdown Modal */}
+          {!loading && openDropdown && (
+            <Modal
+              transparent
+              visible={true}
+              onRequestClose={() => setOpenDropdown(null)}
+            >
+              <TouchableOpacity
+                style={styles.dropdownOverlay}
+                activeOpacity={1}
+                onPress={() => setOpenDropdown(null)}
+              >
+                <View style={styles.dropdownMenu}>
+                  {openDropdown === 'status' ? (
+                    // Status dropdown with counts
+                    <>
+                      {/* Barchasi (All) option */}
+                      <TouchableOpacity
+                        style={[
+                          styles.dropdownOption,
+                          selectedFilters.status === 'Barchasi' && styles.dropdownOptionActive,
+                        ]}
+                        onPress={() => {
+                          handleStatusChange('Barchasi');
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dropdownOptionText,
+                          selectedFilters.status === 'Barchasi' && styles.dropdownOptionTextActive,
+                        ]}>
+                          Barchasi
+                        </Text>
+                        <View style={styles.countBadge}>
+                          <Text style={styles.countBadgeText}>{totalCount}</Text>
+                        </View>
+                      </TouchableOpacity>
+                      {/* Individual status options */}
+                      {Object.entries(STATUS_MAP).map(([key, { label }]) => {
+                        const count = tabCounts?.[key as keyof TabCounts] || 0;
+                        return (
+                          <TouchableOpacity
+                            key={key}
+                            style={[
+                              styles.dropdownOption,
+                              selectedFilters.status === label && styles.dropdownOptionActive,
+                            ]}
+                            onPress={() => {
+                              handleStatusChange(label);
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            <Text style={[
+                              styles.dropdownOptionText,
+                              selectedFilters.status === label && styles.dropdownOptionTextActive,
+                            ]}>
+                              {label}
+                            </Text>
+                            <View style={styles.countBadge}>
+                              <Text style={styles.countBadgeText}>{count}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    // Other dropdowns
+                    FILTER_OPTIONS[openDropdown as keyof typeof FILTER_OPTIONS]?.map(
+                      (option) => (
+                        <TouchableOpacity
+                          key={option}
+                          style={[
+                            styles.dropdownOption,
+                            selectedFilters[openDropdown as keyof typeof selectedFilters] === option && styles.dropdownOptionActive,
+                          ]}
+                          onPress={() => {
+                            setSelectedFilters(prev => ({
+                              ...prev,
+                              [openDropdown]: option,
+                            }));
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          <Text style={[
+                            styles.dropdownOptionText,
+                            selectedFilters[openDropdown as keyof typeof selectedFilters] === option && styles.dropdownOptionTextActive,
+                          ]}>
+                            {option}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    )
+                  )}
+                </View>
+              </TouchableOpacity>
+            </Modal>
+          )}
+
+          {/* Listings Grid */}
+          {!loading && activeTab === 'listings' && (
+            <View style={styles.listingsSection}>
+              {listingsLoading ? (
+                <View style={styles.listingsGrid}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <View key={i} style={[styles.listingCard, { width: cardWidth }]}>
+                      <SkeletonLoader width="100%" height={120} borderRadius={12} />
+                      <View style={{ padding: 8 }}>
+                        <SkeletonLoader width="80%" height={14} borderRadius={4} />
+                        <SkeletonLoader width="60%" height={12} borderRadius={4} style={{ marginTop: 6 }} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              ) : myListings.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <View style={styles.emptyStateIcon}>
+                    <Home size={40} color={COLORS.accent} />
+                    <View style={[styles.dot, styles.dotTopRight]} />
+                    <View style={[styles.dot, styles.dotBottomLeft]} />
+                    <View style={[styles.dot, styles.dotTopLeft]} />
+                  </View>
+                  <Text style={styles.emptyStateText}>E'lonlar topilmadi</Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.listingsGrid}>
+                    {myListings.map((item) => (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={[styles.listingCard, { width: cardWidth }]}
+                        activeOpacity={0.8}
+                        onPress={() => navigation.navigate('MyListingDetail', { listingId: item.id })}
+                      >
+                        {/* Image */}
+                        <View style={styles.listingImageContainer}>
+                          {item.main_image ? (
+                            <Image
+                              source={{ uri: item.main_image }}
+                              style={styles.listingImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.listingImagePlaceholder}>
+                              <ImageIcon size={24} color="#94a3b8" />
+                            </View>
+                          )}
+                          {/* Status Badge */}
+                          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+                            <Text style={styles.statusBadgeText}>{getStatusLabel(item.status)}</Text>
+                          </View>
+                          {/* Views */}
+                          <View style={styles.viewsBadge}>
+                            <Eye size={12} color="#fff" />
+                            <Text style={styles.viewsText}>{item.views_count || 0}</Text>
+                          </View>
+                        </View>
+
+                        {/* Content */}
+                        <View style={styles.listingContent}>
+                          <Text style={styles.listingPrice}>
+                            {formatPrice(item.price, item.currency)}
+                          </Text>
+                          <Text style={styles.listingTitle} numberOfLines={2}>
+                            {item.title}
+                          </Text>
+                          <Text style={styles.listingLocation} numberOfLines={1}>
+                            {item.district?.translations?.ru?.name || ''}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Load More */}
+                  {hasNextPage && (
+                    <TouchableOpacity
+                      style={styles.loadMoreButton}
+                      onPress={handleLoadMore}
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? (
+                        <ActivityIndicator size="small" color={COLORS.purple} />
+                      ) : (
+                        <Text style={styles.loadMoreText}>Ko'proq yuklash</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Favorites Tab - Empty State */}
+          {!loading && activeTab === 'favorites' && (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyStateIcon}>
+                <Heart size={40} color={COLORS.accent} />
+                <View style={[styles.dot, styles.dotTopRight]} />
+                <View style={[styles.dot, styles.dotBottomLeft]} />
+                <View style={[styles.dot, styles.dotTopLeft]} />
+              </View>
+              <Text style={styles.emptyStateText}>Sevimlilar ro'yxati bo'sh</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
       {/* Bottom Sheet Menu */}
-      <BottomSheetMenu
-        visible={menuVisible}
-        onClose={() => setMenuVisible(false)}
-        onLogout={handleLogout}
-        onDeleteAccount={handleDeleteAccount}
-        onLanguagePress={() => {
-          setMenuVisible(false);
-          setLanguageModalVisible(true);
-        }}
-      />
+      {!loading && (
+        <BottomSheetMenu
+          visible={menuVisible}
+          onClose={() => setMenuVisible(false)}
+          onLogout={handleLogout}
+          onDeleteAccount={handleDeleteAccount}
+          onLanguagePress={() => {
+            setMenuVisible(false);
+            setLanguageModalVisible(true);
+          }}
+        />
+      )}
 
       {/* Language Modal */}
-      <LanguageModal
-        visible={languageModalVisible}
-        onClose={() => setLanguageModalVisible(false)}
-        currentLanguage={currentLanguage}
-        onLanguageSelect={handleLanguageSelect}
-      />
+      {!loading && (
+        <LanguageModal
+          visible={languageModalVisible}
+          onClose={() => setLanguageModalVisible(false)}
+          currentLanguage={currentLanguage}
+          onLanguageSelect={handleLanguageSelect}
+        />
+      )}
       <BottomNav />
     </SafeAreaView>
   );
@@ -437,10 +853,57 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   filterText: {
     color: COLORS.gray700,
     fontSize: 14,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  dropdownMenu: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 20,
+    paddingTop: 12,
+  },
+  dropdownOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownOptionActive: {
+    backgroundColor: COLORS.gray100,
+  },
+  dropdownOptionText: {
+    fontSize: 14,
+    color: COLORS.gray900,
+    fontWeight: '500',
+  },
+  dropdownOptionTextActive: {
+    color: COLORS.purple,
+    fontWeight: '600',
+  },
+  countBadge: {
+    backgroundColor: COLORS.gray200,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  countBadgeText: {
+    fontSize: 12,
+    color: COLORS.gray700,
+    fontWeight: '500',
   },
   emptyState: {
     alignItems: 'center',
@@ -455,6 +918,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: COLORS.gray500,
+    marginTop: 16,
   },
   dot: {
     position: 'absolute',
@@ -474,5 +942,103 @@ const styles = StyleSheet.create({
   dotTopLeft: {
     top: 0,
     left: -16,
+  },
+  // Listings Grid Styles
+  listingsSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+  },
+  listingsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  listingCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 4,
+  },
+  listingImageContainer: {
+    height: 120,
+    backgroundColor: COLORS.gray100,
+    position: 'relative',
+  },
+  listingImage: {
+    width: '100%',
+    height: '100%',
+  },
+  listingImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.gray100,
+  },
+  statusBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  viewsBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  viewsText: {
+    fontSize: 10,
+    color: COLORS.white,
+    fontWeight: '500',
+  },
+  listingContent: {
+    padding: 10,
+  },
+  listingPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.gray900,
+    marginBottom: 4,
+  },
+  listingTitle: {
+    fontSize: 12,
+    color: COLORS.gray700,
+    lineHeight: 16,
+    marginBottom: 4,
+  },
+  listingLocation: {
+    fontSize: 11,
+    color: COLORS.gray500,
+  },
+  loadMoreButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: COLORS.gray100,
+    borderRadius: 8,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.purple,
   },
 });

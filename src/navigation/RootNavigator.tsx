@@ -5,6 +5,7 @@ import {View, Text, Linking} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import {RootState, AppDispatch} from '../redux/store';
 import {loginWithTelegram, fetchProfile, refreshToken as refreshTokenAction} from '../redux/slices/authSlice';
+import {loadFavoritesAsync} from '../redux/slices/likesSlice';
 
 // Screens
 import HomeScreen from '../screens/HomeScreen';
@@ -18,6 +19,7 @@ import TopPostsScreen from '../screens/TopPostsScreen';
 import Profile from '../components/Profile';
 import ListingDetail from '../components/ListingDetail';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
+import MyListingDetailScreen from '../screens/MyListingDetailScreen';
 import {LoginScreen} from '../screens/LoginScreen';
 import {TelegramLoginScreen} from '../screens/TelegramLoginScreen';
 
@@ -27,10 +29,11 @@ export type RootStackParamList = {
   MainApp: undefined;
   Home: undefined;
   ListingDetail: {listingId?: string; id?: string};
+  MyListingDetail: {listingId: string};
   PropertyDetail: {id: string};
   AddListing: undefined;
   PropertyType: {listingType?: string};
-  PropertyForm: {listingType?: string; propertyType?: string};
+  PropertyForm: {listingType?: string; propertyType?: string; editMode?: boolean};
   Search: undefined;
   Profile: undefined;
   ProfileEdit: undefined;
@@ -68,9 +71,16 @@ function ProfileStack() {
         // User is logged in - show profile
         <>
           <Stack.Screen name="Profile" component={Profile} />
-          <Stack.Screen 
-            name="ProfileEdit" 
+          <Stack.Screen
+            name="ProfileEdit"
             component={ProfileEditScreen}
+            options={{
+              animation: 'default',
+            }}
+          />
+          <Stack.Screen
+            name="MyListingDetail"
+            component={MyListingDetailScreen}
             options={{
               animation: 'default',
             }}
@@ -271,6 +281,8 @@ export function RootNavigator() {
     if (token && !user) {
       console.log('♻️ Token present after rehydrate — fetching profile');
       dispatch(fetchProfile() as any);
+      // Load favorites when token is available
+      dispatch(loadFavoritesAsync() as any);
       return;
     }
 
@@ -282,6 +294,8 @@ export function RootNavigator() {
           if (action.payload?.success) {
             console.log('✅ Token refresh succeeded — fetching profile');
             dispatch(fetchProfile() as any);
+            // Load favorites after token refresh
+            dispatch(loadFavoritesAsync() as any);
           } else {
             console.log('❌ Token refresh failed during startup');
           }

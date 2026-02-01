@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { useTheme } from '@react-navigation/native';
 import { ArrowLeft, MapPin, Camera, ImageIcon, X } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import BottomNav from '../components/BottomNav';
+import ApiClient from '../services/api';
 
 interface FormData {
   title: string;
@@ -76,8 +77,8 @@ const PropertyFormScreen = () => {
     floor: '',
     totalFloors: '',
     renovation: 'Ta\'mirlash tanlang',
-    country: 'O\'zbekiston',
-    region: 'Tashkent',
+    country: 'Каракалпакистан',
+    region: '',
     district: '',
     address: '',
     phone: '',
@@ -91,6 +92,8 @@ const PropertyFormScreen = () => {
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showImageSourceModal, setShowImageSourceModal] = useState(false);
+  const [regionOptions, setRegionOptions] = useState<string[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(true);
 
   const renovationOptions = [
     'Ta\'mirlash tanlang',
@@ -100,8 +103,33 @@ const PropertyFormScreen = () => {
   ];
 
   const currencyOptions = ['USD', 'UZS', 'EUR'];
-  const countryOptions = ['O\'zbekiston'];
-  const regionOptions = ['Tashkent', 'Samarkand', 'Bukhara', 'Andijan'];
+  const countryOptions = ['Каракалпакистан'];
+
+  // Fetch districts on component mount (cached)
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      try {
+        setLoadingDistricts(true);
+        const districts = await ApiClient.getDistricts();
+        const districtNames = districts
+          .map((district: any) => {
+            // Try to get Uzbek translation first, then Russian
+            return district.translations?.uz?.name || district.translations?.ru?.name || '';
+          })
+          .filter((name: string) => name.length > 0)
+          .sort((a: string, b: string) => a.localeCompare(b, 'uz'));
+        setRegionOptions(districtNames);
+      } catch (error) {
+        console.error('Failed to fetch districts:', error);
+        // Fallback to empty array if fetch fails
+        setRegionOptions([]);
+      } finally {
+        setLoadingDistricts(false);
+      }
+    };
+
+    fetchDistricts();
+  }, []);
 
   // Property type specific field configurations
   const getFieldsForPropertyType = () => {

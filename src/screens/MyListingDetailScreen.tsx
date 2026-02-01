@@ -9,19 +9,13 @@ import {
     Dimensions,
     PanResponder,
     ActivityIndicator,
-    Linking,
+    Alert,
 } from 'react-native';
-import { ArrowLeft, MapPin, Heart, MessageCircle, Send } from 'lucide-react-native';
-import { similarListings } from '../data/mockData';
-import SimilarListingsSection from './SimilarListingSection';
-import BottomNav from './BottomNav';
+import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Power, CheckCircle } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants';
-import { useAppDispatch, useAppSelector } from '../redux/hooks';
-import { addToFavoritesAsync, removeFromFavoritesAsync } from '../redux/slices/likesSlice';
 import api from '../services/api';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_HEIGHT = 350;
 
 interface AnnouncementImage {
@@ -30,7 +24,7 @@ interface AnnouncementImage {
     image_medium_url: string;
 }
 
-interface AnnouncementDetail {
+interface MyAnnouncementDetail {
     id: string;
     title: string;
     description: string;
@@ -42,6 +36,8 @@ interface AnnouncementDetail {
         id: number;
         translations: { ru: { name: string } };
     };
+    latitude: number | null;
+    longitude: number | null;
     price: string;
     currency: string;
     area: string;
@@ -56,21 +52,26 @@ interface AnnouncementDetail {
     is_owner: boolean;
     views_count: number;
     favorites_count: number;
+    status: string;
+    payment_status: string;
+    promotion_type: string;
+    rejection_reason: string;
     created_at: string;
+    updated_at: string;
+    posted_at: string | null;
+    expires_at: string | null;
+    days_until_expiration: number | null;
 }
 
-const ListingDetail = () => {
+const MyListingDetailScreen = () => {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
-    const dispatch = useAppDispatch();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [imageLoading, setImageLoading] = useState(true);
-    const [listing, setListing] = useState<AnnouncementDetail | null>(null);
+    const [listing, setListing] = useState<MyAnnouncementDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const panResponder = useRef<any>(null);
-    const likedIds = useAppSelector(state => state.likes.likedIds);
-    const favoriteMap = useAppSelector(state => state.likes.favoriteMap);
 
     const listingId = route.params?.listingId;
 
@@ -94,8 +95,6 @@ const ListingDetail = () => {
         }
     };
 
-    const isLiked = listing ? likedIds.includes(listing.id) : false;
-
     const images = listing?.images?.map(img => img.image_url) || [];
 
     useEffect(() => {
@@ -105,7 +104,7 @@ const ListingDetail = () => {
         panResponder.current = PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: () => true,
-            onPanResponderRelease: (evt, gestureState) => {
+            onPanResponderRelease: (_evt, gestureState) => {
                 const { dx, vx } = gestureState;
                 const SWIPE_THRESHOLD = 50;
                 const VELOCITY_THRESHOLD = 0.5;
@@ -150,6 +149,32 @@ const ListingDetail = () => {
         return types[type] || type;
     };
 
+    const getStatusLabel = (status: string) => {
+        const statuses: Record<string, string> = {
+            draft: 'Qoralama',
+            active: 'Faol',
+            pending: 'Tekshiruvda',
+            inactive: 'Faol emas',
+            rejected: 'Rad etilgan',
+            sold: 'Sotilgan',
+            rented: 'Ijaraga berilgan',
+        };
+        return statuses[status] || status;
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'active': return '#22c55e';
+            case 'draft': return '#94a3b8';
+            case 'pending': return '#f59e0b';
+            case 'rejected': return '#ef4444';
+            case 'inactive': return '#6b7280';
+            case 'sold':
+            case 'rented': return '#3b82f6';
+            default: return '#64748b';
+        }
+    };
+
     const formatTimeAgo = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
@@ -189,16 +214,105 @@ const ListingDetail = () => {
                 euro: 'Yevroremont',
                 good: 'Yaxshi',
                 needs_repair: "Ta'mir talab",
+                cosmetic: 'Kosmetik',
             };
             details.push({ label: 'Holati', value: conditions[listing.condition] || listing.condition });
         }
         return details;
     };
 
-    const handleCall = () => {
-        if (listing?.phone) {
-            Linking.openURL(`tel:${listing.phone}`);
-        }
+    const handleEdit = () => {
+        navigation.navigate('PropertyForm', {
+            listingId: listing?.id,
+            editMode: true,
+        });
+    };
+
+    const handleDelete = () => {
+        Alert.alert(
+            "E'lonni o'chirish",
+            "Haqiqatan ham bu e'lonni o'chirmoqchimisiz?",
+            [
+                { text: 'Bekor qilish', style: 'cancel' },
+                {
+                    text: "O'chirish",
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            if (listing?.id) {
+                                await api.deleteAnnouncement(listing.id);
+                            }
+                            Alert.alert('Muvaffaqiyatli', "E'lon o'chirildi");
+                            navigation.goBack();
+                        } catch (err) {
+                            console.error('Delete error:', err);
+                            Alert.alert('Xatolik', "E'lonni o'chirishda xatolik yuz berdi");
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleDeactivate = () => {
+        Alert.alert(
+            "E'lonni deaktivatsiya qilish",
+            "Bu e'lonni faolsizlantirmoqchimisiz?",
+            [
+                { text: 'Bekor qilish', style: 'cancel' },
+                {
+                    text: 'Deaktivatsiya',
+                    onPress: async () => {
+                        try {
+                            if (listing?.id) {
+                                await api.deactivateAnnouncement(listing.id);
+                            }
+                            Alert.alert('Muvaffaqiyatli', "E'lon deaktivatsiya qilindi");
+                            fetchListing(); // Refresh to show updated status
+                        } catch (err) {
+                            console.error('Deactivate error:', err);
+                            Alert.alert('Xatolik', "E'lonni deaktivatsiya qilishda xatolik yuz berdi");
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleMarkSold = () => {
+        const isSale = listing?.listing_type === 'sale';
+        const title = isSale ? "Sotilgan deb belgilash" : "Ijaraga berilgan deb belgilash";
+        const message = isSale
+            ? "Bu mulk sotilganini tasdiqlaysizmi?"
+            : "Bu mulk ijaraga berilganini tasdiqlaysizmi?";
+        const successMessage = isSale ? "Sotilgan deb belgilandi" : "Ijaraga berilgan deb belgilandi";
+
+        Alert.alert(
+            title,
+            message,
+            [
+                { text: 'Bekor qilish', style: 'cancel' },
+                {
+                    text: 'Tasdiqlash',
+                    onPress: async () => {
+                        try {
+                            if (listing?.id) {
+                                if (isSale) {
+                                    await api.markAnnouncementSold(listing.id);
+                                } else {
+                                    await api.markAnnouncementRented(listing.id);
+                                }
+                            }
+                            Alert.alert('Muvaffaqiyatli', successMessage);
+                            fetchListing(); // Refresh to show updated status
+                        } catch (err: any) {
+                            console.error('Mark sold error details:', err.response?.data || err.message);
+                            Alert.alert('Xatolik', err.response?.data?.detail || "Xatolik yuz berdi");
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     if (loading) {
@@ -222,8 +336,6 @@ const ListingDetail = () => {
 
     const details = buildDetails();
 
-    const avatarUri = listing.seller_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${listing.seller_name}`;
-
     return (
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>
@@ -243,6 +355,7 @@ const ListingDetail = () => {
                         />
                     ) : (
                         <View style={[styles.image, styles.noImagePlaceholder]}>
+                            <ImageIcon size={48} color="#94a3b8" />
                             <Text style={styles.noImageText}>Rasm yo'q</Text>
                         </View>
                     )}
@@ -262,10 +375,9 @@ const ListingDetail = () => {
                         <ArrowLeft size={24} color="#fff" strokeWidth={2.5} />
                     </TouchableOpacity>
 
-                    {/* User Badge */}
-                    <View style={styles.userBadge}>
-                        <Image source={{ uri: avatarUri }} style={styles.userAvatar} />
-                        <Text style={styles.userText} numberOfLines={1}>{listing.seller_name}</Text>
+                    {/* Status Badge */}
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(listing.status) }]}>
+                        <Text style={styles.statusBadgeText}>{getStatusLabel(listing.status)}</Text>
                     </View>
 
                     {/* Pagination Dots */}
@@ -288,49 +400,35 @@ const ListingDetail = () => {
 
                 {/* Content */}
                 <View style={styles.contentContainer}>
-                    {/* Tags and Actions Row */}
-                    <View style={styles.tagsActionsContainer}>
-                        <View style={styles.tagsContainer}>
-                            <View style={styles.tagOutline}>
-                                <Text style={styles.tagOutlineText}>{getPropertyTypeLabel(listing.property_type)}</Text>
-                            </View>
-                            <View style={styles.tagPrimary}>
-                                <Text style={styles.tagPrimaryText}>{getListingTypeLabel(listing.listing_type)}</Text>
-                            </View>
+                    {/* Stats Row */}
+                    <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                            <Eye size={16} color="#64748b" />
+                            <Text style={styles.statText}>{listing.views_count} ko'rishlar</Text>
                         </View>
-
-                        <View style={styles.actionsContainer}>
-                            <TouchableOpacity
-                                style={styles.actionButton}
-                                activeOpacity={0.7}
-                                onPress={() => {
-                                  if (listing) {
-                                    if (isLiked) {
-                                      const favoriteId = favoriteMap[listing.id];
-                                      dispatch(removeFromFavoritesAsync({ announcementId: listing.id, favoriteId }) as any);
-                                    } else {
-                                      dispatch(addToFavoritesAsync(listing as any) as any);
-                                    }
-                                  }
-                                }}
-                            >
-                                <Heart
-                                    size={20}
-                                    color={isLiked ? '#dc2626' : '#0f172a'}
-                                    fill={isLiked ? '#dc2626' : 'none'}
-                                />
-                                <Text style={[styles.actionText, isLiked && styles.actionTextActive]}>
-                                    {listing.favorites_count}
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                                <MessageCircle size={20} color="#0f172a" />
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                                <Send size={20} color="#0f172a" />
-                            </TouchableOpacity>
+                        <View style={styles.statItem}>
+                            <Heart size={16} color="#64748b" />
+                            <Text style={styles.statText}>{listing.favorites_count} sevimlilar</Text>
                         </View>
                     </View>
+
+                    {/* Tags Row */}
+                    <View style={styles.tagsContainer}>
+                        <View style={styles.tagOutline}>
+                            <Text style={styles.tagOutlineText}>{getPropertyTypeLabel(listing.property_type)}</Text>
+                        </View>
+                        <View style={styles.tagPrimary}>
+                            <Text style={styles.tagPrimaryText}>{getListingTypeLabel(listing.listing_type)}</Text>
+                        </View>
+                    </View>
+
+                    {/* Rejection Reason */}
+                    {listing.status === 'rejected' && listing.rejection_reason && (
+                        <View style={styles.rejectionBox}>
+                            <Text style={styles.rejectionTitle}>Rad etilish sababi:</Text>
+                            <Text style={styles.rejectionText}>{listing.rejection_reason}</Text>
+                        </View>
+                    )}
 
                     {/* Time Posted */}
                     <Text style={styles.timePosted}>{formatTimeAgo(listing.created_at)}</Text>
@@ -364,56 +462,129 @@ const ListingDetail = () => {
                         <Text style={styles.locationTitle}>Joylashuv</Text>
                         <View style={styles.locationAddress}>
                             <MapPin size={16} color="#64748b" />
-                            <Text style={styles.locationText}>{listing.district?.translations?.ru?.name || 'Noma\'lum'}</Text>
-                        </View>
-
-                        {/* Map Placeholder */}
-                        <View style={styles.mapContainer}>
-                            <Image
-                                source={{ uri: 'https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/69.2401,41.3111,14,0/400x200?access_token=pk.placeholder' }}
-                                style={styles.mapImage}
-                                resizeMode="cover"
-                            />
-                            <View style={styles.mapOverlay}>
-                                <MapPin size={32} color="#dc2626" />
-                                <Text style={styles.mapText}>Yandex Maps</Text>
-                            </View>
+                            <Text style={styles.locationText}>
+                                {listing.district?.translations?.ru?.name || "Noma'lum"}
+                            </Text>
                         </View>
                     </View>
 
-                    {/* Similar Listings */}
-                    <SimilarListingsSection listings={similarListings} />
+                    {/* Payment & Promotion Info */}
+                    <View style={styles.infoSection}>
+                        <Text style={styles.infoSectionTitle}>E'lon ma'lumotlari</Text>
+                        <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>To'lov holati</Text>
+                            <View style={[
+                                styles.infoBadge,
+                                { backgroundColor: listing.payment_status === 'paid' ? '#dcfce7' : '#fef3c7' }
+                            ]}>
+                                <Text style={[
+                                    styles.infoBadgeText,
+                                    { color: listing.payment_status === 'paid' ? '#166534' : '#92400e' }
+                                ]}>
+                                    {listing.payment_status === 'paid' ? "To'langan" : "To'lanmagan"}
+                                </Text>
+                            </View>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Reklama turi</Text>
+                            <Text style={styles.infoValue}>
+                                {listing.promotion_type === 'standard' ? 'Standart' : listing.promotion_type}
+                            </Text>
+                        </View>
+                        {listing.expires_at && (
+                            <View style={styles.infoRow}>
+                                <Text style={styles.infoLabel}>Amal qilish muddati</Text>
+                                <Text style={styles.infoValue}>
+                                    {listing.days_until_expiration} kun qoldi
+                                </Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
 
-                {/* Bottom Spacer for Fixed Buttons */}
+                {/* Bottom Spacer */}
                 <View style={styles.bottomSpacer} />
             </ScrollView>
 
             {/* Fixed Bottom Actions */}
             <View style={styles.bottomActionsContainer}>
-                <TouchableOpacity style={styles.messageButton} activeOpacity={0.7}>
-                    <Text style={styles.messageButtonText}>Sotuvchiga yozing</Text>
-                </TouchableOpacity>
-                <View style={styles.bottomButtonsRow}>
-                    <TouchableOpacity style={styles.callButton} activeOpacity={0.7}>
-                        <Text style={styles.callButtonText}>Qo'ng'iroq qiling</Text>
+                {/* Action Buttons Row */}
+                {listing.status === 'active' && (
+                    <View style={styles.actionButtonsRow}>
+                        <TouchableOpacity
+                            style={styles.deactivateButton}
+                            activeOpacity={0.7}
+                            onPress={handleDeactivate}
+                        >
+                            <Power size={18} color="#f59e0b" />
+                            <Text style={styles.deactivateButtonText}>Deaktivatsiya</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.markSoldButton}
+                            activeOpacity={0.7}
+                            onPress={handleMarkSold}
+                        >
+                            <CheckCircle size={18} color="#22c55e" />
+                            <Text style={styles.markSoldButtonText}>
+                                {listing.listing_type === 'sale' ? 'Sotildi' : 'Ijaraga berildi'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Main Actions Row */}
+                <View style={styles.mainActionsRow}>
+                    <TouchableOpacity
+                        style={styles.editButton}
+                        activeOpacity={0.7}
+                        onPress={handleEdit}
+                    >
+                        <Edit2 size={20} color="#fff" />
+                        <Text style={styles.editButtonText}>Tahrirlash</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.locationButton} activeOpacity={0.7}>
-                        <Text style={styles.locationButtonText}>Joylashuv</Text>
-                    </TouchableOpacity>
+                    <View style={styles.bottomButtonsRow}>
+                        <TouchableOpacity style={styles.shareButton} activeOpacity={0.7}>
+                            <Share2 size={20} color={COLORS.gray700} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.deleteButton}
+                            activeOpacity={0.7}
+                            onPress={handleDelete}
+                        >
+                            <Trash2 size={20} color="#ef4444" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
-            <BottomNav />
         </View>
     );
 };
 
-export default ListingDetail;
+export default MyListingDetailScreen;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#ffffff',
+    },
+    centerContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#64748b',
+        marginBottom: 16,
+    },
+    retryButton: {
+        backgroundColor: COLORS.purple,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    retryText: {
+        color: '#fff',
+        fontWeight: '600',
     },
     scrollView: {
         flex: 1,
@@ -425,6 +596,16 @@ const styles = StyleSheet.create({
     image: {
         width: '100%',
         height: '100%',
+    },
+    noImagePlaceholder: {
+        backgroundColor: '#f1f5f9',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    noImageText: {
+        fontSize: 14,
+        color: '#94a3b8',
+        marginTop: 8,
     },
     loadingOverlay: {
         position: 'absolute',
@@ -446,38 +627,20 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
         zIndex: 100,
     },
-    userBadge: {
+    statusBadge: {
         position: 'absolute',
-        left: 16,
-        bottom: 16,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        top: 16,
+        right: 16,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderRadius: 20,
+        borderRadius: 8,
     },
-    userAvatar: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: '#e2e8f0',
-    },
-    userText: {
-        color: 'white',
+    statusBadgeText: {
         fontSize: 12,
-        fontWeight: '500',
-        maxWidth: 120,
+        fontWeight: '600',
+        color: '#fff',
     },
     paginationContainer: {
         position: 'absolute',
@@ -504,16 +667,25 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 16,
     },
-    tagsActionsContainer: {
+    statsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 12,
+        gap: 24,
+        marginBottom: 16,
+    },
+    statItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    statText: {
+        fontSize: 14,
+        color: '#64748b',
     },
     tagsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 8,
+        marginBottom: 16,
     },
     tagOutline: {
         paddingHorizontal: 12,
@@ -538,23 +710,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '500',
     },
-    actionsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
+    rejectionBox: {
+        backgroundColor: '#fef2f2',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 16,
+        borderLeftWidth: 4,
+        borderLeftColor: '#ef4444',
     },
-    actionButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    actionText: {
-        color: '#0f172a',
+    rejectionTitle: {
         fontSize: 14,
-    },
-    actionTextActive: {
-        color: '#dc2626',
         fontWeight: '600',
+        color: '#dc2626',
+        marginBottom: 4,
+    },
+    rejectionText: {
+        fontSize: 14,
+        color: '#7f1d1d',
     },
     timePosted: {
         fontSize: 14,
@@ -617,40 +789,49 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        marginBottom: 12,
     },
     locationText: {
         color: '#64748b',
         fontSize: 16,
     },
-    mapContainer: {
-        height: 192,
-        borderRadius: 8,
-        overflow: 'hidden',
-        backgroundColor: '#e2e8f0',
-        position: 'relative',
+    infoSection: {
+        backgroundColor: '#f8fafc',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 24,
     },
-    mapImage: {
-        width: '100%',
-        height: '100%',
-        opacity: 0.5,
+    infoSectionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#0f172a',
+        marginBottom: 16,
     },
-    mapOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+    infoRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        justifyContent: 'center',
+        marginBottom: 12,
     },
-    mapText: {
-        fontSize: 12,
+    infoLabel: {
+        fontSize: 14,
         color: '#64748b',
-        marginTop: 4,
+    },
+    infoValue: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#0f172a',
+    },
+    infoBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    infoBadgeText: {
+        fontSize: 12,
+        fontWeight: '600',
     },
     bottomSpacer: {
-        height: 200,
+        height: 160,
     },
     bottomActionsContainer: {
         position: 'absolute',
@@ -661,45 +842,83 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#e2e8f0',
         padding: 16,
+        gap: 12,
     },
-    messageButton: {
-        backgroundColor: '#e2e8f0',
-        paddingVertical: 12,
-        borderRadius: 8,
-        marginBottom: 12,
+    actionButtonsRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    deactivateButton: {
+        flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#fef3c7',
+        paddingVertical: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#f59e0b',
     },
-    messageButtonText: {
-        color: '#0f172a',
+    deactivateButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#92400e',
+    },
+    markSoldButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: '#dcfce7',
+        paddingVertical: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#22c55e',
+    },
+    markSoldButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#166534',
+    },
+    mainActionsRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    editButton: {
+        flex: 1,
+        backgroundColor: COLORS.purple,
+        paddingVertical: 14,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    editButtonText: {
+        color: 'white',
         fontSize: 16,
-        fontWeight: '500',
+        fontWeight: '600',
     },
     bottomButtonsRow: {
         flexDirection: 'row',
         gap: 12,
     },
-    callButton: {
-        flex: 1,
-        backgroundColor: '#0f172a',
-        paddingVertical: 12,
-        borderRadius: 8,
+    shareButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: '#f1f5f9',
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    callButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    locationButton: {
-        flex: 1,
-        backgroundColor: '#6366f1',
-        paddingVertical: 12,
-        borderRadius: 8,
+    deleteButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: '#fef2f2',
         alignItems: 'center',
-    },
-    locationButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '500',
+        justifyContent: 'center',
     },
 });

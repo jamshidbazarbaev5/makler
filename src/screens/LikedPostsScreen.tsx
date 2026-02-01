@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,20 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
+  RefreshControl,
+  Animated,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@react-navigation/native';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, Grid, List, Heart, Search, Trash2 } from 'lucide-react-native';
 import BottomNav from '../components/BottomNav';
 import ListingCard from '../components/ListingCardForLiked';
+import { NotificationsLoadingSkeleton } from '../components/SkeletonLoader';
+import { useAppSelector, useAppDispatch } from '../redux/hooks';
+import { loadFavoritesAsync, removeFromFavoritesAsync } from '../redux/slices/likesSlice';
+import api from '../services/api';
 
 interface Listing {
   id: string;
@@ -24,6 +32,21 @@ interface Listing {
   imageUrl: string;
   badge?: string;
   username: string;
+}
+
+interface Announcement {
+  id: string;
+  title: string;
+  price: string;
+  currency: string;
+  area: string;
+  area_unit: string;
+  district: {
+    translations: { ru: { name: string } };
+  };
+  rooms: number | null;
+  main_image: string | null;
+  seller_name: string;
 }
 
 const initialListings: Listing[] = [
@@ -95,27 +118,155 @@ const initialListings: Listing[] = [
 const LikedPostsScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const [likedListings, setLikedListings] = useState<Listing[]>(initialListings);
+  const dispatch = useAppDispatch();
+  const likedIds = useAppSelector(state => state.likes.likedIds);
+  const favoriteMap = useAppSelector(state => state.likes.favoriteMap);
+  
+  const [likedListings, setLikedListings] = useState<Listing[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'area'>('price-asc');
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleRemoveLike = (id: string) => {
-    setLikedListings((prev) => prev.filter((item) => item.id !== id));
+  // Load favorites from API on mount
+  useEffect(() => {
+    loadFavorites();
+  }, []);
+
+  const loadFavorites = async () => {
+    try {
+      setLoading(true);
+      // Load favorite IDs from API
+      const result = await dispatch(loadFavoritesAsync() as any);
+      // After IDs are loaded, fetch announcement data
+      if (result.payload?.announcementIds && result.payload.announcementIds.length > 0) {
+        await fetchAnnouncementsForIds(result.payload.announcementIds);
+      } else {
+        setLikedListings([]);
+      }
+    } catch (err) {
+      console.error('Error loading favorites:', err);
+      setLikedListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAnnouncementsForIds = async (ids: string[]) => {
+    try {
+      const announcements = await Promise.all(
+        ids.map(id => api.getAnnouncementById(id))
+      );
+      const formattedListings = announcements.map(ann => formatAnnouncement(ann));
+      setLikedListings(formattedListings);
+    } catch (err) {
+      console.error('Error fetching announcements:', err);
+    }
+  };
+
+  const formatAnnouncement = (ann: Announcement): Listing => {
+    const price = parseFloat(ann.price);
+    const formattedPrice = ann.currency === 'usd' 
+      ? `$${price.toLocaleString()}`
+      : `${price.toLocaleString()} so'm`;
+
+    return {
+      id: ann.id,
+      title: ann.title,
+      price: formattedPrice,
+      location: ann.district?.translations?.ru?.name || 'Unknown',
+      bedrooms: ann.rooms || 0,
+      area: parseInt(ann.area) || 0,
+      imageUrl: ann.main_image || 'https://via.placeholder.com/300',
+      username: ann.seller_name || 'Unknown',
+    };
+  };
+
+  const handleRemoveLike = (announcementId: string) => {
+    // Show confirmation alert before deleting
+    Alert.alert(
+      'Sevimlardan olib tashlash',
+      'Ushbu e\'lonni sevimlardan olib tashlamoqchimisiz?',
+      [
+        {
+          text: 'Bekor qilish',
+          onPress: () => {},
+          style: 'cancel',
+        },
+        {
+          text: 'Olib tashlash',
+          onPress: () => {
+            setDeletingId(announcementId);
+            const favoriteId = favoriteMap[announcementId];
+            if (favoriteId) {
+              // Dispatch the async action to remove from API
+              dispatch(removeFromFavoritesAsync({ announcementId, favoriteId }) as any)
+                .then(() => {
+                  // Remove from local state after API success
+                  setLikedListings((prev) => prev.filter((item) => item.id !== announcementId));
+                })
+                .finally(() => {
+                  setDeletingId(null);
+                });
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    );
   };
 
   const handleOpenListing = (listing: Listing) => {
-    navigation.navigate('ListingDetail', { id: listing.id, listing });
+    // Navigate to ListingDetail through the nested HomeStack navigator
+    (navigation as any).navigate('HomeTab', {
+      screen: 'Home',
+      params: {
+        screen: 'ListingDetail',
+        params: { listingId: listing.id }
+      }
+    });
   };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadFavorites();
+    setRefreshing(false);
+  }, []);
+
+  // Filter listings based on search
+  const filteredListings = likedListings.filter((item) =>
+    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Sort listings
+  const sortedListings = [...filteredListings].sort((a, b) => {
+    const priceA = parseInt(a.price.replace(/[^0-9]/g, ''));
+    const priceB = parseInt(b.price.replace(/[^0-9]/g, ''));
+
+    if (sortBy === 'price-asc') return priceA - priceB;
+    if (sortBy === 'price-desc') return priceB - priceA;
+    if (sortBy === 'area') return b.area - a.area;
+    return 0;
+  });
 
   const numColumns = viewMode === 'grid' ? 2 : 1;
 
 
   const EmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>Sevimli e'lonlar yo'q</Text>
-      <Text style={styles.emptySubtitle}>Sevimli mulklarni saqlashni boshlang</Text>
+      <View style={[styles.emptyIconContainer, { backgroundColor: colors.card }]}>
+        <Heart size={48} color={colors.text} strokeWidth={1.5} />
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Sevimli e'lonlar yo'q</Text>
+      <Text style={[styles.emptySubtitle, { color: colors.border }]}>
+        Sevimli mulklarni saqlashni boshlang
+      </Text>
       <TouchableOpacity 
-        style={styles.emptyButton}
-        // onPress={() => navigation.navigate('HomeTab')}
+        style={[styles.emptyButton, { backgroundColor: colors.primary }]}
+        onPress={() => (navigation as any).navigate('HomeTab')}
       >
         <Text style={styles.emptyButtonText}>E'lonlarni ko'ring</Text>
       </TouchableOpacity>
@@ -123,9 +274,9 @@ const LikedPostsScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={styles.backButton}
@@ -135,8 +286,8 @@ const LikedPostsScreen = () => {
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>Sevimli</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.text }]}>
-              {likedListings.length} {likedListings.length === 1 ? 'e\'lon' : 'e\'lon'}
+            <Text style={[styles.headerSubtitle, { color: colors.border }]}>
+              {filteredListings.length} {filteredListings.length === 1 ? 'e\'lon' : 'e\'lon'}
             </Text>
           </View>
         </View>
@@ -145,35 +296,108 @@ const LikedPostsScreen = () => {
             style={[styles.viewModeButton, viewMode === 'grid' && styles.activeViewMode]}
             onPress={() => setViewMode('grid')}
           >
-            <Text style={styles.viewModeIcon}>⊞</Text>
+            <Grid size={18} color={viewMode === 'grid' ? colors.primary : colors.text} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.viewModeButton, viewMode === 'list' && styles.activeViewMode]}
             onPress={() => setViewMode('list')}
           >
-            <Text style={styles.viewModeIcon}>≡</Text>
+            <List size={18} color={viewMode === 'list' ? colors.primary : colors.text} />
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* Search and Sort Bar */}
+      {likedListings.length > 0 && (
+        <View style={[styles.controlsBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={[styles.searchInputContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Search size={16} color={colors.text} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="E'lonlarni qidirish..."
+              placeholderTextColor={colors.border}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          <View style={styles.sortContainer}>
+            <TouchableOpacity
+              style={[
+                styles.sortButton,
+                {
+                  backgroundColor: sortBy === 'price-asc' ? colors.primary : colors.background,
+                },
+              ]}
+              onPress={() => setSortBy('price-asc')}
+            >
+              <Text
+                style={[
+                  styles.sortButtonText,
+                  { color: sortBy === 'price-asc' ? '#fff' : colors.text },
+                ]}
+              >
+                ↑ Narx
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.sortButton,
+                {
+                  backgroundColor: sortBy === 'price-desc' ? colors.primary : colors.background,
+                },
+              ]}
+              onPress={() => setSortBy('price-desc')}
+            >
+              <Text
+                style={[
+                  styles.sortButtonText,
+                  { color: sortBy === 'price-desc' ? '#fff' : colors.text },
+                ]}
+              >
+                ↓ Narx
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* Main Content */}
-      {likedListings.length === 0 ? (
+      {loading ? (
+        <NotificationsLoadingSkeleton />
+      ) : likedListings.length === 0 ? (
         <EmptyState />
+      ) : sortedListings.length === 0 ? (
+        <View style={styles.noResultsContainer}>
+          <Text style={[styles.noResultsTitle, { color: colors.text }]}>Natija topilmadi</Text>
+          <Text style={[styles.noResultsSubtitle, { color: colors.border }]}>
+            "{searchQuery}" uchun hech qanday e'lon topilmadi
+          </Text>
+        </View>
       ) : (
         <FlatList
-          data={likedListings}
+          data={sortedListings}
           numColumns={numColumns}
           key={numColumns}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          }
           renderItem={({ item }) => (
             <View style={[styles.cardWrapper, numColumns === 2 && styles.gridItem]}>
-              <ListingCard
-                {...item}
-                isLiked={true}
-                onToggleLike={handleRemoveLike}
-                onClick={() => handleOpenListing(item)}
-              />
+              <View style={{ position: 'relative' }}>
+                <ListingCard
+                  {...item}
+                  isLiked={true}
+                  onToggleLike={handleRemoveLike}
+                  onClick={() => handleOpenListing(item)}
+                />
+                {deletingId === item.id && (
+                  <View style={styles.deletingIcon}>
+                    <Trash2 size={32} color="#dc2626" />
+                  </View>
+                )}
+              </View>
             </View>
           )}
           showsVerticalScrollIndicator={false}
@@ -231,6 +455,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   activeViewMode: {
     backgroundColor: '#fff',
@@ -244,6 +470,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
+  // Search and Sort Styles
+  controlsBar: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sortButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  sortButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   listContainer: {
     paddingHorizontal: 8,
     paddingVertical: 12,
@@ -256,31 +516,86 @@ const styles = StyleSheet.create({
   gridItem: {
     maxWidth: '50%',
   },
+  deletingIcon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    zIndex: 10,
+    borderRadius: 12,
+  },
+  // Empty State Styles
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
   },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000',
     marginBottom: 8,
+    textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#999',
     marginBottom: 24,
     textAlign: 'center',
   },
   emptyButton: {
-    backgroundColor: '#000',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   emptyButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  // No Results Styles
+  noResultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  noResultsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  noResultsSubtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  deletingItem: {
+    opacity: 0.6,
+  },
+  deletingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deletingText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',

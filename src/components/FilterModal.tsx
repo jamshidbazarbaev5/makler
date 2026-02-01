@@ -17,8 +17,6 @@ import {
   COLORS,
   REGIONS,
   COUNTRIES,
-  CATEGORIES,
-  PROPERTY_TYPES,
   POSTED_BY_OPTIONS,
 } from '../constants';
 
@@ -47,6 +45,12 @@ const INITIAL_STATE: FilterState = {
   postedBy: 'Agasi',
 };
 
+// Listing type categories from AddListingScreen
+const LISTING_CATEGORIES = ['Kunlik', 'Oylik', 'Sotuv'];
+
+// Property types from PropertyTypeScreen
+const PROPERTY_TYPE_OPTIONS = ['Kvartira', 'Hovli/Kottej/Dacha', 'Mehmonxona'];
+
 export const FilterModal: React.FC<FilterModalProps> = ({
   isOpen,
   onClose,
@@ -55,16 +59,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState<FilterState>(INITIAL_STATE);
   const sheetHeight = useRef(new Animated.Value(COLLAPSED_HEIGHT)).current;
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [pickerData, setPickerData] = useState<{
-    title: string;
-    items: {label: string; value: string}[];
-    key: string;
-  }>({
-    title: '',
-    items: [],
-    key: '',
-  });
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const toggleExpand = () => {
     const toValue = !isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT;
@@ -93,6 +88,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   const handleClose = () => {
     onClose();
     setIsExpanded(false);
+    setOpenDropdown(null);
   };
 
   const openPicker = (
@@ -100,12 +96,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     title: string,
     items: string[],
   ) => {
-    setPickerData({
-      title,
-      items: items.map(item => ({label: item, value: item})),
-      key,
-    });
-    setPickerVisible(true);
+    setOpenDropdown(openDropdown === key ? null : key);
   };
 
   if (!isOpen) return null;
@@ -148,11 +139,27 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   <TouchableOpacity
                     style={styles.selectBox}
                     onPress={() =>
-                      openPicker('category', 'Toifasi', CATEGORIES)
+                      setOpenDropdown(openDropdown === 'category' ? null : 'category')
                     }>
                     <Text style={styles.selectText}>{filters.category}</Text>
                     <ChevronDown size={20} color={COLORS.gray400} />
                   </TouchableOpacity>
+                  {openDropdown === 'category' && (
+                    <View style={styles.inlineDropdown}>
+                      {LISTING_CATEGORIES.map((item) => (
+                        <TouchableOpacity
+                          key={item}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            updateFilter('category', item);
+                            setOpenDropdown(null);
+                          }}>
+                          <Text style={styles.dropdownItemText}>{item}</Text>
+                          {filters.category === item && <Check size={20} color={COLORS.primary} />}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
 
                 {/* Property Type Field */}
@@ -161,17 +168,29 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                   <TouchableOpacity
                     style={styles.selectBox}
                     onPress={() =>
-                      openPicker(
-                        'propertyType',
-                        "Ko'chmas mulk turi",
-                        PROPERTY_TYPES,
-                      )
+                      setOpenDropdown(openDropdown === 'propertyType' ? null : 'propertyType')
                     }>
                     <Text style={styles.selectText}>
                       {filters.propertyType}
                     </Text>
                     <ChevronDown size={20} color={COLORS.gray400} />
                   </TouchableOpacity>
+                  {openDropdown === 'propertyType' && (
+                    <View style={styles.inlineDropdown}>
+                      {PROPERTY_TYPE_OPTIONS.map((item) => (
+                        <TouchableOpacity
+                          key={item}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            updateFilter('propertyType', item);
+                            setOpenDropdown(null);
+                          }}>
+                          <Text style={styles.dropdownItemText}>{item}</Text>
+                          {filters.propertyType === item && <Check size={20} color={COLORS.primary} />}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
 
                 {/* Posted By Field */}
@@ -389,41 +408,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             </>
           )}
         </Animated.View>
-      </Modal>
-
-      {/* Picker Modal */}
-      <Modal
-        visible={pickerVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setPickerVisible(false)}>
-        <View style={styles.pickerContainer}>
-          <View style={styles.pickerHeader}>
-            <TouchableOpacity onPress={() => setPickerVisible(false)}>
-              <Text style={styles.pickerCancel}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.pickerTitle}>{pickerData.title}</Text>
-            <View style={styles.placeholder} />
-          </View>
-          <ScrollView style={styles.pickerScroll}>
-            {pickerData.items.map(item => (
-              <TouchableOpacity
-                key={item.value}
-                style={styles.pickerItem}
-                onPress={() => {
-                  updateFilter(
-                    pickerData.key as keyof FilterState,
-                    item.value as any,
-                  );
-                  setPickerVisible(false);
-                }}>
-                <Text style={styles.pickerItemText}>{item.label}</Text>
-                {filters[pickerData.key as keyof FilterState] ===
-                  item.value && <Check size={24} color={COLORS.primary} />}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
       </Modal>
     </>
   );
@@ -655,7 +639,31 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
   },
 
-  // PICKER STYLES
+  // INLINE DROPDOWN STYLES
+  inlineDropdown: {
+    backgroundColor: COLORS.gray50,
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    overflow: 'hidden',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: COLORS.gray900,
+    fontWeight: '500',
+  },
+
+  // PICKER STYLES (removed - using inline dropdowns now)
   pickerContainer: {
     flex: 1,
     backgroundColor: COLORS.white,
@@ -684,15 +692,6 @@ const styles = StyleSheet.create({
   },
   pickerScroll: {
     flex: 1,
-  },
-  pickerItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray100,
   },
   pickerItemText: {
     fontSize: 16,

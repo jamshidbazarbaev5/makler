@@ -187,12 +187,21 @@ const authSlice = createSlice({
         state.user = null;
       })
       // Fetch Profile
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.loading = false;
         if (state.user) {
           state.user = {...state.user, ...action.payload};
         } else {
           state.user = action.payload;
         }
+      })
+      .addCase(fetchProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       })
       // Update Profile (JSON)
       .addCase(updateProfile.pending, state => {

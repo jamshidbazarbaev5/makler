@@ -22,22 +22,13 @@ export interface AuthResponse {
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || 'YOUR_BOT_TOKEN_HERE';
 const API_BASE_URL = 'https://makler-qaraqalpaq.uz/api/mobile';
 
-/**
- * Verify Telegram authentication data
- * NOTE: Frontend verification is optional - backend MUST verify!
- * For now, we skip frontend verification and let backend handle it
- */
 export const verifyTelegramAuth = (data: TelegramAuthData): boolean => {
-  // Check required fields
   if (!data.id || !data.first_name || !data.hash) {
     return false;
   }
   return true;
 };
 
-/**
- * Check if auth data is not older than 1 day
- */
 export const isAuthDataValid = (authDate: number): boolean => {
   const currentTime = Math.floor(Date.now() / 1000);
   const authAge = currentTime - authDate;
@@ -46,10 +37,6 @@ export const isAuthDataValid = (authDate: number): boolean => {
   return authAge < ONE_DAY;
 };
 
-/**
- * Authenticate user with Telegram
- * Call this with Telegram auth data from the client
- */
 export const authenticateWithTelegram = async (
   telegramData: TelegramAuthData,
 ): Promise<AuthResponse> => {
