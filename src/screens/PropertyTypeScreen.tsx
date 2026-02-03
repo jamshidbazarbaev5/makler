@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '@react-navigation/native';
-import { ArrowLeft, Home, Building2, Users } from 'lucide-react-native';
+import { ArrowLeft, Home, Building2, Users, TreePine, Store } from 'lucide-react-native';
 import BottomNav from '../components/BottomNav';
 
 interface NavigationProp {
@@ -28,7 +28,7 @@ const PropertyTypeScreen = () => {
   const params = route.params as RouteParams | undefined;
   const listingType = params?.listingType;
 
-  const propertyTypes = [
+  const allPropertyTypes = [
     {
       id: 'kvartira',
       icon: Home,
@@ -42,12 +42,28 @@ const PropertyTypeScreen = () => {
       description: 'Shaxsiy turar joy',
     },
     {
-      id: 'mehmonxona',
-      icon: Users,
-      title: 'Mehmonxona',
-      description: 'Mehmonxona va turizm',
+      id: 'land',
+      icon: TreePine,
+      title: 'Yer',
+      description: 'Qurilish uchun yer',
+      excludeForListingTypes: ['daily-rent'],
+    },
+    {
+      id: 'commercial',
+      icon: Store,
+      title: 'Tijorat',
+      description: 'Tijorat mulki',
+      excludeForListingTypes: ['daily-rent'],
     },
   ];
+
+  // Filter property types based on listing type
+  const propertyTypes = allPropertyTypes.filter(type => {
+    if (type.excludeForListingTypes && listingType) {
+      return !type.excludeForListingTypes.includes(listingType);
+    }
+    return true;
+  });
 
   const handleSelectPropertyType = (propertyTypeId: string) => {
     navigation.navigate('PropertyForm', { 

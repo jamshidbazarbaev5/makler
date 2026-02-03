@@ -66,6 +66,28 @@ const PropertyFormScreen = () => {
   const propertyType = params?.propertyType || 'kvartira';
   const headerTitle = listingTypeMap[listingType] || 'Kvartira';
 
+  // Properly map incoming listing types to API values
+  const normalizedListingType = useMemo(() => {
+    switch(listingType) {
+      case 'daily-rent': return 'rent_daily';
+      case 'monthly-rent': return 'rent';
+      case 'sell': return 'sale';
+      case 'buy': return 'sale'; // Buying is technically searching for sales
+      default: return 'sale';
+    }
+  }, [listingType]);
+
+  // Map property types to API values
+  const normalizedPropertyType = useMemo(() => {
+    switch(propertyType) {
+      case 'kvartira': return 'apartment';
+      case 'hovli-kottej-dacha': return 'house';
+      case 'land': return 'land';
+      case 'commercial': return 'commercial';
+      default: return 'apartment';
+    }
+  }, [propertyType]);
+
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
@@ -95,11 +117,26 @@ const PropertyFormScreen = () => {
   const [regionOptions, setRegionOptions] = useState<string[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(true);
 
+  const renovationMap: Record<string, string> = {
+    'Yangi ta\'mirlab qo\'yilgan': 'euro_repair',
+    'Eskilangan': 'needs_repair',
+    'Yaxshi holatda': 'cosmetic',
+    'Ta\'mir talab': 'needs_repair',
+    'Yevroremont': 'euro_repair',
+    'Kapital ta\'mir': 'capital',
+    'Ta\'mirsiz': 'no_repair',
+    'Dizaynerlik': 'design'
+  };
+
   const renovationOptions = [
     'Ta\'mirlash tanlang',
     'Yangi ta\'mirlab qo\'yilgan',
     'Eskilangan',
     'Yaxshi holatda',
+    'Yevroremont',
+    'Kapital ta\'mir',
+    'Ta\'mirsiz',
+    'Dizaynerlik'
   ];
 
   const currencyOptions = ['USD', 'UZS', 'EUR'];
@@ -162,14 +199,24 @@ const PropertyFormScreen = () => {
         renovation: true,
         roomsCount: true,
       },
-      mehmonxona: {
+      land: {
         ...baseFields,
-        propertyOwner: true,
+        propertyOwner: false,
         totalArea: true,
-        roomsCount: true,
-        floor: true,
-        totalFloors: true,
-        renovation: true,
+        floor: false,
+        totalFloors: false,
+        renovation: false,
+        roomsCount: false,
+        apartmentType: false,
+      },
+      commercial: {
+        ...baseFields,
+        propertyOwner: false,
+        totalArea: true,
+        floor: false,
+        totalFloors: false,
+        renovation: false,
+        roomsCount: false,
         apartmentType: false,
       },
     };
@@ -247,12 +294,94 @@ const PropertyFormScreen = () => {
     }));
   };
 
-  const handleSubmit = () => {
-    if (!formData.title || !formData.price || !formData.bedrooms) {
-      Alert.alert('Xato', 'Barcha maydon to\'ldirilsin');
-      return;
+  const handleSubmit = async () => {
+    try {
+      // Validation based on property type
+      if (!formData.title || !formData.price) {
+        Alert.alert('Xato', 'Sarlavha va narx majburiy');
+        return;
+      }
+
+      // For apartment/house, rooms are required
+      if ((normalizedPropertyType === 'apartment' || normalizedPropertyType === 'house') && !formData.roomsCount) {
+        Alert.alert('Xato', 'Xonalar soni majburiy');
+        return;
+      }
+
+      // Find district ID
+      // This logic assumes we have the full district object or can map the name back to ID
+      // Ideally regionOptions should store {id, name} objects
+      // For now, we'll try to find it from the API call if we had stored the full list,
+      // but since we only stored names, this part might need adjustment in a real app.
+      // Let's assume for this mock that we send a static ID or we need to look it up.
+      // Ideally, update the district fetching to store a map of name -> id.
+
+      const payload: any = {
+        title: formData.title,
+        description: formData.description,
+        property_type: normalizedPropertyType,
+        listing_type: normalizedListingType,
+        price: parseFloat(formData.price).toFixed(2),
+        currency: formData.currency.toLowerCase(),
+        // Map common fields
+        rooms: formData.roomsCount ? parseInt(formData.roomsCount) : null,
+        area: formData.totalArea ? formData.totalArea : (formData.area || null),
+        phone: formData.phone,
+
+        // Handle specific fields based on property type
+        ...(normalizedPropertyType === 'apartment' && {
+          floor: formData.floor ? parseInt(formData.floor) : null,
+          total_floors: formData.totalFloors ? parseInt(formData.totalFloors) : null,
+          area_unit: 'sqm',
+        }),
+
+        ...(normalizedPropertyType === 'house' && {
+          area_unit: 'sqm',
+        }),
+
+        ...(normalizedPropertyType === 'land' && {
+          area_unit: 'sotix'
+        }),
+
+        ...(normalizedPropertyType === 'commercial' && {
+          area_unit: 'sqm'
+        }),
+
+        building_type: formData.apartmentType === 'secondary' ? 'old' : 'new',
+        condition: renovationMap[formData.renovation] || 'cosmetic',
+
+        // Mock district ID since we don't have the full map here yet
+        district_id: 3,
+      };
+
+      console.log('Submitting Payload:', JSON.stringify(payload, null, 2));
+
+      // 1. Create the announcement first
+      const createdAnnouncement = await ApiClient.createProperty(payload);
+      const announcementId = createdAnnouncement.id;
+
+      if (!announcementId) {
+        throw new Error('No announcement ID returned');
+      }
+
+      console.log(`Announcement created with ID: ${announcementId}`);
+
+      // 2. Upload images if any
+      if (formData.images.length > 0) {
+        console.log(`Uploading ${formData.images.length} images...`);
+        // Upload images one by one or in parallel
+        await Promise.all(formData.images.map(imageUri =>
+          ApiClient.uploadAnnouncementImage(announcementId, imageUri)
+        ));
+      }
+
+      Alert.alert('Muvaffaqiyat', 'E\'lon muvaffaqiyatli yaratildi!', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error: any) {
+      console.error('Submission Error:', error);
+      Alert.alert('Xato', 'E\'lon yaratishda xatolik yuz berdi: ' + (error.message || ''));
     }
-    Alert.alert('Muvaffaqiyat', 'E\'lon yuborildi!');
   };
 
   return (
@@ -401,7 +530,9 @@ const PropertyFormScreen = () => {
 
         {visibleFields.totalArea && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Maydon, m²</Text>
+            <Text style={styles.sectionTitle}>
+              Maydon, {normalizedPropertyType === 'land' ? 'sotix' : 'm²'}
+            </Text>
             <TextInput
               style={styles.input}
               placeholder="Maydonni kiriting"

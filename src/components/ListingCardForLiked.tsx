@@ -1,15 +1,15 @@
-import { Heart, HeartIcon, MapPin, Bed, Maximize2 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Image,
   Animated,
   Dimensions,
   Pressable,
 } from 'react-native';
+import { Heart, ImageIcon, Eye, Trash2 } from 'lucide-react-native';
+import { COLORS } from '../constants';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width / 2 - 12;
@@ -27,6 +27,7 @@ interface ListingCardProps {
   isLiked?: boolean;
   onToggleLike?: (id: string) => void;
   onClick?: () => void;
+  views_count?: number;
 }
 
 const ListingCard: React.FC<ListingCardProps> = ({
@@ -42,6 +43,7 @@ const ListingCard: React.FC<ListingCardProps> = ({
   isLiked = true,
   onToggleLike,
   onClick,
+  views_count,
 }) => {
   const [scaleAnim] = useState(new Animated.Value(1));
   const [likeScaleAnim] = useState(new Animated.Value(1));
@@ -87,8 +89,7 @@ const ListingCard: React.FC<ListingCardProps> = ({
         },
       ]}
     >
-      <TouchableOpacity
-        activeOpacity={0.9}
+      <Pressable
         onPress={handlePress}
         style={styles.container}
       >
@@ -101,8 +102,8 @@ const ListingCard: React.FC<ListingCardProps> = ({
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.image, styles.imagePlaceholder]}>
-              <Text style={styles.placeholderText}>No Image</Text>
+            <View style={styles.imagePlaceholder}>
+              <ImageIcon size={24} color="#94a3b8" />
             </View>
           )}
 
@@ -113,7 +114,15 @@ const ListingCard: React.FC<ListingCardProps> = ({
             </View>
           )}
 
-          {/* Like Button */}
+          {/* Views */}
+          {views_count !== undefined && (
+            <View style={styles.viewsBadge}>
+              <Eye size={12} color="#fff" />
+              <Text style={styles.viewsText}>{views_count}</Text>
+            </View>
+          )}
+
+          {/* Like/Remove Button */}
           <Animated.View
             style={[
               styles.likeButton,
@@ -130,82 +139,46 @@ const ListingCard: React.FC<ListingCardProps> = ({
                 pressed && styles.likeButtonPressed,
               ]}
             >
-              <HeartIcon/>
+              <Trash2 size={16} color={isLiked ? '#fff' : '#999'} />
             </Pressable>
           </Animated.View>
         </View>
 
         {/* Content Section */}
         <View style={styles.content}>
-          {/* Title & Price */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.title} numberOfLines={2}>
-              {title}
+          <Text style={styles.price}>{price || '—'}</Text>
+          <Text style={styles.title} numberOfLines={2}>
+            {title || 'Untitled'}
+          </Text>
+          {location && typeof location === 'string' && location.length > 0 && (
+            <Text style={styles.location} numberOfLines={1}>
+              {location}
             </Text>
-            <Text style={styles.price}>{price}</Text>
-          </View>
-
-          {/* Location */}
-          {location && (
-            <View style={styles.locationContainer}>
-              <MapPin size={14} color="#666" />
-              <Text style={styles.locationText} numberOfLines={1}>
-                {location}
-              </Text>
-            </View>
-          )}
-
-          {/* Details */}
-          {(bedrooms || area) && (
-            <View style={styles.detailsContainer}>
-              {bedrooms && (
-                <View style={styles.detailItem}>
-                  <Bed size={12} color="#666" />
-                  <Text style={styles.detailText}>
-                    {bedrooms} {bedrooms === 1 ? 'xona' : 'xonalar'}
-                  </Text>
-                </View>
-              )}
-              {area && (
-                <View style={styles.detailItem}>
-                  <Maximize2 size={12} color="#666" />
-                  <Text style={styles.detailText}>{area} m²</Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Username */}
-          {username && (
-            <View style={styles.usernameContainer}>
-              <Text style={styles.usernameLabel}>E'lon beruvchi: </Text>
-              <Text style={styles.usernameText}>{username}</Text>
-            </View>
           )}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+    marginBottom: 4,
   },
   container: {
     overflow: 'hidden',
   },
   imageContainer: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    backgroundColor: '#e8e8e8',
+    height: 120,
+    backgroundColor: COLORS.gray100,
     position: 'relative',
   },
   image: {
@@ -213,57 +186,61 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   imagePlaceholder: {
-    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-  },
-  placeholderText: {
-    fontSize: 12,
-    color: '#999',
-    fontWeight: '500',
+    justifyContent: 'center',
+    backgroundColor: COLORS.gray100,
   },
   badgeContainer: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: COLORS.purple,
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#000',
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  viewsBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  viewsText: {
+    fontSize: 10,
+    color: COLORS.white,
+    fontWeight: '500',
   },
   likeButton: {
     position: 'absolute',
-    bottom: 12,
-    right: 12,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    bottom: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   likeButtonActive: {
     backgroundColor: '#ff6b6b',
-    borderColor: '#ff5252',
-    shadowColor: '#ff6b6b',
-    shadowOpacity: 0.4,
   },
   likeButtonPress: {
     width: '100%',
@@ -274,79 +251,24 @@ const styles = StyleSheet.create({
   likeButtonPressed: {
     opacity: 0.7,
   },
-  likeIcon: {
-    fontSize: 28,
-  },
-  likeIconActive: {
-    color: '#fff',
-  },
   content: {
-    padding: 12,
-  },
-  titleContainer: {
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    lineHeight: 18,
-    marginBottom: 6,
+    padding: 10,
   },
   price: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFD700',
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    gap: 6,
-  },
-  locationIcon: {
     fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.gray900,
+    marginBottom: 4,
   },
-  locationText: {
+  title: {
     fontSize: 12,
-    color: '#666',
-    flex: 1,
+    color: COLORS.gray700,
+    lineHeight: 16,
+    marginBottom: 4,
   },
-  detailsContainer: {
-    flexDirection: 'row',
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    marginBottom: 10,
-    gap: 12,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flex: 1,
-  },
-  detailIcon: {
-    fontSize: 12,
-  },
-  detailText: {
+  location: {
     fontSize: 11,
-    color: '#666',
-  },
-  usernameContainer: {
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    flexDirection: 'row',
-  },
-  usernameLabel: {
-    fontSize: 11,
-    color: '#999',
-  },
-  usernameText: {
-    fontSize: 11,
-    color: '#333',
-    fontWeight: '500',
+    color: COLORS.gray500,
   },
 });
 

@@ -11,11 +11,11 @@ import {
     ActivityIndicator,
     Linking,
 } from 'react-native';
-import { ArrowLeft, MapPin, Heart, MessageCircle, Send } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Heart, MessageCircle, Send, ImageIcon } from 'lucide-react-native';
 import { similarListings } from '../data/mockData';
 import SimilarListingsSection from './SimilarListingSection';
 import BottomNav from './BottomNav';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { addToFavoritesAsync, removeFromFavoritesAsync } from '../redux/slices/likesSlice';
@@ -74,11 +74,13 @@ const ListingDetail = () => {
 
     const listingId = route.params?.listingId;
 
-    useEffect(() => {
-        if (listingId) {
-            fetchListing();
-        }
-    }, [listingId]);
+    useFocusEffect(
+        React.useCallback(() => {
+            if (listingId) {
+                fetchListing();
+            }
+        }, [listingId])
+    );
 
     const fetchListing = async () => {
         try {
@@ -243,6 +245,7 @@ const ListingDetail = () => {
                         />
                     ) : (
                         <View style={[styles.image, styles.noImagePlaceholder]}>
+                            <ImageIcon size={48} color={COLORS.gray400} />
                             <Text style={styles.noImageText}>Rasm yo'q</Text>
                         </View>
                     )}
@@ -307,8 +310,10 @@ const ListingDetail = () => {
                                   if (listing) {
                                     if (isLiked) {
                                       const favoriteId = favoriteMap[listing.id];
+                                      setListing(prev => prev ? ({...prev, favorites_count: Math.max(0, prev.favorites_count - 1)}) : null);
                                       dispatch(removeFromFavoritesAsync({ announcementId: listing.id, favoriteId }) as any);
                                     } else {
+                                      setListing(prev => prev ? ({...prev, favorites_count: prev.favorites_count + 1}) : null);
                                       dispatch(addToFavoritesAsync(listing as any) as any);
                                     }
                                   }
@@ -425,6 +430,17 @@ const styles = StyleSheet.create({
     image: {
         width: '100%',
         height: '100%',
+    },
+    noImagePlaceholder: {
+        backgroundColor: COLORS.gray100,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
+    },
+    noImageText: {
+        color: COLORS.gray500,
+        fontSize: 16,
+        fontWeight: '500',
     },
     loadingOverlay: {
         position: 'absolute',

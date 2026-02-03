@@ -167,20 +167,22 @@ const LikedPostsScreen = () => {
   };
 
   const formatAnnouncement = (ann: Announcement): Listing => {
-    const price = parseFloat(ann.price);
-    const formattedPrice = ann.currency === 'usd' 
-      ? `$${price.toLocaleString()}`
-      : `${price.toLocaleString()} so'm`;
+    const price = ann.price ? parseFloat(ann.price) : 0;
+    const formattedPrice = !isNaN(price) && price > 0
+      ? (ann.currency === 'usd' 
+          ? `$${price.toLocaleString()}`
+          : `${price.toLocaleString()} so'm`)
+      : 'Narxsiz';
 
     return {
       id: ann.id,
-      title: ann.title,
+      title: ann.title || 'Untitled',
       price: formattedPrice,
       location: ann.district?.translations?.ru?.name || 'Unknown',
-      bedrooms: ann.rooms || 0,
-      area: parseInt(ann.area) || 0,
+      bedrooms: ann.rooms ? Math.max(0, Math.min(10, ann.rooms)) : 0,
+      area: ann.area ? Math.max(0, parseInt(ann.area)) : 0,
       imageUrl: ann.main_image || 'https://via.placeholder.com/300',
-      username: ann.seller_name || 'Unknown',
+      username: ann.seller_name || 'Unknown Seller',
     };
   };
 
@@ -392,11 +394,6 @@ const LikedPostsScreen = () => {
                   onToggleLike={handleRemoveLike}
                   onClick={() => handleOpenListing(item)}
                 />
-                {deletingId === item.id && (
-                  <View style={styles.deletingIcon}>
-                    <Trash2 size={32} color="#dc2626" />
-                  </View>
-                )}
               </View>
             </View>
           )}

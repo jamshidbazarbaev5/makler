@@ -8,6 +8,7 @@ import {
   useWindowDimensions,
   Platform,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 import ListingCard from './ListingCard'
@@ -45,6 +46,7 @@ const AllListingsSection = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const numColumns = 2;
   const columnWidth = useMemo(() => (width - 48) / numColumns, [width]);
@@ -79,7 +81,13 @@ const AllListingsSection = () => {
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchAnnouncements(1);
   };
 
   const handleLoadMore = () => {
@@ -175,6 +183,13 @@ const AllListingsSection = () => {
         contentContainerStyle={styles.gridContainer}
         columnWrapperStyle={styles.columnWrapper}
         scrollIndicatorInsets={Platform.OS === 'android' ? { right: 1 } : {}}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
       />
 
       {hasNextPage && (

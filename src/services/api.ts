@@ -102,9 +102,10 @@ class ApiClient {
     return response.data.data;
   }
 
-  async createProperty(data: PropertyFormData): Promise<Property> {
-    const response = await this.client.post<ApiResponse<Property>>('/properties', data);
-    return response.data.data;
+  async createProperty(data: any): Promise<any> {
+    console.log('🚀 Creating Announcement with Payload:', JSON.stringify(data, null, 2));
+    const response = await this.client.post('/announcements/', data);
+    return response.data;
   }
 
   async updateProperty(id: string, data: Partial<PropertyFormData>): Promise<Property> {
@@ -213,6 +214,44 @@ class ApiClient {
       params: { page, limit },
     });
     return response.data;
+  }
+
+  async uploadAnnouncementImage(id: string, imageUri: string): Promise<any> {
+    const formData = new FormData();
+    // The server error {"images":["Обязательное поле."]} suggests the field name should be 'images'
+    // or specifically matching what the serializer expects.
+    // Let's try 'images' based on the error key.
+    formData.append('images', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'photo.jpg',
+    } as any);
+
+    console.log(`📤 Uploading image for announcement ${id}`);
+
+    // We use fetch here because axios sometimes has issues with FormData in React Native
+    const state = store.getState();
+    const token = state.auth.token;
+
+    // We need to use the base URL from the client instance or the constant
+    const url = `${API_BASE_URL}/announcements/${id}/upload_image/`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Image upload failed:', errorText);
+      throw new Error(`Image upload failed: ${response.status} ${errorText}`);
+    }
+
+    return await response.json();
   }
 
   async getAnnouncementById(id: string): Promise<any> {
