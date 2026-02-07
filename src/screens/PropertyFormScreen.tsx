@@ -17,6 +17,7 @@ import { useTheme } from '@react-navigation/native';
 import { ArrowLeft, MapPin, Camera, ImageIcon, X } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import BottomNav from '../components/BottomNav';
+import MapPicker from '../components/MapPicker';
 import ApiClient from '../services/api';
 
 interface FormData {
@@ -775,72 +776,33 @@ const PropertyFormScreen = () => {
             <View style={{ width: 24 }} />
           </View>
 
-          <SafeAreaView style={styles.locationSearchContainer}>
-            <Text style={styles.locationLabel}>Tashkent shahrining ba'zi joylari:</Text>
-            <ScrollView style={styles.locationList}>
-              {[
-                { lat: 41.2995, lon: 69.2401, name: 'Tashkent Markazi' },
-                { lat: 41.3193, lon: 69.2806, name: 'Nukus ko\'chasi' },
-                { lat: 41.3156, lon: 69.1877, name: 'Sergeli tumani' },
-                { lat: 41.2871, lon: 69.2080, name: 'Yunusabad tumani' },
-                { lat: 41.3386, lon: 69.2808, name: 'Mirzo Ulug\'bek tumani' },
-              ].map((location, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.locationOption}
-                  onPress={() => {
-                    setFormData(prev => ({
-                      ...prev,
-                      latitude: location.lat,
-                      longitude: location.lon,
-                    }));
-                    setShowLocationModal(false);
-                  }}
-                >
-                  <MapPin size={20} color="#000" />
-                  <Text style={styles.locationOptionText}>{location.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </SafeAreaView>
+          <View style={styles.mapContainer2}>
+            <MapPicker
+              initialLatitude={formData.latitude || 42.4602}
+              initialLongitude={formData.longitude || 59.6034}
+              onLocationSelect={(lat, lng) => {
+                setFormData(prev => ({
+                  ...prev,
+                  latitude: lat,
+                  longitude: lng,
+                }));
+              }}
+            />
+          </View>
 
-          <View style={styles.manualLocationContainer}>
-            <Text style={styles.locationLabel}>Yoki koordinatalarni kiriting:</Text>
-            <View style={styles.coordinateInputs}>
-              <TextInput
-                style={styles.coordinateInput}
-                placeholder="Kenglik (Latitude)"
-                placeholderTextColor="#999"
-                keyboardType="decimal-pad"
-                value={formData.latitude?.toString() || ''}
-                onChangeText={(text) => {
-                  const lat = parseFloat(text);
-                  if (!isNaN(lat)) {
-                    setFormData(prev => ({
-                      ...prev,
-                      latitude: lat,
-                    }));
-                  }
-                }}
-              />
-              <TextInput
-                style={styles.coordinateInput}
-                placeholder="Uzunlik (Longitude)"
-                placeholderTextColor="#999"
-                keyboardType="decimal-pad"
-                value={formData.longitude?.toString() || ''}
-                onChangeText={(text) => {
-                  const lon = parseFloat(text);
-                  if (!isNaN(lon)) {
-                    setFormData(prev => ({
-                      ...prev,
-                      longitude: lon,
-                    }));
-                  }
-                }}
-              />
-            </View>
+          <View style={styles.selectedLocationInfo}>
+            {formData.latitude && formData.longitude ? (
+              <Text style={styles.selectedLocationText}>
+                Tanlangan: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+              </Text>
+            ) : (
+              <Text style={styles.selectedLocationText}>
+                Xaritada joylashuvni tanlang
+              </Text>
+            )}
+          </View>
 
+          <View style={styles.confirmLocationButtonContainer}>
             <TouchableOpacity
               style={styles.confirmLocationButton}
               onPress={() => setShowLocationModal(false)}
@@ -1165,53 +1127,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
-  locationSearchContainer: {
+  mapContainer2: {
     flex: 1,
-    // paddingHorizontal: -120,
-    // paddingVertical: ,
+    margin: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  locationLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 12,
-  },
-  locationList: {
-    marginBottom: 20,
-  },
-  locationOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    gap: 12,
-  },
-  locationOptionText: {
-    fontSize: 14,
-    color: '#000',
-    flex: 1,
-  },
-  manualLocationContainer: {
+  selectedLocationInfo: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f8f8f8',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
   },
-  coordinateInputs: {
-    gap: 8,
-    marginBottom: 16,
-  },
-  coordinateInput: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  selectedLocationText: {
     fontSize: 14,
-    color: '#000',
-    backgroundColor: '#f8f8f8',
+    color: '#333',
+    textAlign: 'center',
+  },
+  confirmLocationButtonContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
   },
   confirmLocationButton: {
     backgroundColor: '#000',

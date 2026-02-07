@@ -10,8 +10,10 @@ import {
     PanResponder,
     ActivityIndicator,
     Linking,
+    Platform,
 } from 'react-native';
-import { ArrowLeft, MapPin, Heart, MessageCircle, Send, ImageIcon } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Heart, MessageCircle, Send, ImageIcon, Navigation } from 'lucide-react-native';
+import { WebView } from 'react-native-webview';
 import { similarListings } from '../data/mockData';
 import SimilarListingsSection from './SimilarListingSection';
 import BottomNav from './BottomNav';
@@ -57,6 +59,8 @@ interface AnnouncementDetail {
     views_count: number;
     favorites_count: number;
     created_at: string;
+    latitude: number | null;
+    longitude: number | null;
 }
 
 const ListingDetail = () => {
@@ -200,6 +204,65 @@ const ListingDetail = () => {
     const handleCall = () => {
         if (listing?.phone) {
             Linking.openURL(`tel:${listing.phone}`);
+        }
+    };
+
+    const getMapHtml = (lat: number, lng: number) => `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                html, body { width: 100%; height: 100%; overflow: hidden; }
+                #map { width: 100%; height: 100%; }
+                .leaflet-control-attribution { display: none !important; }
+                .leaflet-control-zoom { display: none !important; }
+            </style>
+        </head>
+        <body>
+            <div id="map"></div>
+            <script>
+                var map = L.map('map', {
+                    zoomControl: false,
+                    attributionControl: false,
+                    dragging: false,
+                    touchZoom: false,
+                    scrollWheelZoom: false,
+                    doubleClickZoom: false
+                }).setView([${lat}, ${lng}], 15);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                }).addTo(map);
+
+                var markerIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: '<div style="background: #dc2626; width: 24px; height: 24px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                L.marker([${lat}, ${lng}], { icon: markerIcon }).addTo(map);
+            </script>
+        </body>
+        </html>
+    `;
+
+    const openInMaps = (lat: number, lng: number) => {
+        const label = listing?.title || 'Location';
+        const scheme = Platform.select({
+            ios: `maps:0,0?q=${label}@${lat},${lng}`,
+            android: `geo:${lat},${lng}?q=${lat},${lng}(${label})`,
+        });
+
+        if (scheme) {
+            Linking.openURL(scheme).catch(() => {
+                // Fallback to Google Maps web
+                Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`);
+            });
         }
     };
 
@@ -372,18 +435,32 @@ const ListingDetail = () => {
                             <Text style={styles.locationText}>{listing.district?.translations?.ru?.name || 'Noma\'lum'}</Text>
                         </View>
 
-                        {/* Map Placeholder */}
-                        <View style={styles.mapContainer}>
-                            <Image
-                                source={{ uri: 'https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/69.2401,41.3111,14,0/400x200?access_token=pk.placeholder' }}
-                                style={styles.mapImage}
-                                resizeMode="cover"
-                            />
-                            <View style={styles.mapOverlay}>
-                                <MapPin size={32} color="#dc2626" />
-                                <Text style={styles.mapText}>Yandex Maps</Text>
+                        {/* Interactive Map */}
+                        {listing.latitude && listing.longitude ? (
+                            <TouchableOpacity
+                                style={styles.mapContainer}
+                                onPress={() => openInMaps(listing.latitude!, listing.longitude!)}
+                                activeOpacity={0.9}
+                            >
+                                <WebView
+                                    source={{ html: getMapHtml(listing.latitude, listing.longitude) }}
+                                    style={styles.mapWebView}
+                                    scrollEnabled={false}
+                                    pointerEvents="none"
+                                />
+                                <View style={styles.mapTapOverlay}>
+                                    <Navigation size={20} color="#fff" />
+                                    <Text style={styles.mapTapText}>Xaritada ochish</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ) : (
+                            <View style={styles.mapContainer}>
+                                <View style={styles.noLocationPlaceholder}>
+                                    <MapPin size={32} color={COLORS.gray400} />
+                                    <Text style={styles.noLocationText}>Joylashuv ko'rsatilmagan</Text>
+                                </View>
                             </View>
-                        </View>
+                        )}
                     </View>
 
                     {/* Similar Listings */}
@@ -400,10 +477,22 @@ const ListingDetail = () => {
                     <Text style={styles.messageButtonText}>Sotuvchiga yozing</Text>
                 </TouchableOpacity>
                 <View style={styles.bottomButtonsRow}>
-                    <TouchableOpacity style={styles.callButton} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.callButton} activeOpacity={0.7} onPress={handleCall}>
                         <Text style={styles.callButtonText}>Qo'ng'iroq qiling</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.locationButton} activeOpacity={0.7}>
+                    <TouchableOpacity
+                        style={[
+                            styles.locationButton,
+                            !(listing?.latitude && listing?.longitude) && styles.locationButtonDisabled
+                        ]}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                            if (listing?.latitude && listing?.longitude) {
+                                openInMaps(listing.latitude, listing.longitude);
+                            }
+                        }}
+                        disabled={!(listing?.latitude && listing?.longitude)}
+                    >
                         <Text style={styles.locationButtonText}>Joylashuv</Text>
                     </TouchableOpacity>
                 </View>
@@ -419,6 +508,26 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#ffffff',
+    },
+    centerContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#64748b',
+        marginBottom: 16,
+    },
+    retryButton: {
+        backgroundColor: COLORS.purple,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    retryText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '500',
     },
     scrollView: {
         flex: 1,
@@ -646,24 +755,36 @@ const styles = StyleSheet.create({
         backgroundColor: '#e2e8f0',
         position: 'relative',
     },
-    mapImage: {
+    mapWebView: {
         width: '100%',
         height: '100%',
-        opacity: 0.5,
     },
-    mapOverlay: {
+    mapTapOverlay: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        bottom: 12,
+        right: 12,
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
     },
-    mapText: {
+    mapTapText: {
+        color: '#fff',
         fontSize: 12,
-        color: '#64748b',
-        marginTop: 4,
+        fontWeight: '500',
+    },
+    noLocationPlaceholder: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 8,
+    },
+    noLocationText: {
+        color: COLORS.gray500,
+        fontSize: 14,
     },
     bottomSpacer: {
         height: 200,
@@ -712,6 +833,9 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         borderRadius: 8,
         alignItems: 'center',
+    },
+    locationButtonDisabled: {
+        backgroundColor: '#94a3b8',
     },
     locationButtonText: {
         color: 'white',

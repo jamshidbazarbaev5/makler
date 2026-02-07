@@ -892,6 +892,10 @@ PODS:
     - glog
     - RCT-Folly (= 2022.05.16.00)
     - React-Core
+  - react-native-geolocation (3.4.0):
+    - glog
+    - RCT-Folly (= 2022.05.16.00)
+    - React-Core
   - react-native-image-picker (7.2.3):
     - glog
     - RCT-Folly (= 2022.05.16.00)
@@ -1148,6 +1152,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - "react-native-blur (from `../node_modules/@react-native-community/blur`)"
+  - "react-native-geolocation (from `../node_modules/@react-native-community/geolocation`)"
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
@@ -1252,6 +1257,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   react-native-blur:
     :path: "../node_modules/@react-native-community/blur"
+  react-native-geolocation:
+    :path: "../node_modules/@react-native-community/geolocation"
   react-native-image-picker:
     :path: "../node_modules/react-native-image-picker"
   react-native-netinfo:
@@ -1359,6 +1366,7 @@ SPEC CHECKSUMS:
   React-logger: 3eb80a977f0d9669468ef641a5e1fabbc50a09ec
   React-Mapbuffer: 84ea43c6c6232049135b1550b8c60b2faac19fab
   react-native-blur: b2b140d3d65077a1d5d26be62d9415f895592344
+  react-native-geolocation: 167798574694849024cb093222bd158e84ac8d21
   react-native-image-picker: 3e4ad7a308e087f49f8aa1443c9ead2e8ce8f060
   react-native-netinfo: f0a9899081c185db1de5bb2fdc1c88c202a059ac
   react-native-pager-view: ffc268422bff14c50921542692f483375c1534ce
