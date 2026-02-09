@@ -10,8 +10,11 @@ import {
     PanResponder,
     ActivityIndicator,
     Alert,
+    Platform,
+    Linking,
 } from 'react-native';
-import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Power, CheckCircle } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Power, CheckCircle, Navigation } from 'lucide-react-native';
+import { WebView } from 'react-native-webview';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants';
 import api from '../services/api';
@@ -466,6 +469,70 @@ const MyListingDetailScreen = () => {
                                 {listing.district?.translations?.ru?.name || "Noma'lum"}
                             </Text>
                         </View>
+
+                        {/* Map View */}
+                        {listing.latitude && listing.longitude && (
+                            <View style={styles.mapViewContainer}>
+                                <WebView
+                                    style={styles.mapWebView}
+                                    scrollEnabled={false}
+                                    source={{
+                                        html: `
+                                            <!DOCTYPE html>
+                                            <html>
+                                            <head>
+                                                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                                                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                                <style>
+                                                    * { margin: 0; padding: 0; }
+                                                    html, body, #map { width: 100%; height: 100%; }
+                                                </style>
+                                            </head>
+                                            <body>
+                                                <div id="map"></div>
+                                                <script>
+                                                    var map = L.map('map', {
+                                                        zoomControl: false,
+                                                        attributionControl: false,
+                                                        dragging: false,
+                                                        touchZoom: false,
+                                                        doubleClickZoom: false,
+                                                        scrollWheelZoom: false
+                                                    }).setView([${listing.latitude}, ${listing.longitude}], 15);
+
+                                                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+                                                    var markerIcon = L.divIcon({
+                                                        html: '<div style="background-color: #6366f1; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);"></div>',
+                                                        className: 'custom-marker',
+                                                        iconSize: [24, 24],
+                                                        iconAnchor: [12, 12]
+                                                    });
+
+                                                    L.marker([${listing.latitude}, ${listing.longitude}], { icon: markerIcon }).addTo(map);
+                                                </script>
+                                            </body>
+                                            </html>
+                                        `
+                                    }}
+                                />
+                                <TouchableOpacity
+                                    style={styles.openMapsButton}
+                                    onPress={() => {
+                                        const url = Platform.OS === 'ios'
+                                            ? `maps:?q=${listing.latitude},${listing.longitude}`
+                                            : `geo:${listing.latitude},${listing.longitude}?q=${listing.latitude},${listing.longitude}`;
+                                        Linking.openURL(url).catch(() => {
+                                            Linking.openURL(`https://www.google.com/maps?q=${listing.latitude},${listing.longitude}`);
+                                        });
+                                    }}
+                                >
+                                    <Navigation size={16} color="#fff" />
+                                    <Text style={styles.openMapsButtonText}>Xaritada ochish</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
 
                     {/* Payment & Promotion Info */}
@@ -793,6 +860,34 @@ const styles = StyleSheet.create({
     locationText: {
         color: '#64748b',
         fontSize: 16,
+    },
+    mapViewContainer: {
+        marginTop: 16,
+        height: 200,
+        borderRadius: 12,
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    mapWebView: {
+        flex: 1,
+        borderRadius: 12,
+    },
+    openMapsButton: {
+        position: 'absolute',
+        bottom: 12,
+        right: 12,
+        backgroundColor: COLORS.purple,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        gap: 6,
+    },
+    openMapsButtonText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
     },
     infoSection: {
         backgroundColor: '#f8fafc',

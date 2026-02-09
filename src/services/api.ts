@@ -216,6 +216,25 @@ class ApiClient {
     return response.data;
   }
 
+  // Get announcements for map view - backend should return only id, title, price, currency, latitude, longitude, property_type
+  // For now using regular endpoint with has_coordinates filter if available
+  async getAnnouncementsForMap(): Promise<any[]> {
+    try {
+      // Try to get all announcements with coordinates in one request
+      // Backend should ideally have a dedicated lightweight endpoint for this
+      const response = await this.client.get('/announcements/', {
+        params: {
+          limit: 500, // Get more for map
+          has_coordinates: true // If backend supports this filter
+        },
+      });
+      return response.data?.results || [];
+    } catch (err) {
+      console.error('Error fetching map announcements:', err);
+      return [];
+    }
+  }
+
   async uploadAnnouncementImage(id: string, imageUri: string): Promise<any> {
     const formData = new FormData();
     // The server error {"images":["Обязательное поле."]} suggests the field name should be 'images'
@@ -313,6 +332,27 @@ class ApiClient {
 
   async markAnnouncementRented(id: string): Promise<any> {
     const response = await this.client.post(`/announcements/${id}/mark_rented/`, {});
+    return response.data;
+  }
+
+  // Notifications API
+  async getNotifications(): Promise<{ count: number; next: string | null; previous: string | null; results: any[] }> {
+    const response = await this.client.get('/notifications/');
+    return response.data;
+  }
+
+  async getNotificationsCount(): Promise<{ unread_count: number; total_count: number }> {
+    const response = await this.client.get('/notifications/count/');
+    return response.data;
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<any> {
+    const response = await this.client.post(`/notifications/${notificationId}/read/`);
+    return response.data;
+  }
+
+  async markAllNotificationsAsRead(): Promise<any> {
+    const response = await this.client.post('/notifications/read_all/');
     return response.data;
   }
 }

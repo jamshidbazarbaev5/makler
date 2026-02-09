@@ -15,6 +15,7 @@ import { Bell, CheckCircle, Filter, Trash2, ArrowLeft } from 'lucide-react-nativ
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import BottomNav from '../components/BottomNav';
 import NotificationItem from '../components/NotificationItem';
+import RejectionReasonSheet from '../components/RejectionReasonSheet';
 import { NotificationsLoadingSkeleton } from '../components/SkeletonLoader';
 import {
   fetchNotifications,
@@ -25,9 +26,11 @@ import {
 } from '../redux/slices/notificationsSlice';
 import { COLORS } from '../constants';
 import { Notification } from '../types';
+import { useLanguage } from '../localization/LanguageContext';
 
 const NotificationsScreen: React.FC = () => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
   const { notifications, unreadCount, loading, error } = useAppSelector(
@@ -39,11 +42,16 @@ const NotificationsScreen: React.FC = () => {
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>(
     []
   );
+  const [rejectionSheetVisible, setRejectionSheetVisible] = useState(false);
+  const [selectedRejection, setSelectedRejection] = useState<{
+    postTitle: string;
+    reason: string;
+  } | null>(null);
 
   // Filter notifications based on current filter
   const filteredNotifications = notifications.filter((notification) => {
     if (filter === 'unread') {
-      return !notification.read;
+      return !notification.is_read;
     }
     return true;
   });
@@ -70,7 +78,7 @@ const NotificationsScreen: React.FC = () => {
   const handleNotificationPress = useCallback(
     async (notification: Notification) => {
       // Mark as read if not already read
-      if (!notification.read) {
+      if (!notification.is_read) {
         try {
           await dispatch(markAsRead(notification.id)).unwrap();
         } catch (err) {
@@ -78,13 +86,28 @@ const NotificationsScreen: React.FC = () => {
         }
       }
 
-      // Handle navigation or action based on notification type
-      if (notification.actionUrl) {
-        // Navigate to action URL
-        console.log('Navigate to:', notification.actionUrl);
+      // If it's a rejected post, show the rejection reason sheet
+      if (notification.notification_type === 'post_rejected') {
+        // Extract post title and reason from message
+        const rejectedPattern = /Your post "([^"]+)" was rejected\. Reason: (.+)/;
+        const match = notification.message.match(rejectedPattern);
+
+        if (match) {
+          const postTitle = match[1];
+          const reason = match[2];
+          setSelectedRejection({ postTitle, reason });
+          setRejectionSheetVisible(true);
+        }
+      } else {
+        // For approved posts, navigate to the announcement detail screen
+        if (notification.announcement) {
+          navigation.navigate('MyListingDetail' as never, {
+            id: notification.announcement
+          } as never);
+        }
       }
     },
-    [dispatch]
+    [dispatch, navigation]
   );
 
   const handleMarkAllAsRead = useCallback(async () => {
@@ -143,7 +166,7 @@ const NotificationsScreen: React.FC = () => {
           onPress: async () => {
             for (const id of selectedNotifications) {
               try {
-                await dispatch(deleteNotification(id)).unwrap();
+                await dispatch(deleteNotification(parseInt(id))).unwrap();
               } catch (err) {
                 console.error('Failed to delete notification:', err);
               }
@@ -177,14 +200,14 @@ const NotificationsScreen: React.FC = () => {
       <Text
         style={[styles.emptyTitle, { color: colors.text }]}
       >
-        No notifications yet
+        {t.noNotificationsYet}
       </Text>
       <Text
         style={[styles.emptyMessage, { color: colors.text + '80' }]}
       >
         {filter === 'unread'
-          ? 'You have no unread notifications'
-          : 'When you get notifications, they will appear here'}
+          ? t.noUnreadNotifications
+          : t.whenYouGetNotifications}
       </Text>
       {filter === 'unread' && (
         <TouchableOpacity
@@ -192,7 +215,7 @@ const NotificationsScreen: React.FC = () => {
           onPress={() => setFilter('all')}
         >
           <Text style={[styles.showAllText, { color: colors.primary }]}>
-            Show all notifications
+            {t.showAllNotifications}
           </Text>
         </TouchableOpacity>
       )}
@@ -211,7 +234,7 @@ const NotificationsScreen: React.FC = () => {
         </TouchableOpacity>
         <Bell size={24} color={colors.text} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Bildirishnomalar
+          {t.notifications}
         </Text>
         {unreadCount > 0 && (
           <View
@@ -275,7 +298,7 @@ const NotificationsScreen: React.FC = () => {
             ],
           ]}
         >
-          All ({notifications.length})
+          {t.all} ({notifications.length})
         </Text>
       </TouchableOpacity>
 
@@ -299,7 +322,7 @@ const NotificationsScreen: React.FC = () => {
               ],
             ]}
           >
-            Unread
+            {t.unread}
           </Text>
           {unreadCount > 0 && (
             <View style={styles.filterBadge}>
@@ -344,7 +367,7 @@ const NotificationsScreen: React.FC = () => {
       <FlatList
         data={filteredNotifications}
         renderItem={renderNotificationItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={renderEmptyState}
         refreshControl={
@@ -360,6 +383,19 @@ const NotificationsScreen: React.FC = () => {
 
       {/* Bottom Navigation */}
       <BottomNav />
+
+      {/* Rejection Reason Bottom Sheet */}
+      {selectedRejection && (
+        <RejectionReasonSheet
+          visible={rejectionSheetVisible}
+          onClose={() => {
+            setRejectionSheetVisible(false);
+            setSelectedRejection(null);
+          }}
+          postTitle={selectedRejection.postTitle}
+          reason={selectedRejection.reason}
+        />
+      )}
     </SafeAreaView>
   );
 };

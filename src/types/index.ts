@@ -102,21 +102,20 @@ export interface User {
 
 // Notification Types
 export interface Notification {
-  id: string;
+  id: number;
+  notification_type: 'post_approved' | 'post_rejected';
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'new_listing' | 'message' | 'like' | 'booking';
-  timestamp: string;
-  read: boolean;
-  actionUrl?: string;
-  data?: any;
-  icon?: string;
-  userId?: string;
+  announcement: string;
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
 }
 
 export interface NotificationsState {
   notifications: Notification[];
   unreadCount: number;
+  totalCount: number;
   loading: boolean;
   error: string | null;
 }

@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { NotificationsState, Notification } from '../../types';
-import MOCK_NOTIFICATIONS from '../../data/mockNotifications';
+import apiClient from '../../services/api';
 
 const initialState: NotificationsState = {
-  notifications: MOCK_NOTIFICATIONS,
-  unreadCount: MOCK_NOTIFICATIONS.filter(n => !n.read).length,
+  notifications: [],
+  unreadCount: 0,
+  totalCount: 0,
   loading: false,
   error: null,
 };
@@ -14,15 +15,20 @@ export const fetchNotifications = createAsyncThunk(
   'notifications/fetchNotifications',
   async (_, { rejectWithValue }) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('📢 Fetching notifications from API...');
+      const response = await apiClient.getNotifications();
+      console.log('📢 Notifications response:', JSON.stringify(response, null, 2));
 
-      // Return mock data instead of API call
+      const countResponse = await apiClient.getNotificationsCount();
+      console.log('📢 Count response:', JSON.stringify(countResponse, null, 2));
+
       return {
-        notifications: MOCK_NOTIFICATIONS,
-        unreadCount: MOCK_NOTIFICATIONS.filter(n => !n.read).length,
+        notifications: response.results,
+        unreadCount: countResponse.unread_count,
+        totalCount: countResponse.total_count,
       };
     } catch (error: any) {
+      console.error('📢 Failed to fetch notifications:', error);
       return rejectWithValue(error.message || 'Failed to fetch notifications');
     }
   }
@@ -31,12 +37,9 @@ export const fetchNotifications = createAsyncThunk(
 // Async thunk to mark notification as read
 export const markAsRead = createAsyncThunk(
   'notifications/markAsRead',
-  async (notificationId: string, { rejectWithValue }) => {
+  async (notificationId: number, { rejectWithValue }) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Return success with notification ID
+      await apiClient.markNotificationAsRead(notificationId);
       return { id: notificationId };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to mark as read');
@@ -49,10 +52,7 @@ export const markAllAsRead = createAsyncThunk(
   'notifications/markAllAsRead',
   async (_, { rejectWithValue }) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Return success
+      await apiClient.markAllNotificationsAsRead();
       return true;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to mark all as read');
@@ -60,15 +60,13 @@ export const markAllAsRead = createAsyncThunk(
   }
 );
 
-// Async thunk to delete notification
+// Async thunk to delete notification (keeping for UI purposes, but no API endpoint for delete)
 export const deleteNotification = createAsyncThunk(
   'notifications/deleteNotification',
-  async (notificationId: string, { rejectWithValue }) => {
+  async (notificationId: number, { rejectWithValue }) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Return success with notification ID
+      // No delete endpoint in API, so just mark as read and remove from local state
+      await apiClient.markNotificationAsRead(notificationId);
       return { id: notificationId };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to delete notification');
@@ -84,19 +82,21 @@ const notificationsSlice = createSlice({
     addLocalNotification: (state, action) => {
       const notification = {
         ...action.payload,
-        id: `local-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        read: false,
+        id: Date.now(),
+        created_at: new Date().toISOString(),
+        is_read: false,
       } as Notification;
 
       state.notifications.unshift(notification);
       state.unreadCount += 1;
+      state.totalCount += 1;
     },
 
     // Clear all notifications
     clearAllNotifications: (state) => {
       state.notifications = [];
       state.unreadCount = 0;
+      state.totalCount = 0;
     },
   },
   extraReducers: (builder) => {
@@ -108,9 +108,9 @@ const notificationsSlice = createSlice({
 
     builder.addCase(fetchNotifications.fulfilled, (state, action) => {
       state.loading = false;
-      state.notifications = action.payload.notifications || action.payload || [];
-      state.unreadCount = action.payload.unreadCount ||
-        (action.payload.notifications || action.payload).filter((n: Notification) => !n.read).length;
+      state.notifications = action.payload.notifications;
+      state.unreadCount = action.payload.unreadCount;
+      state.totalCount = action.payload.totalCount;
     });
 
     builder.addCase(fetchNotifications.rejected, (state, action) => {
@@ -121,16 +121,19 @@ const notificationsSlice = createSlice({
     // markAsRead
     builder.addCase(markAsRead.fulfilled, (state, action) => {
       const notification = state.notifications.find(n => n.id === action.payload.id);
-      if (notification && !notification.read) {
-        notification.read = true;
+      if (notification && !notification.is_read) {
+        notification.is_read = true;
+        notification.read_at = new Date().toISOString();
         state.unreadCount = Math.max(0, state.unreadCount - 1);
       }
     });
 
     // markAllAsRead
     builder.addCase(markAllAsRead.fulfilled, (state) => {
+      const now = new Date().toISOString();
       state.notifications.forEach(notification => {
-        notification.read = true;
+        notification.is_read = true;
+        notification.read_at = now;
       });
       state.unreadCount = 0;
     });
@@ -140,10 +143,11 @@ const notificationsSlice = createSlice({
       const index = state.notifications.findIndex(n => n.id === action.payload.id);
       if (index !== -1) {
         const notification = state.notifications[index];
-        if (!notification.read) {
+        if (!notification.is_read) {
           state.unreadCount = Math.max(0, state.unreadCount - 1);
         }
         state.notifications.splice(index, 1);
+        state.totalCount = Math.max(0, state.totalCount - 1);
       }
     });
   },

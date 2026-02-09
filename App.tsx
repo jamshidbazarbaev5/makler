@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { store, persistor } from './src/redux/store';
 import { PersistGate } from 'redux-persist/integration/react';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { LanguageProvider } from './src/localization/LanguageContext';
 
 const MyTheme = {
   ...DefaultTheme,
@@ -21,9 +22,11 @@ const App = () => {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <NavigationContainer theme={MyTheme}>
-          <RootNavigator />
-        </NavigationContainer>
+        <LanguageProvider>
+          <NavigationContainer theme={MyTheme}>
+            <RootNavigator />
+          </NavigationContainer>
+        </LanguageProvider>
       </PersistGate>
     </Provider>
   );

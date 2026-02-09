@@ -27,6 +27,7 @@ import {useSelector, useDispatch} from 'react-redux';
 import {RootState, AppDispatch} from '../redux/store';
 import {fetchProfile, logout} from '../redux/slices/authSlice';
 import api from '../services/api';
+import { useLanguage } from '../localization/LanguageContext';
 
 type Props = NativeStackScreenProps<any, 'Profile'>;
 
@@ -76,11 +77,11 @@ interface TabCounts {
 export default function Profile({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const {user, loading} = useSelector((state: RootState) => state.auth);
+  const { language, setLanguage } = useLanguage();
 
   const [activeTab, setActiveTab] = useState('listings');
   const [menuVisible, setMenuVisible] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState<'uz' | 'ru' | 'en'>('uz');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState({
     status: 'Barchasi',
@@ -227,11 +228,16 @@ export default function Profile({ navigation }: Props) {
     ]);
   };
 
-  const handleLanguageSelect = (language: 'uz' | 'ru' | 'en') => {
-    setCurrentLanguage(language);
+  const handleLanguageSelect = async (lang: 'uz' | 'ru' | 'en') => {
+    await setLanguage(lang);
+    const languageNames = {
+      uz: "O'zbek",
+      ru: 'Русский',
+      en: 'English'
+    };
     Alert.alert(
       'Til o\'zgartirildi',
-      `Tanlangan til: ${language === 'uz' ? "O'zbek" : language === 'ru' ? 'Русский' : 'English'}`
+      `Tanlangan til: ${languageNames[lang]}`
     );
   };
 
@@ -661,7 +667,7 @@ export default function Profile({ navigation }: Props) {
         <LanguageModal
           visible={languageModalVisible}
           onClose={() => setLanguageModalVisible(false)}
-          currentLanguage={currentLanguage}
+          currentLanguage={language}
           onLanguageSelect={handleLanguageSelect}
         />
       )}

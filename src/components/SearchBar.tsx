@@ -5,8 +5,8 @@ import {
   TouchableOpacity,
   Text,
 } from 'react-native';
-import { Search, Settings } from 'lucide-react-native';
-import { useTheme } from '@react-navigation/native';
+import { Search, Settings, Map } from 'lucide-react-native';
+import { useTheme, useNavigation } from '@react-navigation/native';
 
 interface SearchBarProps {
   onFilterPress: () => void;
@@ -14,6 +14,7 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
   const { colors } = useTheme();
+  const navigation = useNavigation<any>();
 
   return (
     <View style={[styles.container, { paddingHorizontal: 16, paddingVertical: 8 }]}>
@@ -41,6 +42,15 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
         >
           Nima qidiryapsiz?
         </Text>
+        <TouchableOpacity
+          style={[styles.mapButton, { backgroundColor: '#6366f1' }]}
+          onPress={() => navigation.navigate('Map')}
+        >
+          <Map
+            size={20}
+            color="#fff"
+          />
+        </TouchableOpacity>
         <TouchableOpacity
           style={[styles.filterButton, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={onFilterPress}
@@ -80,6 +90,11 @@ const styles = StyleSheet.create({
   filterButton: {
     borderRadius: 8,
     borderWidth: 1,
+    padding: 8,
+    marginLeft: 8,
+  },
+  mapButton: {
+    borderRadius: 8,
     padding: 8,
     marginLeft: 8,
   },

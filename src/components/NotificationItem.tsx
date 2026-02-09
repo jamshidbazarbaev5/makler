@@ -20,6 +20,7 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '@react-navigation/native';
 import { Notification } from '../types';
+import { useLanguage } from '../localization/LanguageContext';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -33,25 +34,49 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   onSwipe,
 }) => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const animatedValue = React.useRef(new Animated.Value(0)).current;
+
+  // Translate notification message while preserving the property title
+  const translateMessage = (message: string): string => {
+    // Pattern for approved posts: Your post "TITLE" has been approved and is now live!
+    const approvedPattern = /Your post "([^"]+)" has been approved and is now live!/;
+    const approvedMatch = message.match(approvedPattern);
+    if (approvedMatch) {
+      const postTitle = approvedMatch[1];
+      return t.postApprovedMessage(postTitle);
+    }
+
+    // Pattern for rejected posts: Your post "TITLE" was rejected. Reason: REASON
+    const rejectedPattern = /Your post "([^"]+)" was rejected\. Reason: (.+)/;
+    const rejectedMatch = message.match(rejectedPattern);
+    if (rejectedMatch) {
+      const postTitle = rejectedMatch[1];
+      const reason = rejectedMatch[2];
+      return t.postRejectedMessage(postTitle, reason);
+    }
+
+    // If no pattern matches, return original message
+    return message;
+  };
+
+  // Translate notification title
+  const translateTitle = (title: string, type: string): string => {
+    if (type === 'post_approved') {
+      return t.postPublished;
+    } else if (type === 'post_rejected') {
+      return t.postRejected;
+    }
+    return title;
+  };
 
   // Get appropriate icon based on notification type
   const getIcon = () => {
-    switch (notification.type) {
-      case 'success':
+    switch (notification.notification_type) {
+      case 'post_approved':
         return <CheckCircle size={24} color="#10b981" />;
-      case 'warning':
-        return <AlertCircle size={24} color="#f59e0b" />;
-      case 'error':
+      case 'post_rejected':
         return <AlertCircle size={24} color="#ef4444" />;
-      case 'new_listing':
-        return <Home size={24} color="#3b82f6" />;
-      case 'message':
-        return <MessageSquare size={24} color="#8b5cf6" />;
-      case 'like':
-        return <Heart size={24} color="#ec4899" />;
-      case 'booking':
-        return <Calendar size={24} color="#0ea5e9" />;
       default:
         return <Info size={24} color="#6b7280" />;
     }
@@ -59,22 +84,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
   // Get appropriate background color based on notification type and read status
   const getBackgroundColor = () => {
-    if (!notification.read) {
-      switch (notification.type) {
-        case 'success':
+    if (!notification.is_read) {
+      switch (notification.notification_type) {
+        case 'post_approved':
           return '#f0fdf4';
-        case 'warning':
-          return '#fffbeb';
-        case 'error':
+        case 'post_rejected':
           return '#fef2f2';
-        case 'new_listing':
-          return '#eff6ff';
-        case 'message':
-          return '#f5f3ff';
-        case 'like':
-          return '#fdf2f8';
-        case 'booking':
-          return '#f0f9ff';
         default:
           return '#f9fafb';
       }
@@ -107,6 +122,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     }
   };
 
+  const timestamp = notification.created_at || notification.read_at || new Date().toISOString();
+
   const backgroundColor = getBackgroundColor();
   const icon = getIcon();
 
@@ -116,7 +133,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         styles.container,
         {
           backgroundColor,
-          borderLeftColor: notification.read ? 'transparent' : colors.primary,
+          borderLeftColor: notification.is_read ? 'transparent' : colors.primary,
           transform: [
             {
               translateX: animatedValue.interpolate({
@@ -139,7 +156,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
             style={[
               styles.iconWrapper,
               {
-                backgroundColor: notification.read
+                backgroundColor: notification.is_read
                   ? colors.card
                   : `${colors.primary}15`,
               },
@@ -157,15 +174,15 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                 styles.title,
                 {
                   color: colors.text,
-                  fontWeight: notification.read ? '400' : '600',
+                  fontWeight: notification.is_read ? '400' : '600',
                 },
               ]}
               numberOfLines={1}
             >
-              {notification.title}
+              {translateTitle(notification.title, notification.notification_type)}
             </Text>
             <Text style={[styles.time, { color: colors.text + '80' }]}>
-              {formatTime(notification.timestamp)}
+              {formatTime(timestamp)}
             </Text>
           </View>
 
@@ -174,16 +191,16 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
               styles.message,
               {
                 color: colors.text + 'CC',
-                fontWeight: notification.read ? '400' : '500',
+                fontWeight: notification.is_read ? '400' : '500',
               },
             ]}
             numberOfLines={2}
           >
-            {notification.message}
+            {translateMessage(notification.message)}
           </Text>
 
           {/* Unread indicator */}
-          {!notification.read && (
+          {!notification.is_read && (
             <View
               style={[
                 styles.unreadDot,

@@ -353,6 +353,10 @@ const PropertyFormScreen = () => {
 
         // Mock district ID since we don't have the full map here yet
         district_id: 3,
+
+        // Location coordinates (limited to 6 decimal places to stay within 9 digit limit)
+        ...(formData.latitude && { latitude: parseFloat(formData.latitude.toFixed(6)) }),
+        ...(formData.longitude && { longitude: parseFloat(formData.longitude.toFixed(6)) }),
       };
 
       console.log('Submitting Payload:', JSON.stringify(payload, null, 2));
@@ -381,7 +385,9 @@ const PropertyFormScreen = () => {
       ]);
     } catch (error: any) {
       console.error('Submission Error:', error);
-      Alert.alert('Xato', 'E\'lon yaratishda xatolik yuz berdi: ' + (error.message || ''));
+      console.error('Error Response:', error.response?.data);
+      console.error('Error Status:', error.response?.status);
+      Alert.alert('Xato', 'E\'lon yaratishda xatolik yuz berdi: ' + JSON.stringify(error.response?.data || error.message || ''));
     }
   };
 

@@ -20,6 +20,7 @@ import Profile from '../components/Profile';
 import ListingDetail from '../components/ListingDetail';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
 import MyListingDetailScreen from '../screens/MyListingDetailScreen';
+import MapScreen from '../screens/MapScreen';
 import {LoginScreen} from '../screens/LoginScreen';
 import {TelegramLoginScreen} from '../screens/TelegramLoginScreen';
 
@@ -40,6 +41,7 @@ export type RootStackParamList = {
   LikedPosts: undefined;
   TopPosts: undefined;
   Notifications: undefined;
+  Map: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -54,6 +56,7 @@ function HomeStack() {
       }}>
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="ListingDetail" component={ListingDetail} />
+      <Stack.Screen name="Map" component={MapScreen} />
     </Stack.Navigator>
   );
 }
