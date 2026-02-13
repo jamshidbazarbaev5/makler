@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import {useSelector} from 'react-redux';
 import {RootState} from '../redux/store';
 import {TelegramLoginButton} from '../components/TelegramLoginButton';
+import { useLanguage } from '../localization';
 
 interface LoginScreenProps {
   navigation: any;
@@ -23,6 +24,7 @@ const {height} = Dimensions.get('window');
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
   const {colors} = useTheme();
+  const { t } = useLanguage();
   const {isAuthenticated, user} = useSelector((state: RootState) => state.auth);
 
   React.useEffect(() => {
@@ -65,7 +67,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({navigation}) => {
 
             {/* Description */}
             <Text style={[styles.description, {color: colors.text}]}>
-              Bugun o'zingizning uyingizni toping
+              {t.auth.welcomeBack}
             </Text>
 
             {/* Button Section */}

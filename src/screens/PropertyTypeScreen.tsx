@@ -11,6 +11,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from '@react-navigation/native';
 import { ArrowLeft, Home, Building2, Users, TreePine, Store } from 'lucide-react-native';
 import BottomNav from '../components/BottomNav';
+import { useLanguage } from '../localization';
 
 interface NavigationProp {
   navigate: (screen: string, params?: object) => void;
@@ -25,6 +26,7 @@ const PropertyTypeScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const params = route.params as RouteParams | undefined;
   const listingType = params?.listingType;
 
@@ -32,27 +34,27 @@ const PropertyTypeScreen = () => {
     {
       id: 'kvartira',
       icon: Home,
-      title: 'Kvartira',
-      description: 'Xonali kvartira',
+      title: t?.propertyTypeScreen?.apartment || 'Apartment',
+      description: t?.propertyTypeScreen?.apartmentDesc || 'Residential apartment',
     },
     {
       id: 'hovli-kottej-dacha',
       icon: Building2,
-      title: 'Hovli/Kottej/Dacha',
-      description: 'Shaxsiy turar joy',
+      title: t?.propertyTypeScreen?.house || 'House/Cottage/Dacha',
+      description: t?.propertyTypeScreen?.houseDesc || 'Private housing',
     },
     {
       id: 'land',
       icon: TreePine,
-      title: 'Yer',
-      description: 'Qurilish uchun yer',
+      title: t?.propertyTypeScreen?.land || 'Land',
+      description: t?.propertyTypeScreen?.landDesc || 'Land for construction',
       excludeForListingTypes: ['daily-rent'],
     },
     {
       id: 'commercial',
       icon: Store,
-      title: 'Tijorat',
-      description: 'Tijorat mulki',
+      title: t?.propertyTypeScreen?.commercial || 'Commercial',
+      description: t?.propertyTypeScreen?.commercialDesc || 'Commercial property',
       excludeForListingTypes: ['daily-rent'],
     },
   ];
@@ -101,13 +103,13 @@ const PropertyTypeScreen = () => {
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Mulk turi
+          {t?.propertyTypeScreen?.title || 'Property Type'}
         </Text>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>MULK TURINI TANLANG</Text>
+          <Text style={styles.sectionLabel}>{t?.propertyTypeScreen?.selectType || 'SELECT PROPERTY TYPE'}</Text>
           <View style={styles.optionsContainer}>
             {propertyTypes.map((item) => (
               <OptionCard key={item.id} item={item} />

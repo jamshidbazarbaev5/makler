@@ -13,6 +13,7 @@ import {useNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {RootState} from '../redux/store';
 import {RootStackParamList} from '../navigation/RootNavigator';
+import { useLanguage } from '../localization';
 
 interface TelegramLoginButtonProps {
   onSuccess?: () => void;
@@ -29,6 +30,7 @@ export const TelegramLoginButton: React.FC<TelegramLoginButtonProps> = ({
   onSuccess,
 }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useLanguage();
   const {loading, error, isAuthenticated} = useSelector((state: RootState) => state.auth);
 
   // Handle successful authentication
@@ -60,7 +62,7 @@ export const TelegramLoginButton: React.FC<TelegramLoginButtonProps> = ({
             onPress={handleTelegramLogin}
             activeOpacity={0.8}
           >
-            <Text style={styles.buttonText}>Yana Urinib Ko'ring</Text>
+            <Text style={styles.buttonText}>{t.errors.tryAgainLater}</Text>
           </TouchableOpacity>
         </LinearGradient>
       </View>
@@ -88,7 +90,7 @@ export const TelegramLoginButton: React.FC<TelegramLoginButtonProps> = ({
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <>
-              <Text style={styles.buttonText}>Telegram orqali kirish</Text>
+              <Text style={styles.buttonText}>{t.auth.loginWithTelegram}</Text>
             </>
           )}
         </TouchableOpacity>

@@ -1,12 +1,26 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Language, translations, Translations } from './translations';
+
+export type Language = 'uz' | 'ru' | 'en';
+
+// Import JSON translations
+import uzTranslations from './uz.json';
+import ruTranslations from './ru.json';
+import enTranslations from './en.json';
+
+export type TranslationKeys = typeof uzTranslations;
 
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => Promise<void>;
-  t: Translations;
+  t: TranslationKeys;
 }
+
+const translations: Record<Language, TranslationKeys> = {
+  uz: uzTranslations,
+  ru: ruTranslations,
+  en: enTranslations,
+};
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 

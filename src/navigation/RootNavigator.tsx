@@ -21,6 +21,7 @@ import ListingDetail from '../components/ListingDetail';
 import ProfileEditScreen from '../screens/ProfileEditScreen';
 import MyListingDetailScreen from '../screens/MyListingDetailScreen';
 import MapScreen from '../screens/MapScreen';
+import PaymentScreen from '../screens/PaymentScreen';
 import {LoginScreen} from '../screens/LoginScreen';
 import {TelegramLoginScreen} from '../screens/TelegramLoginScreen';
 
@@ -42,6 +43,7 @@ export type RootStackParamList = {
   TopPosts: undefined;
   Notifications: undefined;
   Map: undefined;
+  Payment: {announcementId: string; paymentType: 'post' | 'featured'; amount?: number};
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -84,6 +86,13 @@ function ProfileStack() {
           <Stack.Screen
             name="MyListingDetail"
             component={MyListingDetailScreen}
+            options={{
+              animation: 'default',
+            }}
+          />
+          <Stack.Screen
+            name="Payment"
+            component={PaymentScreen}
             options={{
               animation: 'default',
             }}

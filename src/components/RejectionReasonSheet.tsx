@@ -60,7 +60,7 @@ export default function RejectionReasonSheet({
             </View>
             <View style={styles.headerTextContainer}>
               <Text style={[styles.headerTitle, { color: colors.text }]}>
-                {t.postRejected}
+                {t.notifications.postRejected}
               </Text>
               <Text style={[styles.headerSubtitle, { color: colors.text + '80' }]}>
                 "{postTitle}"
@@ -79,7 +79,7 @@ export default function RejectionReasonSheet({
         >
           <View style={styles.reasonContainer}>
             <Text style={[styles.reasonLabel, { color: colors.text + '80' }]}>
-              {t.rejectionReason}
+              {t.notifications.rejectionReason}
             </Text>
             <Text style={[styles.reasonText, { color: colors.text }]}>
               {reason}
@@ -89,7 +89,7 @@ export default function RejectionReasonSheet({
           {/* Info box */}
           <View style={[styles.infoBox, { backgroundColor: colors.background }]}>
             <Text style={[styles.infoText, { color: colors.text + 'CC' }]}>
-              {t.canEditAndResubmit}
+              {t.notifications.canEditAndResubmit}
             </Text>
           </View>
         </ScrollView>
@@ -100,7 +100,7 @@ export default function RejectionReasonSheet({
             style={[styles.button, { backgroundColor: colors.primary }]}
             onPress={onClose}
           >
-            <Text style={styles.buttonText}>{t.understood}</Text>
+            <Text style={styles.buttonText}>{t.notifications.understood}</Text>
           </TouchableOpacity>
         </View>
       </View>

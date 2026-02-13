@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { Search, Settings, Map } from 'lucide-react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
+import { useLanguage } from '../localization';
 
 interface SearchBarProps {
   onFilterPress: () => void;
@@ -14,6 +15,7 @@ interface SearchBarProps {
 
 const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const navigation = useNavigation<any>();
 
   return (
@@ -40,7 +42,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onFilterPress }) => {
             { color: colors.text },
           ]}
         >
-          Nima qidiryapsiz?
+          {t.search.searchPlaceholder}
         </Text>
         <TouchableOpacity
           style={[styles.mapButton, { backgroundColor: '#6366f1' }]}

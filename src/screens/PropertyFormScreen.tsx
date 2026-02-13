@@ -19,6 +19,7 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import BottomNav from '../components/BottomNav';
 import MapPicker from '../components/MapPicker';
 import ApiClient from '../services/api';
+import { useLanguage } from '../localization';
 
 interface FormData {
   title: string;
@@ -50,22 +51,23 @@ interface RouteParams {
   propertyType?: string;
 }
 
-const listingTypeMap: { [key: string]: string } = {
-  'daily-rent': 'Kunlik Ijara',
-  'monthly-rent': 'Oylik Ijara',
-  'sell': 'Sotish',
-  'daily-rent-buy': 'Ijara Qidirish',
-  'buy': 'Sotib Olish',
-};
-
 const PropertyFormScreen = () => {
   const route = useRoute();
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const { t } = useLanguage();
   const params = route.params as (RouteParams & {propertyType?: string}) | undefined;
   const listingType = params?.listingType || 'sell';
   const propertyType = params?.propertyType || 'kvartira';
-  const headerTitle = listingTypeMap[listingType] || 'Kvartira';
+
+  const listingTypeMap: { [key: string]: string } = {
+    'daily-rent': t?.propertyForm?.dailyRent || 'Daily Rent',
+    'monthly-rent': t?.propertyForm?.monthlyRent || 'Monthly Rent',
+    'sell': t?.propertyForm?.sell || 'Sell',
+    'daily-rent-buy': t?.propertyForm?.searchRent || 'Search Rent',
+    'buy': t?.propertyForm?.buy || 'Buy',
+  };
+  const headerTitle = listingTypeMap[listingType] || t?.propertyTypeScreen?.apartment || 'Apartment';
 
   // Properly map incoming listing types to API values
   const normalizedListingType = useMemo(() => {
@@ -89,6 +91,17 @@ const PropertyFormScreen = () => {
     }
   }, [propertyType]);
 
+  const renovationItems = [
+    { label: t?.propertyForm?.renovationSelect || 'Select renovation', value: 'select' },
+    { label: t?.propertyForm?.renovationNew || 'Freshly renovated', value: 'euro_repair' },
+    { label: t?.propertyForm?.renovationOld || 'Old renovation', value: 'needs_repair' },
+    { label: t?.propertyForm?.renovationGood || 'Good condition', value: 'cosmetic' },
+    { label: t?.propertyForm?.renovationEuro || 'Euro renovation', value: 'euro_repair' },
+    { label: t?.propertyForm?.renovationCapital || 'Capital renovation', value: 'capital' },
+    { label: t?.propertyForm?.renovationNone || 'No renovation', value: 'no_repair' },
+    { label: t?.propertyForm?.renovationDesign || 'Designer', value: 'design' },
+  ];
+
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
@@ -99,7 +112,7 @@ const PropertyFormScreen = () => {
     area: '',
     floor: '',
     totalFloors: '',
-    renovation: 'Ta\'mirlash tanlang',
+    renovation: renovationItems[0].label,
     country: 'Каракалпакистан',
     region: '',
     district: '',
@@ -118,30 +131,7 @@ const PropertyFormScreen = () => {
   const [regionOptions, setRegionOptions] = useState<string[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(true);
 
-  const renovationMap: Record<string, string> = {
-    'Yangi ta\'mirlab qo\'yilgan': 'euro_repair',
-    'Eskilangan': 'needs_repair',
-    'Yaxshi holatda': 'cosmetic',
-    'Ta\'mir talab': 'needs_repair',
-    'Yevroremont': 'euro_repair',
-    'Kapital ta\'mir': 'capital',
-    'Ta\'mirsiz': 'no_repair',
-    'Dizaynerlik': 'design'
-  };
-
-  const renovationOptions = [
-    'Ta\'mirlash tanlang',
-    'Yangi ta\'mirlab qo\'yilgan',
-    'Eskilangan',
-    'Yaxshi holatda',
-    'Yevroremont',
-    'Kapital ta\'mir',
-    'Ta\'mirsiz',
-    'Dizaynerlik'
-  ];
-
   const currencyOptions = ['USD', 'UZS', 'EUR'];
-  const countryOptions = ['Каракалпакистан'];
 
   // Fetch districts on component mount (cached)
   useEffect(() => {
@@ -249,7 +239,7 @@ const PropertyFormScreen = () => {
         if (response.didCancel) {
           console.log('Camera cancelled');
         } else if (response.errorCode) {
-          Alert.alert('Xato', 'Kamera xatosi: ' + response.errorMessage);
+          Alert.alert(t?.propertyForm?.validationError || 'Error', (t?.propertyForm?.cameraError || 'Camera error') + ': ' + response.errorMessage);
         } else if (response.assets && response.assets.length > 0) {
           const imageUri = response.assets[0].uri;
           if (imageUri && formData.images.length < 10) {
@@ -274,7 +264,7 @@ const PropertyFormScreen = () => {
         if (response.didCancel) {
           console.log('Gallery cancelled');
         } else if (response.errorCode) {
-          Alert.alert('Xato', 'Galereya xatosi: ' + response.errorMessage);
+          Alert.alert(t?.propertyForm?.validationError || 'Error', (t?.propertyForm?.galleryError || 'Gallery error') + ': ' + response.errorMessage);
         } else if (response.assets && response.assets.length > 0) {
           const newImages = response.assets
             .map(asset => asset.uri)
@@ -299,13 +289,13 @@ const PropertyFormScreen = () => {
     try {
       // Validation based on property type
       if (!formData.title || !formData.price) {
-        Alert.alert('Xato', 'Sarlavha va narx majburiy');
+        Alert.alert(t?.propertyForm?.validationError || 'Error', t?.propertyForm?.titlePriceRequired || 'Title and price are required');
         return;
       }
 
       // For apartment/house, rooms are required
       if ((normalizedPropertyType === 'apartment' || normalizedPropertyType === 'house') && !formData.roomsCount) {
-        Alert.alert('Xato', 'Xonalar soni majburiy');
+        Alert.alert(t?.propertyForm?.validationError || 'Error', t?.propertyForm?.roomsRequired || 'Number of rooms is required');
         return;
       }
 
@@ -349,7 +339,7 @@ const PropertyFormScreen = () => {
         }),
 
         building_type: formData.apartmentType === 'secondary' ? 'old' : 'new',
-        condition: renovationMap[formData.renovation] || 'cosmetic',
+        condition: renovationItems.find(r => r.label === formData.renovation)?.value || 'cosmetic',
 
         // Mock district ID since we don't have the full map here yet
         district_id: 3,
@@ -380,14 +370,14 @@ const PropertyFormScreen = () => {
         ));
       }
 
-      Alert.alert('Muvaffaqiyat', 'E\'lon muvaffaqiyatli yaratildi!', [
+      Alert.alert(t?.propertyForm?.successTitle || 'Success', t?.propertyForm?.successMessage || 'Listing created successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
       console.error('Submission Error:', error);
       console.error('Error Response:', error.response?.data);
       console.error('Error Status:', error.response?.status);
-      Alert.alert('Xato', 'E\'lon yaratishda xatolik yuz berdi: ' + JSON.stringify(error.response?.data || error.message || ''));
+      Alert.alert(t?.propertyForm?.validationError || 'Error', (t?.propertyForm?.submitError || 'Error creating listing') + ': ' + JSON.stringify(error.response?.data || error.message || ''));
     }
   };
 
@@ -406,8 +396,8 @@ const PropertyFormScreen = () => {
 
         {/* Images Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Rasmlar</Text>
-          <Text style={styles.sectionSubtitle}>Birinchi rasm asosiy bo'ladi va e'lonlarda ko'rsatiladi</Text>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.images || 'Photos'}</Text>
+          <Text style={styles.sectionSubtitle}>{t?.propertyForm?.imagesHint || 'First photo will be the main one shown in listings'}</Text>
           
           <View style={styles.imagesContainer}>
             <FlatList
@@ -431,17 +421,17 @@ const PropertyFormScreen = () => {
 
           {formData.images.length < 10 && (
             <TouchableOpacity style={styles.addImageButton} onPress={handleAddImage}>
-              <Text style={styles.addImageButtonText}>+ Rasm qo'shish ({formData.images.length}/10)</Text>
+              <Text style={styles.addImageButtonText}>+ {t?.propertyForm?.addImage || 'Add Photo'} ({formData.images.length}/10)</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Title Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>E'lon sarlavhasi</Text>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.listingTitle || 'Listing Title'}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Sarlavhani kiriting"
+            placeholder={t?.propertyForm?.titlePlaceholder || 'Enter title'}
             value={formData.title}
             onChangeText={(text) => handleInputChange('title', text)}
             placeholderTextColor="#999"
@@ -450,10 +440,10 @@ const PropertyFormScreen = () => {
 
         {/* Description Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tavsif</Text>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.description || 'Description'}</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="Tavsifni kiriting"
+            placeholder={t?.propertyForm?.descriptionPlaceholder || 'Enter description'}
             value={formData.description}
             onChangeText={(text) => handleInputChange('description', text)}
             placeholderTextColor="#999"
@@ -465,7 +455,7 @@ const PropertyFormScreen = () => {
         {/* Property Details */}
         {visibleFields.propertyOwner && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Kim joylashti</Text>
+            <Text style={styles.sectionTitle}>{t?.propertyForm?.postedBy || 'Posted By'}</Text>
             <View style={styles.rowContainer}>
               <TouchableOpacity
                 style={[
@@ -474,7 +464,7 @@ const PropertyFormScreen = () => {
                 ]}
                 onPress={() => handleInputChange('propertyOwner', 'owner')}
               >
-                <Text style={styles.optionButtonText}>Egasi</Text>
+                <Text style={styles.optionButtonText}>{t?.propertyForm?.owner || 'Owner'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -484,7 +474,7 @@ const PropertyFormScreen = () => {
                 onPress={() => handleInputChange('propertyOwner', 'realtor')}
               >
                 <Text style={[styles.optionButtonText, { color: '#999' }]}>
-                  Rieltor
+                  {t?.propertyForm?.realtor || 'Realtor'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -494,7 +484,7 @@ const PropertyFormScreen = () => {
         {/* Apartment Type */}
         {visibleFields.apartmentType && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Kvartira turi</Text>
+            <Text style={styles.sectionTitle}>{t?.propertyForm?.apartmentType || 'Apartment Type'}</Text>
             <View style={styles.rowContainer}>
               <TouchableOpacity
                 style={[
@@ -503,7 +493,7 @@ const PropertyFormScreen = () => {
                 ]}
                 onPress={() => handleInputChange('apartmentType', 'new')}
               >
-                <Text style={styles.optionButtonText}>Yangi bino</Text>
+                <Text style={styles.optionButtonText}>{t?.propertyForm?.newBuilding || 'New Building'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -513,7 +503,7 @@ const PropertyFormScreen = () => {
                 onPress={() => handleInputChange('apartmentType', 'secondary')}
               >
                 <Text style={[styles.optionButtonText, { color: '#999' }]}>
-                  Ikkilamchi
+                  {t?.propertyForm?.secondary || 'Secondary'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -523,10 +513,10 @@ const PropertyFormScreen = () => {
         {/* Rooms & Area */}
         {visibleFields.roomsCount && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Xonalar soni</Text>
+            <Text style={styles.sectionTitle}>{t?.propertyForm?.roomsCount || 'Number of Rooms'}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Xonalar sonini kiriting"
+              placeholder={t?.propertyForm?.roomsPlaceholder || 'Enter number of rooms'}
               value={formData.roomsCount}
               onChangeText={(text) => handleInputChange('roomsCount', text)}
               placeholderTextColor="#999"
@@ -538,11 +528,11 @@ const PropertyFormScreen = () => {
         {visibleFields.totalArea && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              Maydon, {normalizedPropertyType === 'land' ? 'sotix' : 'm²'}
+              {t?.propertyForm?.area || 'Area'}, {normalizedPropertyType === 'land' ? 'sotix' : 'm²'}
             </Text>
             <TextInput
               style={styles.input}
-              placeholder="Maydonni kiriting"
+              placeholder={t?.propertyForm?.areaPlaceholder || 'Enter area'}
               value={formData.totalArea}
               onChangeText={(text) => handleInputChange('totalArea', text)}
               placeholderTextColor="#999"
@@ -554,10 +544,10 @@ const PropertyFormScreen = () => {
         {/* Floor Details */}
         {visibleFields.floor && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Qavat</Text>
+            <Text style={styles.sectionTitle}>{t?.propertyForm?.floor || 'Floor'}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Qavat raqamini kiriting"
+              placeholder={t?.propertyForm?.floorPlaceholder || 'Enter floor number'}
               value={formData.floor}
               onChangeText={(text) => handleInputChange('floor', text)}
               placeholderTextColor="#999"
@@ -568,10 +558,10 @@ const PropertyFormScreen = () => {
 
         {visibleFields.totalFloors && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Uyning qavatlari soni</Text>
+            <Text style={styles.sectionTitle}>{t?.propertyForm?.totalFloors || 'Total Floors'}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Jami qavatlari"
+              placeholder={t?.propertyForm?.totalFloorsPlaceholder || 'Total floors'}
               value={formData.totalFloors}
               onChangeText={(text) => handleInputChange('totalFloors', text)}
               placeholderTextColor="#999"
@@ -583,7 +573,7 @@ const PropertyFormScreen = () => {
         {/* Renovation */}
         {visibleFields.renovation && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ta'mirlash</Text>
+            <Text style={styles.sectionTitle}>{t?.propertyForm?.renovation || 'Renovation'}</Text>
             <TouchableOpacity
               style={styles.dropdownButton}
               onPress={() => setDropdownOpen(dropdownOpen === 'renovation' ? null : 'renovation')}
@@ -593,16 +583,16 @@ const PropertyFormScreen = () => {
             </TouchableOpacity>
             {dropdownOpen === 'renovation' && (
               <View style={styles.dropdownMenu}>
-                {renovationOptions.map((option, index) => (
+                {renovationItems.map((item, index) => (
                   <TouchableOpacity
                     key={index}
                     style={styles.dropdownItem}
                     onPress={() => {
-                      handleInputChange('renovation', option);
+                      handleInputChange('renovation', item.label);
                       setDropdownOpen(null);
                     }}
                   >
-                    <Text style={styles.dropdownItemText}>{option}</Text>
+                    <Text style={styles.dropdownItemText}>{item.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -612,11 +602,11 @@ const PropertyFormScreen = () => {
 
         {/* Price Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Narx</Text>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.price || 'Price'}</Text>
           <View style={styles.priceContainer}>
             <TextInput
               style={styles.priceInput}
-              placeholder="Narx kiriting"
+              placeholder={t?.propertyForm?.pricePlaceholder || 'Enter price'}
               value={formData.price}
               onChangeText={(text) => handleInputChange('price', text)}
               placeholderTextColor="#999"
@@ -649,7 +639,7 @@ const PropertyFormScreen = () => {
 
         {/* Location Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Davlat</Text>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.country || 'Country'}</Text>
           <TouchableOpacity style={styles.dropdownButton}>
             <Text style={styles.dropdownButtonText}>{formData.country}</Text>
             <Text style={styles.dropdownArrow}>▼</Text>
@@ -657,7 +647,7 @@ const PropertyFormScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Viloyat</Text>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.region || 'District'}</Text>
           <TouchableOpacity
             style={styles.dropdownButton}
             onPress={() => setDropdownOpen(dropdownOpen === 'region' ? null : 'region')}
@@ -684,7 +674,7 @@ const PropertyFormScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Joylashuv</Text>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.location || 'Location'}</Text>
           <TouchableOpacity
             style={styles.mapContainer}
             onPress={() => setShowLocationModal(true)}
@@ -693,8 +683,8 @@ const PropertyFormScreen = () => {
               <MapPin size={24} color="#999" />
               <Text style={styles.mapPlaceholder}>
                 {formData.latitude && formData.longitude
-                  ? `Tanlangan: ${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)}`
-                  : 'Xaritada joylashuvni tanlang'}
+                  ? `${t?.propertyForm?.selected || 'Selected'}: ${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)}`
+                  : t?.propertyForm?.selectOnMap || 'Select location on map'}
               </Text>
             </View>
           </TouchableOpacity>
@@ -702,7 +692,7 @@ const PropertyFormScreen = () => {
 
         {/* Phone Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Telefon raqami</Text>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.phone || 'Phone Number'}</Text>
           <View style={styles.phoneContainer}>
             <View style={styles.flagContainer}>
               <Text style={styles.flagEmoji}>🇺🇿</Text>
@@ -710,7 +700,7 @@ const PropertyFormScreen = () => {
             </View>
             <TextInput
               style={styles.phoneInput}
-              placeholder="Telefon raqamini kiriting"
+              placeholder={t?.propertyForm?.phonePlaceholder || 'Enter phone number'}
               value={formData.phone}
               onChangeText={(text) => handleInputChange('phone', text)}
               placeholderTextColor="#999"
@@ -721,7 +711,7 @@ const PropertyFormScreen = () => {
 
         {/* Submit Button */}
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Tayyor</Text>
+          <Text style={styles.submitButtonText}>{t?.propertyForm?.submit || 'Done'}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 100 }} />
@@ -741,7 +731,7 @@ const PropertyFormScreen = () => {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Rasm qo'shish</Text>
+              <Text style={styles.modalTitle}>{t?.propertyForm?.addImageModal || 'Add Photo'}</Text>
               <TouchableOpacity onPress={() => setShowImageSourceModal(false)}>
                 <X size={24} color="#000" />
               </TouchableOpacity>
@@ -752,7 +742,7 @@ const PropertyFormScreen = () => {
               onPress={handleCameraPress}
             >
               <Camera size={24} color="#000" />
-              <Text style={styles.modalOptionText}>Kamera</Text>
+              <Text style={styles.modalOptionText}>{t?.propertyForm?.camera || 'Camera'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -760,7 +750,7 @@ const PropertyFormScreen = () => {
               onPress={handleGalleryPress}
             >
               <ImageIcon size={24} color="#000" />
-              <Text style={styles.modalOptionText}>Galereya</Text>
+              <Text style={styles.modalOptionText}>{t?.propertyForm?.gallery || 'Gallery'}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -778,7 +768,7 @@ const PropertyFormScreen = () => {
             <TouchableOpacity onPress={() => setShowLocationModal(false)}>
               <ArrowLeft size={24} color="#000" />
             </TouchableOpacity>
-            <Text style={styles.locationModalTitle}>Joylashuvni tanlang</Text>
+            <Text style={styles.locationModalTitle}>{t?.propertyForm?.selectLocation || 'Select Location'}</Text>
             <View style={{ width: 24 }} />
           </View>
 
@@ -799,11 +789,11 @@ const PropertyFormScreen = () => {
           <View style={styles.selectedLocationInfo}>
             {formData.latitude && formData.longitude ? (
               <Text style={styles.selectedLocationText}>
-                Tanlangan: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                {t?.propertyForm?.selected || 'Selected'}: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
               </Text>
             ) : (
               <Text style={styles.selectedLocationText}>
-                Xaritada joylashuvni tanlang
+                {t?.propertyForm?.selectOnMap || 'Select location on map'}
               </Text>
             )}
           </View>
@@ -813,7 +803,7 @@ const PropertyFormScreen = () => {
               style={styles.confirmLocationButton}
               onPress={() => setShowLocationModal(false)}
             >
-              <Text style={styles.confirmLocationButtonText}>Tayyor</Text>
+              <Text style={styles.confirmLocationButtonText}>{t?.propertyForm?.submit || 'Done'}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>

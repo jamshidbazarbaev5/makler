@@ -21,6 +21,7 @@ import { NotificationsLoadingSkeleton } from '../components/SkeletonLoader';
 import { useAppSelector, useAppDispatch } from '../redux/hooks';
 import { loadFavoritesAsync, removeFromFavoritesAsync } from '../redux/slices/likesSlice';
 import api from '../services/api';
+import { useLanguage } from '../localization';
 
 interface Listing {
   id: string;
@@ -118,6 +119,7 @@ const initialListings: Listing[] = [
 const LikedPostsScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const dispatch = useAppDispatch();
   const likedIds = useAppSelector(state => state.likes.likedIds);
   const favoriteMap = useAppSelector(state => state.likes.favoriteMap);
@@ -172,7 +174,7 @@ const LikedPostsScreen = () => {
       ? (ann.currency === 'usd' 
           ? `$${price.toLocaleString()}`
           : `${price.toLocaleString()} so'm`)
-      : 'Narxsiz';
+      : (t?.likedPosts?.noPrice || 'No price');
 
     return {
       id: ann.id,
@@ -189,16 +191,16 @@ const LikedPostsScreen = () => {
   const handleRemoveLike = (announcementId: string) => {
     // Show confirmation alert before deleting
     Alert.alert(
-      'Sevimlardan olib tashlash',
-      'Ushbu e\'lonni sevimlardan olib tashlamoqchimisiz?',
+      t?.likedPosts?.removeTitle || 'Remove from favorites',
+      t?.likedPosts?.removeConfirm || 'Remove this listing from favorites?',
       [
         {
-          text: 'Bekor qilish',
+          text: t?.common?.cancel || 'Cancel',
           onPress: () => {},
           style: 'cancel',
         },
         {
-          text: 'Olib tashlash',
+          text: t?.likedPosts?.removeButton || 'Remove',
           onPress: () => {
             setDeletingId(announcementId);
             const favoriteId = favoriteMap[announcementId];
@@ -221,13 +223,9 @@ const LikedPostsScreen = () => {
   };
 
   const handleOpenListing = (listing: Listing) => {
-    // Navigate to ListingDetail through the nested HomeStack navigator
     (navigation as any).navigate('HomeTab', {
-      screen: 'Home',
-      params: {
-        screen: 'ListingDetail',
-        params: { listingId: listing.id }
-      }
+      screen: 'ListingDetail',
+      params: { listingId: listing.id },
     });
   };
 
@@ -262,15 +260,15 @@ const LikedPostsScreen = () => {
       <View style={[styles.emptyIconContainer, { backgroundColor: colors.card }]}>
         <Heart size={48} color={colors.text} strokeWidth={1.5} />
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>Sevimli e'lonlar yo'q</Text>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>{t?.likedPosts?.emptyTitle || "No favorite listings"}</Text>
       <Text style={[styles.emptySubtitle, { color: colors.border }]}>
-        Sevimli mulklarni saqlashni boshlang
+        {t?.likedPosts?.emptySubtitle || "Start saving properties you like"}
       </Text>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[styles.emptyButton, { backgroundColor: colors.primary }]}
         onPress={() => (navigation as any).navigate('HomeTab')}
       >
-        <Text style={styles.emptyButtonText}>E'lonlarni ko'ring</Text>
+        <Text style={styles.emptyButtonText}>{t?.likedPosts?.browseListing || "Browse Listings"}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -287,9 +285,9 @@ const LikedPostsScreen = () => {
             <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Sevimli</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>{t?.likedPosts?.title || "Favorites"}</Text>
             <Text style={[styles.headerSubtitle, { color: colors.border }]}>
-              {filteredListings.length} {filteredListings.length === 1 ? 'e\'lon' : 'e\'lon'}
+              {filteredListings.length} {t?.likedPosts?.listings || "listing(s)"}
             </Text>
           </View>
         </View>
@@ -316,7 +314,7 @@ const LikedPostsScreen = () => {
             <Search size={16} color={colors.text} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder="E'lonlarni qidirish..."
+              placeholder={t?.likedPosts?.searchPlaceholder || "Search listings..."}
               placeholderTextColor={colors.border}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -338,7 +336,7 @@ const LikedPostsScreen = () => {
                   { color: sortBy === 'price-asc' ? '#fff' : colors.text },
                 ]}
               >
-                ↑ Narx
+                {t?.likedPosts?.priceAsc || "↑ Price"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -356,7 +354,7 @@ const LikedPostsScreen = () => {
                   { color: sortBy === 'price-desc' ? '#fff' : colors.text },
                 ]}
               >
-                ↓ Narx
+                {t?.likedPosts?.priceDesc || "↓ Price"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -370,9 +368,9 @@ const LikedPostsScreen = () => {
         <EmptyState />
       ) : sortedListings.length === 0 ? (
         <View style={styles.noResultsContainer}>
-          <Text style={[styles.noResultsTitle, { color: colors.text }]}>Natija topilmadi</Text>
+          <Text style={[styles.noResultsTitle, { color: colors.text }]}>{t?.likedPosts?.noResults || "No results found"}</Text>
           <Text style={[styles.noResultsSubtitle, { color: colors.border }]}>
-            "{searchQuery}" uchun hech qanday e'lon topilmadi
+            "{searchQuery}" {t?.likedPosts?.noResultsFor || "no listings found"}
           </Text>
         </View>
       ) : (

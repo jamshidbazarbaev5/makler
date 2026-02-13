@@ -200,14 +200,14 @@ const NotificationsScreen: React.FC = () => {
       <Text
         style={[styles.emptyTitle, { color: colors.text }]}
       >
-        {t.noNotificationsYet}
+        {t.notifications.noNotificationsYet}
       </Text>
       <Text
         style={[styles.emptyMessage, { color: colors.text + '80' }]}
       >
         {filter === 'unread'
-          ? t.noUnreadNotifications
-          : t.whenYouGetNotifications}
+          ? t.notifications.noUnreadNotifications
+          : t.notifications.whenYouGetNotifications}
       </Text>
       {filter === 'unread' && (
         <TouchableOpacity
@@ -215,7 +215,7 @@ const NotificationsScreen: React.FC = () => {
           onPress={() => setFilter('all')}
         >
           <Text style={[styles.showAllText, { color: colors.primary }]}>
-            {t.showAllNotifications}
+            {t.notifications.showAllNotifications}
           </Text>
         </TouchableOpacity>
       )}
@@ -234,7 +234,7 @@ const NotificationsScreen: React.FC = () => {
         </TouchableOpacity>
         <Bell size={24} color={colors.text} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          {t.notifications}
+          {t.notifications.title}
         </Text>
         {unreadCount > 0 && (
           <View
@@ -298,7 +298,7 @@ const NotificationsScreen: React.FC = () => {
             ],
           ]}
         >
-          {t.all} ({notifications.length})
+          {t.notifications.all} ({notifications.length})
         </Text>
       </TouchableOpacity>
 
@@ -322,7 +322,7 @@ const NotificationsScreen: React.FC = () => {
               ],
             ]}
           >
-            {t.unread}
+            {t.notifications.unread}
           </Text>
           {unreadCount > 0 && (
             <View style={styles.filterBadge}>

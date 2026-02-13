@@ -42,23 +42,8 @@ const iconMap: any = {
   Heart,
 };
 
-// Status mapping for API
-const STATUS_MAP: Record<string, { label: string; apiKey: string }> = {
-  draft: { label: 'Qoralama', apiKey: 'draft' },
-  active: { label: 'Faol', apiKey: 'active' },
-  processing: { label: 'Tekshiruvda', apiKey: 'processing' },
-  inactive: { label: 'Faol emas', apiKey: 'inactive' },
-  rejected: { label: 'Rad etilgan', apiKey: 'rejected' },
-  completed: { label: 'Yakunlangan', apiKey: 'completed' },
-};
-
-// Filter options based on the images
-const FILTER_OPTIONS = {
-  status: ['Barchasi', ...Object.values(STATUS_MAP).map(s => s.label)],
-  saralash: ['Eng yangi', 'Eng arzon', 'Eng qimmat'],
-  elon_maqsadi: ['Xammasi', 'Kunlik', 'Ijara', 'Sotuv'],
-  mulk_toifasi: ['Xammasi', 'Kvartira', 'Uy', 'Yer', 'Tijorat'],
-};
+// Status mapping for API (labels will be resolved dynamically via translations)
+const STATUS_KEYS = ['draft', 'active', 'processing', 'inactive', 'rejected', 'completed'] as const;
 
 const filters = [
   ['status', 'saralash'],
@@ -77,17 +62,30 @@ interface TabCounts {
 export default function Profile({ navigation }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const {user, loading} = useSelector((state: RootState) => state.auth);
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+
+  // Get translated status labels
+  const getStatusLabel = (key: string): string => {
+    const statusMap: Record<string, string> = {
+      draft: t.myListings.draft,
+      active: t.myListings.active,
+      processing: t.myListings.processing,
+      inactive: t.myListings.inactive,
+      rejected: t.myListings.rejected,
+      completed: t.myListings.completed,
+    };
+    return statusMap[key] || key;
+  };
 
   const [activeTab, setActiveTab] = useState('listings');
   const [menuVisible, setMenuVisible] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState({
-    status: 'Barchasi',
-    saralash: 'Saralash',
-    elon_maqsadi: "E'lon maqsadi",
-    mulk_toifasi: 'Mulk toifasi',
+    status: t.myListings?.all || 'All',
+    saralash: t.filter?.sortBy?.replace(':', '') || 'Sort',
+    elon_maqsadi: t.addListing?.category || 'Category',
+    mulk_toifasi: t.addListing?.propertyType || 'Property Type',
   });
   const [tabCounts, setTabCounts] = useState<TabCounts | null>(null);
   const [myListings, setMyListings] = useState<any[]>([]);
@@ -134,9 +132,8 @@ export default function Profile({ navigation }: Props) {
         setLoadingMore(true);
       }
 
-      const apiStatus = status
-        ? Object.entries(STATUS_MAP).find(([_, v]) => v.label === status)?.[1]?.apiKey
-        : undefined;
+      // selectedStatus already stores the API key directly
+      const apiStatus = status || undefined;
 
       const response = await api.getMyAnnouncements(apiStatus, page, 20);
 
@@ -158,12 +155,12 @@ export default function Profile({ navigation }: Props) {
     }
   };
 
-  const handleStatusChange = (status: string) => {
-    const newStatus = status === 'Barchasi' ? undefined : status;
-    setSelectedFilters(prev => ({ ...prev, status }));
-    setSelectedStatus(newStatus);
+  // statusKey is the API key (e.g. 'draft', 'active') or undefined for all
+  const handleStatusChange = (statusKey: string | undefined, displayLabel: string) => {
+    setSelectedFilters(prev => ({ ...prev, status: displayLabel }));
+    setSelectedStatus(statusKey);
     setCurrentPage(1);
-    fetchMyAnnouncements(newStatus, 1, false);
+    fetchMyAnnouncements(statusKey, 1, false);
   };
 
   const handleLoadMore = () => {
@@ -208,10 +205,6 @@ export default function Profile({ navigation }: Props) {
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    return STATUS_MAP[status]?.label || status;
-  };
-
   const handleLogout = () => {
     Alert.alert('Chiqish', 'Siz hisobingizdan chiqdingiz', [
       {
@@ -230,37 +223,29 @@ export default function Profile({ navigation }: Props) {
 
   const handleLanguageSelect = async (lang: 'uz' | 'ru' | 'en') => {
     await setLanguage(lang);
-    const languageNames = {
-      uz: "O'zbek",
-      ru: 'Русский',
-      en: 'English'
-    };
-    Alert.alert(
-      'Til o\'zgartirildi',
-      `Tanlangan til: ${languageNames[lang]}`
-    );
+    // Language change message will be shown in the new language after state updates
   };
 
   const handleDeleteAccount = async () => {
     Alert.alert(
-      'Hisobni o\'chirish',
-      'Hisobingizni o\'chirmoqchimisiz? Bu amalni ortga qaytarib bo\'lmaydi.',
+      t.profile.deleteAccount,
+      t.profile.deleteAccountConfirm,
       [
         {
-          text: 'Bekor qilish',
+          text: t.common.cancel,
           style: 'cancel',
         },
         {
-          text: 'O\'chirish',
+          text: t.common.delete,
           onPress: async () => {
             try {
               await api.deleteAccount();
-              Alert.alert('Muvaffaqiyatli', 'Hisobingiz muvaffaqiyatli o\'chirildi');
+              Alert.alert(t.common.done, t.success.deleted);
               dispatch(logout() as any);
               navigation.navigate('Login');
             } catch (error: any) {
               console.error('Account deletion failed:', error);
-              Alert.alert('Xatolik', 'Hisobni o\'chirishda xatolik yuz berdi');
+              Alert.alert(t.common.error, t.errors.somethingWentWrong);
             }
           },
           style: 'destructive',
@@ -366,11 +351,11 @@ export default function Profile({ navigation }: Props) {
                   <View style={styles.statsContainer}>
                     <View style={styles.statItem}>
                       <Text style={styles.statValue}>{getTotalListingsCount()}</Text>
-                      <Text style={styles.statLabel}>E'lonlar</Text>
+                      <Text style={styles.statLabel}>{t.profile.totalListings}</Text>
                     </View>
                     <View style={styles.statItem}>
                       <Text style={styles.statValue}>{getTotalViewsCount()}</Text>
-                      <Text style={styles.statLabel}>Ko'rishlar</Text>
+                      <Text style={styles.statLabel}>{t.profile.totalViews}</Text>
                     </View>
                   </View>
                 </View>
@@ -457,45 +442,46 @@ export default function Profile({ navigation }: Props) {
                   {openDropdown === 'status' ? (
                     // Status dropdown with counts
                     <>
-                      {/* Barchasi (All) option */}
+                      {/* All option */}
                       <TouchableOpacity
                         style={[
                           styles.dropdownOption,
-                          selectedFilters.status === 'Barchasi' && styles.dropdownOptionActive,
+                          !selectedStatus && styles.dropdownOptionActive,
                         ]}
                         onPress={() => {
-                          handleStatusChange('Barchasi');
+                          handleStatusChange(undefined, t.myListings?.all || 'All');
                           setOpenDropdown(null);
                         }}
                       >
                         <Text style={[
                           styles.dropdownOptionText,
-                          selectedFilters.status === 'Barchasi' && styles.dropdownOptionTextActive,
+                          !selectedStatus && styles.dropdownOptionTextActive,
                         ]}>
-                          Barchasi
+                          {t.myListings?.all || 'All'}
                         </Text>
                         <View style={styles.countBadge}>
                           <Text style={styles.countBadgeText}>{totalCount}</Text>
                         </View>
                       </TouchableOpacity>
                       {/* Individual status options */}
-                      {Object.entries(STATUS_MAP).map(([key, { label }]) => {
+                      {STATUS_KEYS.map((key) => {
                         const count = tabCounts?.[key as keyof TabCounts] || 0;
+                        const label = getStatusLabel(key);
                         return (
                           <TouchableOpacity
                             key={key}
                             style={[
                               styles.dropdownOption,
-                              selectedFilters.status === label && styles.dropdownOptionActive,
+                              selectedStatus === key && styles.dropdownOptionActive,
                             ]}
                             onPress={() => {
-                              handleStatusChange(label);
+                              handleStatusChange(key, label);
                               setOpenDropdown(null);
                             }}
                           >
                             <Text style={[
                               styles.dropdownOptionText,
-                              selectedFilters.status === label && styles.dropdownOptionTextActive,
+                              selectedStatus === key && styles.dropdownOptionTextActive,
                             ]}>
                               {label}
                             </Text>
@@ -506,34 +492,85 @@ export default function Profile({ navigation }: Props) {
                         );
                       })}
                     </>
-                  ) : (
-                    // Other dropdowns
-                    FILTER_OPTIONS[openDropdown as keyof typeof FILTER_OPTIONS]?.map(
-                      (option) => (
-                        <TouchableOpacity
-                          key={option}
-                          style={[
-                            styles.dropdownOption,
-                            selectedFilters[openDropdown as keyof typeof selectedFilters] === option && styles.dropdownOptionActive,
-                          ]}
-                          onPress={() => {
-                            setSelectedFilters(prev => ({
-                              ...prev,
-                              [openDropdown]: option,
-                            }));
-                            setOpenDropdown(null);
-                          }}
-                        >
-                          <Text style={[
-                            styles.dropdownOptionText,
-                            selectedFilters[openDropdown as keyof typeof selectedFilters] === option && styles.dropdownOptionTextActive,
-                          ]}>
-                            {option}
-                          </Text>
-                        </TouchableOpacity>
-                      )
-                    )
-                  )}
+                  ) : openDropdown === 'saralash' ? (
+                    [
+                      { label: t.profileFilters?.sortNewest || 'Newest', value: 'newest' },
+                      { label: t.profileFilters?.sortCheapest || 'Cheapest', value: 'cheapest' },
+                      { label: t.profileFilters?.sortExpensive || 'Most Expensive', value: 'expensive' },
+                    ].map((option) => (
+                      <TouchableOpacity
+                        key={option.value}
+                        style={[
+                          styles.dropdownOption,
+                          selectedFilters.saralash === option.label && styles.dropdownOptionActive,
+                        ]}
+                        onPress={() => {
+                          setSelectedFilters(prev => ({ ...prev, saralash: option.label }));
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dropdownOptionText,
+                          selectedFilters.saralash === option.label && styles.dropdownOptionTextActive,
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : openDropdown === 'elon_maqsadi' ? (
+                    [
+                      { label: t.profileFilters?.purposeAll || 'All', value: 'all' },
+                      { label: t.profileFilters?.purposeDaily || 'Daily', value: 'daily' },
+                      { label: t.profileFilters?.purposeRent || 'Rent', value: 'rent' },
+                      { label: t.profileFilters?.purposeSale || 'Sale', value: 'sale' },
+                    ].map((option) => (
+                      <TouchableOpacity
+                        key={option.value}
+                        style={[
+                          styles.dropdownOption,
+                          selectedFilters.elon_maqsadi === option.label && styles.dropdownOptionActive,
+                        ]}
+                        onPress={() => {
+                          setSelectedFilters(prev => ({ ...prev, elon_maqsadi: option.label }));
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dropdownOptionText,
+                          selectedFilters.elon_maqsadi === option.label && styles.dropdownOptionTextActive,
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : openDropdown === 'mulk_toifasi' ? (
+                    [
+                      { label: t.profileFilters?.typeAll || 'All', value: 'all' },
+                      { label: t.profileFilters?.typeApartment || 'Apartment', value: 'apartment' },
+                      { label: t.profileFilters?.typeHouse || 'House', value: 'house' },
+                      { label: t.profileFilters?.typeLand || 'Land', value: 'land' },
+                      { label: t.profileFilters?.typeCommercial || 'Commercial', value: 'commercial' },
+                    ].map((option) => (
+                      <TouchableOpacity
+                        key={option.value}
+                        style={[
+                          styles.dropdownOption,
+                          selectedFilters.mulk_toifasi === option.label && styles.dropdownOptionActive,
+                        ]}
+                        onPress={() => {
+                          setSelectedFilters(prev => ({ ...prev, mulk_toifasi: option.label }));
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dropdownOptionText,
+                          selectedFilters.mulk_toifasi === option.label && styles.dropdownOptionTextActive,
+                        ]}>
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : null}
                 </View>
               </TouchableOpacity>
             </Modal>
@@ -562,7 +599,7 @@ export default function Profile({ navigation }: Props) {
                     <View style={[styles.dot, styles.dotBottomLeft]} />
                     <View style={[styles.dot, styles.dotTopLeft]} />
                   </View>
-                  <Text style={styles.emptyStateText}>E'lonlar topilmadi</Text>
+                  <Text style={styles.emptyStateText}>{t.myListings.noListings}</Text>
                 </View>
               ) : (
                 <>
@@ -642,7 +679,7 @@ export default function Profile({ navigation }: Props) {
                 <View style={[styles.dot, styles.dotBottomLeft]} />
                 <View style={[styles.dot, styles.dotTopLeft]} />
               </View>
-              <Text style={styles.emptyStateText}>Sevimlilar ro'yxati bo'sh</Text>
+              <Text style={styles.emptyStateText}>{t.favorites.noFavorites}</Text>
             </View>
           )}
         </View>

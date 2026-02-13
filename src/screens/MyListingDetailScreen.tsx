@@ -13,11 +13,12 @@ import {
     Platform,
     Linking,
 } from 'react-native';
-import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Power, CheckCircle, Navigation } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Power, CheckCircle, Navigation, CreditCard, TrendingUp } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants';
 import api from '../services/api';
+import { useLanguage } from '../localization';
 
 const IMAGE_HEIGHT = 350;
 
@@ -66,14 +67,25 @@ interface MyAnnouncementDetail {
     days_until_expiration: number | null;
 }
 
+interface PaymentSettings {
+    payment_enabled: boolean;
+    featured_enabled: boolean;
+    post_price: string;
+    featured_price: string;
+    post_duration_days: number;
+    featured_duration_days: number;
+}
+
 const MyListingDetailScreen = () => {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
+    const { t } = useLanguage();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [imageLoading, setImageLoading] = useState(true);
     const [listing, setListing] = useState<MyAnnouncementDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
     const panResponder = useRef<any>(null);
 
     const listingId = route.params?.listingId;
@@ -81,14 +93,27 @@ const MyListingDetailScreen = () => {
     useEffect(() => {
         if (listingId) {
             fetchListing();
+            fetchPaymentSettings();
         }
     }, [listingId]);
+
+    const fetchPaymentSettings = async () => {
+        try {
+            const settings = await api.getPaymentSettings();
+            setPaymentSettings(settings);
+        } catch (err) {
+            console.error('Error fetching payment settings:', err);
+        }
+    };
 
     const fetchListing = async () => {
         try {
             setLoading(true);
             setError(null);
             const data = await api.getAnnouncementById(listingId);
+            console.log('Listing data:', JSON.stringify(data, null, 2));
+            console.log('Status:', data.status);
+            console.log('Payment status:', data.payment_status);
             setListing(data);
         } catch (err: any) {
             console.error('Error fetching listing:', err);
@@ -145,22 +170,22 @@ const MyListingDetailScreen = () => {
 
     const getListingTypeLabel = (type: string) => {
         const types: Record<string, string> = {
-            sale: 'Sotish',
-            rent: 'Ijara',
-            rent_daily: 'Kunlik ijara',
+            sale: t.categories.sale,
+            rent: t.categories.rent,
+            rent_daily: t.categories.daily,
         };
         return types[type] || type;
     };
 
     const getStatusLabel = (status: string) => {
         const statuses: Record<string, string> = {
-            draft: 'Qoralama',
-            active: 'Faol',
-            pending: 'Tekshiruvda',
-            inactive: 'Faol emas',
-            rejected: 'Rad etilgan',
-            sold: 'Sotilgan',
-            rented: 'Ijaraga berilgan',
+            draft: t.myListings.draft,
+            active: t.myListings.active,
+            pending: t.myListings.processing,
+            inactive: t.myListings.inactive,
+            rejected: t.myListings.rejected,
+            sold: t.myListings.markAsSold,
+            rented: t.myListings.markAsRented,
         };
         return statuses[status] || status;
     };
@@ -233,23 +258,23 @@ const MyListingDetailScreen = () => {
 
     const handleDelete = () => {
         Alert.alert(
-            "E'lonni o'chirish",
-            "Haqiqatan ham bu e'lonni o'chirmoqchimisiz?",
+            t.myListings.delete,
+            t.myListings.deleteConfirm,
             [
-                { text: 'Bekor qilish', style: 'cancel' },
+                { text: t.common.cancel, style: 'cancel' },
                 {
-                    text: "O'chirish",
+                    text: t.common.delete,
                     style: 'destructive',
                     onPress: async () => {
                         try {
                             if (listing?.id) {
                                 await api.deleteAnnouncement(listing.id);
                             }
-                            Alert.alert('Muvaffaqiyatli', "E'lon o'chirildi");
+                            Alert.alert(t.common.done, t.success.deleted);
                             navigation.goBack();
                         } catch (err) {
                             console.error('Delete error:', err);
-                            Alert.alert('Xatolik', "E'lonni o'chirishda xatolik yuz berdi");
+                            Alert.alert(t.common.error, t.errors.somethingWentWrong);
                         }
                     },
                 },
@@ -284,19 +309,17 @@ const MyListingDetailScreen = () => {
 
     const handleMarkSold = () => {
         const isSale = listing?.listing_type === 'sale';
-        const title = isSale ? "Sotilgan deb belgilash" : "Ijaraga berilgan deb belgilash";
-        const message = isSale
-            ? "Bu mulk sotilganini tasdiqlaysizmi?"
-            : "Bu mulk ijaraga berilganini tasdiqlaysizmi?";
-        const successMessage = isSale ? "Sotilgan deb belgilandi" : "Ijaraga berilgan deb belgilandi";
+        const title = isSale ? t.myListings.markAsSold : t.myListings.markAsRented;
+        const message = t.common.confirm;
+        const successMessage = t.success.updated;
 
         Alert.alert(
             title,
             message,
             [
-                { text: 'Bekor qilish', style: 'cancel' },
+                { text: t.common.cancel, style: 'cancel' },
                 {
-                    text: 'Tasdiqlash',
+                    text: t.common.confirm,
                     onPress: async () => {
                         try {
                             if (listing?.id) {
@@ -306,17 +329,44 @@ const MyListingDetailScreen = () => {
                                     await api.markAnnouncementRented(listing.id);
                                 }
                             }
-                            Alert.alert('Muvaffaqiyatli', successMessage);
+                            Alert.alert(t.common.done, successMessage);
                             fetchListing(); // Refresh to show updated status
                         } catch (err: any) {
                             console.error('Mark sold error details:', err.response?.data || err.message);
-                            Alert.alert('Xatolik', err.response?.data?.detail || "Xatolik yuz berdi");
+                            Alert.alert(t.common.error, err.response?.data?.detail || t.errors.somethingWentWrong);
                         }
                     },
                 },
             ]
         );
     };
+
+    // Navigate to payment screen for posting fee
+    const handlePayForPost = () => {
+        if (listing?.id && paymentSettings?.payment_enabled && (listing.status === 'draft' || listing.status === 'inactive')) {
+            navigation.navigate('Payment', {
+                announcementId: listing.id,
+                paymentType: 'post',
+                amount: parseFloat(paymentSettings.post_price),
+            });
+        }
+    };
+
+    // Navigate to payment screen for featuring/promoting
+    // Only available when announcement is active
+    const handlePromoteListing = () => {
+        if (listing?.id && paymentSettings?.featured_enabled && listing.status === 'active') {
+            navigation.navigate('Payment', {
+                announcementId: listing.id,
+                paymentType: 'featured',
+                amount: parseFloat(paymentSettings.featured_price),
+            });
+        }
+    };
+
+    // Check if payment button should be shown
+    const canPayForPost = (listing?.status === 'draft' || listing?.status === 'inactive') && paymentSettings?.payment_enabled;
+    const canPromote = listing?.status === 'active' && paymentSettings?.featured_enabled;
 
     if (loading) {
         return (
@@ -537,9 +587,9 @@ const MyListingDetailScreen = () => {
 
                     {/* Payment & Promotion Info */}
                     <View style={styles.infoSection}>
-                        <Text style={styles.infoSectionTitle}>E'lon ma'lumotlari</Text>
+                        <Text style={styles.infoSectionTitle}>{t?.profileFilters?.listingInfo || "E'lon ma'lumotlari"}</Text>
                         <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>To'lov holati</Text>
+                            <Text style={styles.infoLabel}>{t?.profileFilters?.paymentStatus || "To'lov holati"}</Text>
                             <View style={[
                                 styles.infoBadge,
                                 { backgroundColor: listing.payment_status === 'paid' ? '#dcfce7' : '#fef3c7' }
@@ -548,21 +598,21 @@ const MyListingDetailScreen = () => {
                                     styles.infoBadgeText,
                                     { color: listing.payment_status === 'paid' ? '#166534' : '#92400e' }
                                 ]}>
-                                    {listing.payment_status === 'paid' ? "To'langan" : "To'lanmagan"}
+                                    {listing.payment_status === 'paid' ? (t?.profileFilters?.paid || "To'langan") : (t?.profileFilters?.unpaid || "To'lanmagan")}
                                 </Text>
                             </View>
                         </View>
                         <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Reklama turi</Text>
+                            <Text style={styles.infoLabel}>{t?.profileFilters?.promotionType || "Reklama turi"}</Text>
                             <Text style={styles.infoValue}>
-                                {listing.promotion_type === 'standard' ? 'Standart' : listing.promotion_type}
+                                {listing.promotion_type === 'standard' ? (t?.profileFilters?.standard || 'Standart') : listing.promotion_type}
                             </Text>
                         </View>
                         {listing.expires_at && (
                             <View style={styles.infoRow}>
-                                <Text style={styles.infoLabel}>Amal qilish muddati</Text>
+                                <Text style={styles.infoLabel}>{t?.profileFilters?.validity || "Amal qilish muddati"}</Text>
                                 <Text style={styles.infoValue}>
-                                    {listing.days_until_expiration} kun qoldi
+                                    {listing.days_until_expiration} {t?.profileFilters?.daysLeft || "kun qoldi"}
                                 </Text>
                             </View>
                         )}
@@ -575,6 +625,34 @@ const MyListingDetailScreen = () => {
 
             {/* Fixed Bottom Actions */}
             <View style={styles.bottomActionsContainer}>
+                {/* Payment Buttons - Show only when payment_status is 'pending_payment' */}
+                {canPayForPost && (
+                    <TouchableOpacity
+                        style={styles.paymentButton}
+                        activeOpacity={0.7}
+                        onPress={handlePayForPost}
+                    >
+                        <CreditCard size={20} color="#fff" />
+                        <Text style={styles.paymentButtonText}>
+                            {t?.payment?.payNow || "To'lov qilish"}
+                        </Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* Promote Button - Show for active paid listings */}
+                {canPromote && listing.promotion_type === 'standard' && (
+                    <TouchableOpacity
+                        style={styles.promoteButton}
+                        activeOpacity={0.7}
+                        onPress={handlePromoteListing}
+                    >
+                        <TrendingUp size={20} color="#fff" />
+                        <Text style={styles.promoteButtonText}>
+                            {t?.payment?.promoteListing || "E'lonni ko'tarish"}
+                        </Text>
+                    </TouchableOpacity>
+                )}
+
                 {/* Action Buttons Row */}
                 {listing.status === 'active' && (
                     <View style={styles.actionButtonsRow}>
@@ -593,7 +671,7 @@ const MyListingDetailScreen = () => {
                         >
                             <CheckCircle size={18} color="#22c55e" />
                             <Text style={styles.markSoldButtonText}>
-                                {listing.listing_type === 'sale' ? 'Sotildi' : 'Ijaraga berildi'}
+                                {listing.listing_type === 'sale' ? t.myListings.markAsSold : t.myListings.markAsRented}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -607,7 +685,7 @@ const MyListingDetailScreen = () => {
                         onPress={handleEdit}
                     >
                         <Edit2 size={20} color="#fff" />
-                        <Text style={styles.editButtonText}>Tahrirlash</Text>
+                        <Text style={styles.editButtonText}>{t.myListings.edit}</Text>
                     </TouchableOpacity>
                     <View style={styles.bottomButtonsRow}>
                         <TouchableOpacity style={styles.shareButton} activeOpacity={0.7}>
@@ -1015,5 +1093,33 @@ const styles = StyleSheet.create({
         backgroundColor: '#fef2f2',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    paymentButton: {
+        backgroundColor: '#10b981',
+        paddingVertical: 14,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    paymentButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    promoteButton: {
+        backgroundColor: '#f59e0b',
+        paddingVertical: 14,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    promoteButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

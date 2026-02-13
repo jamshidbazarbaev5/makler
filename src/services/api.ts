@@ -355,6 +355,99 @@ class ApiClient {
     const response = await this.client.post('/notifications/read_all/');
     return response.data;
   }
+
+  // Payment API methods
+
+  /**
+   * Create a payment for posting an announcement
+   * POST /payments/post/
+   */
+  async createPostPayment(announcementId: string): Promise<any> {
+    const response = await this.client.post('/payments/post/', {
+      announcement_id: announcementId,
+    });
+    return response.data;
+  }
+
+  /**
+   * Create a payment for featuring an announcement (top posts)
+   * POST /payments/featured/
+   */
+  async createFeaturedPayment(announcementId: string): Promise<any> {
+    const response = await this.client.post('/payments/featured/', {
+      announcement_id: announcementId,
+    });
+    return response.data;
+  }
+
+  /**
+   * Generic create payment method
+   */
+  async createPayment(endpoint: string, data: { announcement_id: string }): Promise<any> {
+    const response = await this.client.post(endpoint, data);
+    return response.data;
+  }
+
+  /**
+   * Submit card details for payment
+   * POST /payments/{payment_id}/card/create/
+   */
+  async submitCard(paymentId: string, data: { card_number: string; card_expire: string }): Promise<any> {
+    const response = await this.client.post(`/payments/${paymentId}/card/create/`, data);
+    return response.data;
+  }
+
+  /**
+   * Verify card with SMS code
+   * POST /payments/{payment_id}/card/verify/
+   */
+  async verifyCard(paymentId: string, data: { code: string }): Promise<any> {
+    const response = await this.client.post(`/payments/${paymentId}/card/verify/`, data);
+    return response.data;
+  }
+
+  /**
+   * Resend verification code
+   * POST /payments/{payment_id}/card/resend/
+   */
+  async resendCode(paymentId: string): Promise<any> {
+    const response = await this.client.post(`/payments/${paymentId}/card/resend/`);
+    return response.data;
+  }
+
+  /**
+   * Process the payment after card verification
+   * POST /payments/{payment_id}/pay/
+   */
+  async processPayment(paymentId: string): Promise<any> {
+    const response = await this.client.post(`/payments/${paymentId}/pay/`);
+    return response.data;
+  }
+
+  /**
+   * Get payment status
+   * GET /payments/{payment_id}/status/
+   */
+  async getPaymentStatus(paymentId: string): Promise<any> {
+    const response = await this.client.get(`/payments/${paymentId}/status/`);
+    return response.data;
+  }
+
+  /**
+   * Get payment settings (prices, durations, etc.)
+   * GET /payments/settings/
+   */
+  async getPaymentSettings(): Promise<{
+    payment_enabled: boolean;
+    featured_enabled: boolean;
+    post_price: string;
+    featured_price: string;
+    post_duration_days: number;
+    featured_duration_days: number;
+  }> {
+    const response = await this.client.get('/payments/settings/');
+    return response.data;
+  }
 }
 
 export default new ApiClient();

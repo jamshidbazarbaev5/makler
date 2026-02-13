@@ -13,6 +13,7 @@ import { ArrowLeft, List, AlertCircle } from 'lucide-react-native';
 import { COLORS } from '../constants';
 import api from '../services/api';
 import BottomNav from '../components/BottomNav';
+import { useLanguage } from '../localization';
 
 interface Announcement {
     id: string;
@@ -29,6 +30,7 @@ interface Announcement {
 
 const MapScreen = () => {
     const navigation = useNavigation<any>();
+    const { t } = useLanguage();
     const webViewRef = useRef<WebView>(null);
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState(true);
@@ -97,7 +99,7 @@ const MapScreen = () => {
             setAnnouncements(withCoords);
         } catch (err: any) {
             console.error('Error fetching announcements:', err);
-            setError('Xatolik yuz berdi');
+            setError(t.errors.somethingWentWrong);
         } finally {
             setLoading(false);
         }

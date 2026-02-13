@@ -7,22 +7,24 @@ import {
 } from 'react-native';
 import { Home, Search, PlusCircle, MessageCircle, User, HeartIcon, Bell } from 'lucide-react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
+import { useLanguage } from '../localization';
 
 interface NavItem {
   icon: any;
-  label: string;
+  labelKey: 'home' | 'add' | 'favorites' | 'profile';
   route: string;
 }
 
 const BottomNav = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const { t } = useLanguage();
 
   const navItems: NavItem[] = [
-    { icon: Home, label: 'Bosh sahifa', route: 'HomeTab' },
-    { icon: PlusCircle, label: "Qo'shish", route: 'PropertyForm' },
-    { icon: HeartIcon, label: 'Sevimlilar', route: 'Messages' },
-    { icon: User, label: 'Profil', route: 'Profile' },
+    { icon: Home, labelKey: 'home', route: 'HomeTab' },
+    { icon: PlusCircle, labelKey: 'add', route: 'PropertyForm' },
+    { icon: HeartIcon, labelKey: 'favorites', route: 'Messages' },
+    { icon: User, labelKey: 'profile', route: 'Profile' },
   ];
 
   return (
@@ -60,7 +62,7 @@ const BottomNav = () => {
                 },
               ]}
             >
-              {item.label}
+              {t.bottomNav?.[item.labelKey] || item.labelKey}
             </Text>
           </TouchableOpacity>
           );
