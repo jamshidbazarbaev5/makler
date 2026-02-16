@@ -40,7 +40,23 @@
     "postRejected": "Post Rejected",
     "rejectionReason": "Rejection reason:",
     "canEditAndResubmit": "You can edit and resubmit your post. Please pay attention to the reasons above.",
-    "understood": "Understood"
+    "understood": "Understood",
+    "details": "Details",
+    "markAllConfirm": "Mark all notifications as read?",
+    "clearAllConfirm": "Delete all notifications? This action cannot be undone.",
+    "deleteSelected": "Delete selected",
+    "deleteSelectedConfirm": "selected notification(s) to delete?",
+    "cancel": "Cancel",
+    "markAsRead": "Mark as read",
+    "deleteAll": "Delete all",
+    "delete": "Delete",
+    "justNow": "Just now",
+    "minutesAgo": "m ago",
+    "hoursAgo": "h ago",
+    "daysAgo": "d ago",
+    "postApproved": "Post approved",
+    "postApprovedMessage": "Your post has been approved and is now live!",
+    "postRejectedMessage": "Your post was rejected."
   },
 
   "home": {
@@ -188,7 +204,18 @@
     "myLocation": "My Location",
     "showList": "Show List",
     "showMap": "Show Map",
-    "nearbyProperties": "Nearby Properties"
+    "nearbyProperties": "Nearby Properties",
+    "loading": "Loading map...",
+    "retry": "Retry",
+    "viewOnMap": "View on map",
+    "view": "View",
+    "noImage": "No image",
+    "noLocationData": "Listings have no location data",
+    "apartment": "Apartment",
+    "house": "House",
+    "land": "Land",
+    "commercial": "Commercial",
+    "listingsOnMap": "listings on map"
   },
 
   "filter": {
@@ -329,8 +356,24 @@
     "promoteListing": "Promote Listing"
   },
 
+  "paymentHistory": {
+    "title": "Payment History",
+    "noPayments": "No payments",
+    "noPaymentsDesc": "No payments yet",
+    "loadError": "Failed to load payments",
+    "retry": "Retry",
+    "paidAt": "Paid",
+    "statusPaid": "Paid",
+    "statusCancelled": "Cancelled",
+    "statusFailed": "Failed",
+    "statusPending": "Pending",
+    "purposeFeatured": "Promote to TOP",
+    "purposePost": "Post Publishing"
+  },
+
   "bottomNav": {
     "home": "Home",
+    "map": "Map",
     "add": "Add",
     "favorites": "Favorites",
     "profile": "Profile"

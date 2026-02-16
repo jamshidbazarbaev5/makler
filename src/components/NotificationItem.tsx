@@ -121,15 +121,15 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     const diffDays = Math.floor(diffHours / 24);
 
     if (diffMins < 1) {
-      return 'Just now';
+      return t.notifications.justNow;
     } else if (diffMins < 60) {
-      return `${diffMins}m ago`;
+      return `${diffMins} ${t.notifications.minutesAgo}`;
     } else if (diffHours < 24) {
-      return `${diffHours}h ago`;
+      return `${diffHours} ${t.notifications.hoursAgo}`;
     } else if (diffDays < 7) {
-      return `${diffDays}d ago`;
+      return `${diffDays} ${t.notifications.daysAgo}`;
     } else {
-      return date.toLocaleDateString('en-US', {
+      return date.toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
       });

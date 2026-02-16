@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { Share2, Edit, Menu, Home, Handshake, Heart, ChevronDown, ImageIcon, Eye } from 'lucide-react-native';
+import { Share2, Edit, Menu, Home, Handshake, Heart, ChevronDown, ImageIcon, Eye, Wallet } from 'lucide-react-native';
 import { COLORS } from '../constants';
 import BottomSheetMenu from './BottomSheetMenu';
 import LanguageModal from './LanguageModal';
@@ -290,6 +290,12 @@ export default function Profile({ navigation }: Props) {
             <View style={styles.header}>
               <Text style={styles.username}>{displayUsername}</Text>
               <View style={styles.headerIcons}>
+                <TouchableOpacity
+                  style={styles.iconButton}
+                  onPress={() => navigation.navigate('PaymentHistory')}
+                >
+                  <Wallet size={20} color={COLORS.gray700} />
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.iconButton}>
                   <Share2 size={20} color={COLORS.gray700} />
                 </TouchableOpacity>

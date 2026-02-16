@@ -9,9 +9,10 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
-import { Bell, CheckCircle, Filter, Trash2, ArrowLeft } from 'lucide-react-native';
+import { Bell, CheckCircle, Filter, Trash2, ArrowLeft, X, CheckCircle2, FileText } from 'lucide-react-native';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import BottomNav from '../components/BottomNav';
 import NotificationItem from '../components/NotificationItem';
@@ -47,6 +48,8 @@ const NotificationsScreen: React.FC = () => {
     postTitle: string;
     reason: string;
   } | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   // Filter notifications based on current filter
   const filteredNotifications = notifications.filter((notification) => {
@@ -99,12 +102,9 @@ const NotificationsScreen: React.FC = () => {
           setRejectionSheetVisible(true);
         }
       } else {
-        // For approved posts, navigate to the announcement detail screen
-        if (notification.announcement) {
-          navigation.navigate('MyListingDetail' as never, {
-            id: notification.announcement
-          } as never);
-        }
+        // Show notification details in modal
+        setSelectedNotification(notification);
+        setDetailModalVisible(true);
       }
     },
     [dispatch, navigation]
@@ -114,12 +114,12 @@ const NotificationsScreen: React.FC = () => {
     if (unreadCount === 0) return;
 
     Alert.alert(
-      'Mark all as read',
-      'Are you sure you want to mark all notifications as read?',
+      t.notifications.markAllAsRead,
+      t.notifications.markAllConfirm,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.notifications.cancel, style: 'cancel' },
         {
-          text: 'Mark as read',
+          text: t.notifications.markAsRead,
           style: 'default',
           onPress: async () => {
             try {
@@ -137,12 +137,12 @@ const NotificationsScreen: React.FC = () => {
     if (notifications.length === 0) return;
 
     Alert.alert(
-      'Clear all notifications',
-      'Are you sure you want to delete all notifications? This action cannot be undone.',
+      t.notifications.clearAll,
+      t.notifications.clearAllConfirm,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.notifications.cancel, style: 'cancel' },
         {
-          text: 'Delete all',
+          text: t.notifications.deleteAll,
           style: 'destructive',
           onPress: () => {
             dispatch(clearAllNotifications());
@@ -156,12 +156,12 @@ const NotificationsScreen: React.FC = () => {
     if (selectedNotifications.length === 0) return;
 
     Alert.alert(
-      'Delete selected',
-      `Are you sure you want to delete ${selectedNotifications.length} notification(s)?`,
+      t.notifications.deleteSelected,
+      `${selectedNotifications.length} ${t.notifications.deleteSelectedConfirm}`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t.notifications.cancel, style: 'cancel' },
         {
-          text: 'Delete',
+          text: t.notifications.delete,
           style: 'destructive',
           onPress: async () => {
             for (const id of selectedNotifications) {
@@ -396,6 +396,75 @@ const NotificationsScreen: React.FC = () => {
           reason={selectedRejection.reason}
         />
       )}
+
+      {/* Notification Detail Bottom Sheet */}
+      <Modal
+        transparent
+        visible={detailModalVisible}
+        animationType="fade"
+        onRequestClose={() => setDetailModalVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalOverlay}
+          onPress={() => setDetailModalVisible(false)}
+        >
+          <View />
+        </TouchableOpacity>
+
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle}>
+            <View style={styles.modalHandleBar} />
+          </View>
+
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{t.notifications.details}</Text>
+            <TouchableOpacity onPress={() => setDetailModalVisible(false)}>
+              <X size={22} color="#64748b" />
+            </TouchableOpacity>
+          </View>
+
+          {selectedNotification && (
+            <View style={styles.modalContent}>
+              <View style={[
+                styles.modalIconBox,
+                {
+                  backgroundColor: selectedNotification.notification_type === 'post_approved'
+                    ? '#dcfce7' : '#fef3c7',
+                },
+              ]}>
+                {selectedNotification.notification_type === 'post_approved' ? (
+                  <CheckCircle2 size={28} color="#22c55e" />
+                ) : (
+                  <FileText size={28} color="#f59e0b" />
+                )}
+              </View>
+
+              <Text style={styles.modalNotifTitle}>
+                {selectedNotification.notification_type === 'post_approved'
+                  ? t.notifications.postPublished
+                  : t.notifications.postRejected}
+              </Text>
+
+              <Text style={styles.modalNotifMessage}>
+                {selectedNotification.notification_type === 'post_approved'
+                  ? t.notifications.postApprovedMessage
+                  : t.notifications.postRejectedMessage}
+              </Text>
+
+              <Text style={styles.modalNotifDate}>
+                {new Date(selectedNotification.created_at).toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </View>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -537,6 +606,77 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHandle: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  modalHandleBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#d1d5db',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  modalContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+  modalIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  modalNotifTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#0f172a',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  modalNotifMessage: {
+    fontSize: 15,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  modalNotifDate: {
+    fontSize: 13,
+    color: '#94a3b8',
   },
 });
 

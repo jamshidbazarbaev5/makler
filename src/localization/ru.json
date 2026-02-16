@@ -40,7 +40,23 @@
     "postRejected": "Объявление отклонено",
     "rejectionReason": "Причина отклонения:",
     "canEditAndResubmit": "Вы можете отредактировать и повторно отправить ваше объявление. Пожалуйста, обратите внимание на причины выше.",
-    "understood": "Понятно"
+    "understood": "Понятно",
+    "details": "Подробности",
+    "markAllConfirm": "Отметить все уведомления как прочитанные?",
+    "clearAllConfirm": "Удалить все уведомления? Это действие нельзя отменить.",
+    "deleteSelected": "Удалить выбранные",
+    "deleteSelectedConfirm": "выбранных уведомлений удалить?",
+    "cancel": "Отмена",
+    "markAsRead": "Отметить как прочитанное",
+    "deleteAll": "Удалить все",
+    "delete": "Удалить",
+    "justNow": "Только что",
+    "minutesAgo": "мин назад",
+    "hoursAgo": "ч назад",
+    "daysAgo": "дн назад",
+    "postApproved": "Объявление одобрено",
+    "postApprovedMessage": "Ваше объявление одобрено и опубликовано!",
+    "postRejectedMessage": "Ваше объявление было отклонено."
   },
 
   "home": {
@@ -188,7 +204,18 @@
     "myLocation": "Мое местоположение",
     "showList": "Показать список",
     "showMap": "Показать карту",
-    "nearbyProperties": "Объекты поблизости"
+    "nearbyProperties": "Объекты поблизости",
+    "loading": "Загрузка карты...",
+    "retry": "Повторить",
+    "viewOnMap": "Посмотреть на карте",
+    "view": "Посмотреть",
+    "noImage": "Нет фото",
+    "noLocationData": "В объявлениях нет данных о местоположении",
+    "apartment": "Квартира",
+    "house": "Дом",
+    "land": "Участок",
+    "commercial": "Коммерция",
+    "listingsOnMap": "объявлений на карте"
   },
 
   "filter": {
@@ -329,8 +356,24 @@
     "promoteListing": "Поднять объявление"
   },
 
+  "paymentHistory": {
+    "title": "История платежей",
+    "noPayments": "Нет платежей",
+    "noPaymentsDesc": "Пока нет платежей",
+    "loadError": "Не удалось загрузить платежи",
+    "retry": "Повторить",
+    "paidAt": "Оплачено",
+    "statusPaid": "Оплачено",
+    "statusCancelled": "Отменено",
+    "statusFailed": "Не прошёл",
+    "statusPending": "Ожидание",
+    "purposeFeatured": "Поднять в TOP",
+    "purposePost": "Публикация объявления"
+  },
+
   "bottomNav": {
     "home": "Главная",
+    "map": "Карта",
     "add": "Добавить",
     "favorites": "Избранное",
     "profile": "Профиль"

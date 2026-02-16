@@ -12,7 +12,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '@react-navigation/native';
 import { ArrowLeft, Grid, List, Heart, Search, Trash2 } from 'lucide-react-native';
 import BottomNav from '../components/BottomNav';
@@ -132,10 +132,12 @@ const LikedPostsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Load favorites from API on mount
-  useEffect(() => {
-    loadFavorites();
-  }, []);
+  // Reload favorites every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadFavorites();
+    }, [])
+  );
 
   const loadFavorites = async () => {
     try {

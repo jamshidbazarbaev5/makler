@@ -12,8 +12,10 @@ import {
     Alert,
     Platform,
     Linking,
+    Modal,
+    Animated,
 } from 'react-native';
-import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Power, CheckCircle, Navigation, CreditCard, TrendingUp } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Navigation, CreditCard, MoreHorizontal, Power, CheckCircle, TrendingUp, X } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants';
@@ -86,6 +88,7 @@ const MyListingDetailScreen = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
+    const [moreModalVisible, setMoreModalVisible] = useState(false);
     const panResponder = useRef<any>(null);
 
     const listingId = route.params?.listingId;
@@ -368,6 +371,12 @@ const MyListingDetailScreen = () => {
     const canPayForPost = (listing?.status === 'draft' || listing?.status === 'inactive') && paymentSettings?.payment_enabled;
     const canPromote = listing?.status === 'active' && paymentSettings?.featured_enabled;
 
+    const handleMoreActions = () => {
+        setMoreModalVisible(true);
+    };
+
+    const hasMoreActions = listing?.status === 'active' || (canPromote && listing?.promotion_type === 'standard');
+
     if (loading) {
         return (
             <View style={[styles.container, styles.centerContent]}>
@@ -625,7 +634,7 @@ const MyListingDetailScreen = () => {
 
             {/* Fixed Bottom Actions */}
             <View style={styles.bottomActionsContainer}>
-                {/* Payment Buttons - Show only when payment_status is 'pending_payment' */}
+                {/* Payment Button - Show for draft/inactive */}
                 {canPayForPost && (
                     <TouchableOpacity
                         style={styles.paymentButton}
@@ -639,45 +648,7 @@ const MyListingDetailScreen = () => {
                     </TouchableOpacity>
                 )}
 
-                {/* Promote Button - Show for active paid listings */}
-                {canPromote && listing.promotion_type === 'standard' && (
-                    <TouchableOpacity
-                        style={styles.promoteButton}
-                        activeOpacity={0.7}
-                        onPress={handlePromoteListing}
-                    >
-                        <TrendingUp size={20} color="#fff" />
-                        <Text style={styles.promoteButtonText}>
-                            {t?.payment?.promoteListing || "E'lonni ko'tarish"}
-                        </Text>
-                    </TouchableOpacity>
-                )}
-
-                {/* Action Buttons Row */}
-                {listing.status === 'active' && (
-                    <View style={styles.actionButtonsRow}>
-                        <TouchableOpacity
-                            style={styles.deactivateButton}
-                            activeOpacity={0.7}
-                            onPress={handleDeactivate}
-                        >
-                            <Power size={18} color="#f59e0b" />
-                            <Text style={styles.deactivateButtonText}>Deaktivatsiya</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.markSoldButton}
-                            activeOpacity={0.7}
-                            onPress={handleMarkSold}
-                        >
-                            <CheckCircle size={18} color="#22c55e" />
-                            <Text style={styles.markSoldButtonText}>
-                                {listing.listing_type === 'sale' ? t.myListings.markAsSold : t.myListings.markAsRented}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                {/* Main Actions Row */}
+                {/* Compact Actions Row */}
                 <View style={styles.mainActionsRow}>
                     <TouchableOpacity
                         style={styles.editButton}
@@ -691,6 +662,15 @@ const MyListingDetailScreen = () => {
                         <TouchableOpacity style={styles.shareButton} activeOpacity={0.7}>
                             <Share2 size={20} color={COLORS.gray700} />
                         </TouchableOpacity>
+                        {hasMoreActions && (
+                            <TouchableOpacity
+                                style={styles.moreButton}
+                                activeOpacity={0.7}
+                                onPress={handleMoreActions}
+                            >
+                                <MoreHorizontal size={20} color={COLORS.gray700} />
+                            </TouchableOpacity>
+                        )}
                         <TouchableOpacity
                             style={styles.deleteButton}
                             activeOpacity={0.7}
@@ -701,6 +681,105 @@ const MyListingDetailScreen = () => {
                     </View>
                 </View>
             </View>
+
+            {/* More Actions Bottom Sheet Modal */}
+            <Modal
+                transparent
+                visible={moreModalVisible}
+                animationType="fade"
+                onRequestClose={() => setMoreModalVisible(false)}
+            >
+                <TouchableOpacity
+                    activeOpacity={1}
+                    style={styles.modalOverlay}
+                    onPress={() => setMoreModalVisible(false)}
+                >
+                    <View />
+                </TouchableOpacity>
+
+                <View style={styles.modalSheet}>
+                    {/* Handle Bar */}
+                    <View style={styles.modalHandle}>
+                        <View style={styles.modalHandleBar} />
+                    </View>
+
+                    {/* Header */}
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Amallar</Text>
+                        <TouchableOpacity onPress={() => setMoreModalVisible(false)}>
+                            <X size={22} color="#64748b" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Action Items */}
+                    <View style={styles.modalContent}>
+                        {listing?.status === 'active' && (
+                            <>
+                                <TouchableOpacity
+                                    style={styles.modalActionItem}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        setMoreModalVisible(false);
+                                        handleMarkSold();
+                                    }}
+                                >
+                                    <View style={[styles.modalIconBox, { backgroundColor: '#dcfce7' }]}>
+                                        <CheckCircle size={20} color="#22c55e" />
+                                    </View>
+                                    <View style={styles.modalActionTextContainer}>
+                                        <Text style={styles.modalActionTitle}>
+                                            {listing.listing_type === 'sale' ? t.myListings.markAsSold : t.myListings.markAsRented}
+                                        </Text>
+                                        <Text style={styles.modalActionSubtitle}>
+                                            {listing.listing_type === 'sale'
+                                                ? "E'lonni sotilgan deb belgilash"
+                                                : "E'lonni ijaraga berilgan deb belgilash"}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.modalActionItem}
+                                    activeOpacity={0.7}
+                                    onPress={() => {
+                                        setMoreModalVisible(false);
+                                        handleDeactivate();
+                                    }}
+                                >
+                                    <View style={[styles.modalIconBox, { backgroundColor: '#fef3c7' }]}>
+                                        <Power size={20} color="#f59e0b" />
+                                    </View>
+                                    <View style={styles.modalActionTextContainer}>
+                                        <Text style={styles.modalActionTitle}>Deaktivatsiya</Text>
+                                        <Text style={styles.modalActionSubtitle}>E'lonni vaqtincha to'xtatish</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
+                        {canPromote && listing?.promotion_type === 'standard' && (
+                            <TouchableOpacity
+                                style={styles.modalActionItem}
+                                activeOpacity={0.7}
+                                onPress={() => {
+                                    setMoreModalVisible(false);
+                                    handlePromoteListing();
+                                }}
+                            >
+                                <View style={[styles.modalIconBox, { backgroundColor: '#fef3c7' }]}>
+                                    <TrendingUp size={20} color="#f59e0b" />
+                                </View>
+                                <View style={styles.modalActionTextContainer}>
+                                    <Text style={styles.modalActionTitle}>
+                                        {t?.payment?.promoteListing || "E'lonni ko'tarish"}
+                                    </Text>
+                                    <Text style={styles.modalActionSubtitle}>E'lonni yuqoriga chiqarish</Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -1004,7 +1083,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     bottomSpacer: {
-        height: 160,
+        height: 120,
     },
     bottomActionsContainer: {
         position: 'absolute',
@@ -1017,43 +1096,13 @@ const styles = StyleSheet.create({
         padding: 16,
         gap: 12,
     },
-    actionButtonsRow: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    deactivateButton: {
-        flex: 1,
-        flexDirection: 'row',
+    moreButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: '#f1f5f9',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        backgroundColor: '#fef3c7',
-        paddingVertical: 12,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#f59e0b',
-    },
-    deactivateButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#92400e',
-    },
-    markSoldButton: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        backgroundColor: '#dcfce7',
-        paddingVertical: 12,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#22c55e',
-    },
-    markSoldButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#166534',
     },
     mainActionsRow: {
         flexDirection: 'row',
@@ -1108,18 +1157,76 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
     },
-    promoteButton: {
-        backgroundColor: '#f59e0b',
-        paddingVertical: 14,
-        borderRadius: 12,
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalSheet: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+    modalHandle: {
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    modalHandleBar: {
+        width: 40,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#d1d5db',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        marginBottom: 8,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#0f172a',
+    },
+    modalContent: {
+        paddingHorizontal: 16,
+        paddingBottom: 36,
+    },
+    modalActionItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
+        paddingVertical: 14,
+        paddingHorizontal: 8,
+        borderRadius: 12,
+        gap: 14,
     },
-    promoteButtonText: {
-        color: 'white',
-        fontSize: 16,
+    modalIconBox: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalActionTextContainer: {
+        flex: 1,
+    },
+    modalActionTitle: {
+        fontSize: 15,
         fontWeight: '600',
+        color: '#0f172a',
+        marginBottom: 2,
+    },
+    modalActionSubtitle: {
+        fontSize: 13,
+        color: '#94a3b8',
     },
 });

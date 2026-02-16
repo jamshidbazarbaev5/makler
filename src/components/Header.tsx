@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,28 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Bell } from 'lucide-react-native';
-import { useTheme } from '@react-navigation/native';
-import { useNavigation } from '@react-navigation/native';
+import { useTheme, useNavigation, useFocusEffect } from '@react-navigation/native';
+import api from '../services/api';
 
 const Header = () => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadCount();
+    }, [])
+  );
+
+  const fetchUnreadCount = async () => {
+    try {
+      const data = await api.getNotificationsCount();
+      setUnreadCount(data.unread_count || 0);
+    } catch (err) {
+      // silently fail
+    }
+  };
 
   return (
     <View
@@ -21,8 +37,7 @@ const Header = () => {
       ]}
     >
       <View style={styles.leftSection}>
-     
-        <TouchableOpacity onPress={() => navigation.getParent()?.navigate('TopPosts' as any)}>
+        <TouchableOpacity onPress={() => navigation.getParent()?.navigate('TopPostsTab' as any)}>
           <Text
             style={[
               styles.title,
@@ -37,16 +52,26 @@ const Header = () => {
       <View style={styles.rightSection}>
         <TouchableOpacity
           style={[
-            styles.badge,
+            styles.topBadge,
             { backgroundColor: colors.text },
           ]}
-          onPress={() => navigation.getParent()?.navigate('TopPosts' as any)}
+          onPress={() => navigation.getParent()?.navigate('TopPostsTab' as any)}
         >
-          <Text style={[styles.badgeText, { color: colors.card }]}>TOP</Text>
-          {/* <Text style={[styles.badgeNumber, { color: colors.card }]}>10</Text> */}
+          <Text style={[styles.topBadgeText, { color: colors.card }]}>TOP</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.getParent()?.navigate('Notifications' as any)}>
+
+        <TouchableOpacity
+          style={styles.bellContainer}
+          onPress={() => navigation.getParent()?.navigate('Notifications' as any)}
+        >
           <Bell size={24} color={colors.text} />
+          {unreadCount > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -67,16 +92,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  logo: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoEmoji: {
-    fontSize: 28,
-  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -86,23 +101,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  badge: {
+  topBadge: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
-  badgeText: {
+  topBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
   },
-  badgeNumber: {
-    fontSize: 8,
-    fontWeight: 'bold',
+  bellContainer: {
+    position: 'relative',
+  },
+  unreadBadge: {
     position: 'absolute',
-    marginTop: 12,
+    top: -6,
+    right: -8,
+    backgroundColor: '#ef4444',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  unreadText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
 

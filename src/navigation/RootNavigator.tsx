@@ -22,6 +22,7 @@ import ProfileEditScreen from '../screens/ProfileEditScreen';
 import MyListingDetailScreen from '../screens/MyListingDetailScreen';
 import MapScreen from '../screens/MapScreen';
 import PaymentScreen from '../screens/PaymentScreen';
+import PaymentHistoryScreen from '../screens/PaymentHistoryScreen';
 import {LoginScreen} from '../screens/LoginScreen';
 import {TelegramLoginScreen} from '../screens/TelegramLoginScreen';
 
@@ -44,6 +45,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   Map: undefined;
   Payment: {announcementId: string; paymentType: 'post' | 'featured'; amount?: number};
+  PaymentHistory: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -59,6 +61,19 @@ function HomeStack() {
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="ListingDetail" component={ListingDetail} />
       <Stack.Screen name="Map" component={MapScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function MapStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: {backgroundColor: '#fff'},
+      }}>
+      <Stack.Screen name="Map" component={MapScreen} />
+      <Stack.Screen name="ListingDetail" component={ListingDetail} />
     </Stack.Navigator>
   );
 }
@@ -97,11 +112,31 @@ function ProfileStack() {
               animation: 'default',
             }}
           />
+          <Stack.Screen
+            name="PaymentHistory"
+            component={PaymentHistoryScreen}
+            options={{
+              animation: 'default',
+            }}
+          />
         </>
       ) : (
         // User not logged in - show login screen
         <Stack.Screen name="Login" component={LoginScreen} />
       )}
+    </Stack.Navigator>
+  );
+}
+
+function TopPostsStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        contentStyle: {backgroundColor: '#fff'},
+      }}>
+      <Stack.Screen name="TopPosts" component={TopPostsScreen} />
+      <Stack.Screen name="ListingDetail" component={ListingDetail} />
     </Stack.Navigator>
   );
 }
@@ -152,6 +187,18 @@ function MainAppNavigator() {
           }}
         />
         <Tab.Screen
+          name="MapTab"
+          component={MapStack}
+          options={{
+            tabBarLabel: 'Map',
+            tabBarIcon: ({color}) => (
+              <View style={{width: 24, height: 24, justifyContent: 'center', alignItems: 'center'}}>
+                <Text style={{color, fontSize: 20}}>🗺️</Text>
+              </View>
+            ),
+          }}
+        />
+        <Tab.Screen
           name="Search"
           component={SearchScreen}
           options={{
@@ -188,8 +235,8 @@ function MainAppNavigator() {
           }}
         />
         <Tab.Screen
-          name="TopPosts"
-          component={TopPostsScreen}
+          name="TopPostsTab"
+          component={TopPostsStack}
           options={{
             tabBarLabel: 'Top',
             tabBarIcon: ({color}) => (

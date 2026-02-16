@@ -209,30 +209,35 @@ class ApiClient {
     await this.client.delete('/users/profile/me/delete/');
   }
 
-  async getAnnouncements(page = 1, limit = 20): Promise<{ results: any[]; count: number }> {
+  async getAnnouncements(page = 1, limit = 20): Promise<{ results: any[]; count: number; next: string | null }> {
     const response = await this.client.get('/announcements/', {
       params: { page, limit },
     });
     return response.data;
   }
 
-  // Get announcements for map view - backend should return only id, title, price, currency, latitude, longitude, property_type
-  // For now using regular endpoint with has_coordinates filter if available
-  async getAnnouncementsForMap(): Promise<any[]> {
-    try {
-      // Try to get all announcements with coordinates in one request
-      // Backend should ideally have a dedicated lightweight endpoint for this
-      const response = await this.client.get('/announcements/', {
-        params: {
-          limit: 500, // Get more for map
-          has_coordinates: true // If backend supports this filter
-        },
-      });
-      return response.data?.results || [];
-    } catch (err) {
-      console.error('Error fetching map announcements:', err);
-      return [];
-    }
+  async getFeaturedAnnouncements(): Promise<{ results: any[]; count: number }> {
+    const response = await this.client.get('/announcements/featured/');
+    return response.data;
+  }
+
+  async getAnnouncementsForMap(bounds?: {
+    lat_min: number;
+    lat_max: number;
+    lng_min: number;
+    lng_max: number;
+  }): Promise<{ results: any[]; count: number }> {
+    const params: any = {
+      limit: 500,
+      ...(bounds && {
+        lat_min: bounds.lat_min,
+        lat_max: bounds.lat_max,
+        lng_min: bounds.lng_min,
+        lng_max: bounds.lng_max,
+      }),
+    };
+    const response = await this.client.get('/announcements/', { params });
+    return response.data;
   }
 
   async uploadAnnouncementImage(id: string, imageUri: string): Promise<any> {
@@ -276,6 +281,11 @@ class ApiClient {
   async getAnnouncementById(id: string): Promise<any> {
     const response = await this.client.get(`/announcements/${id}/`);
     return response.data;
+  }
+
+  async getRelatedAnnouncements(id: string): Promise<any[]> {
+    const response = await this.client.get(`/announcements/${id}/related/`);
+    return response.data?.results || response.data || [];
   }
 
   async getDistricts(): Promise<any[]> {
@@ -430,6 +440,11 @@ class ApiClient {
    */
   async getPaymentStatus(paymentId: string): Promise<any> {
     const response = await this.client.get(`/payments/${paymentId}/status/`);
+    return response.data;
+  }
+
+  async getPaymentHistory(): Promise<{ results: any[]; count: number; next: string | null }> {
+    const response = await this.client.get('/payments/');
     return response.data;
   }
 

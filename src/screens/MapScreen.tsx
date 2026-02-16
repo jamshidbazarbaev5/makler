@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
     StyleSheet,
@@ -28,88 +28,81 @@ interface Announcement {
     images?: { image_url: string }[];
 }
 
+interface MapBounds {
+    lat_min: number;
+    lat_max: number;
+    lng_min: number;
+    lng_max: number;
+}
+
 const MapScreen = () => {
     const navigation = useNavigation<any>();
     const { t } = useLanguage();
     const webViewRef = useRef<WebView>(null);
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState(true);
+    const [fetching, setFetching] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [totalCount, setTotalCount] = useState(0);
+    const fetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Initial load with default Nukus bounds
     useEffect(() => {
-        fetchAnnouncements();
+        fetchAnnouncements({
+            lat_min: 42.43,
+            lat_max: 42.49,
+            lng_min: 59.57,
+            lng_max: 59.64,
+        });
     }, []);
 
-    const fetchAnnouncements = async () => {
+    const fetchAnnouncements = async (bounds: MapBounds) => {
         try {
-            setLoading(true);
+            if (!loading) setFetching(true);
             setError(null);
 
-            // Fetch all pages
-            let allResults: any[] = [];
-            let page = 1;
-            const limit = 100;
-            let totalCount = 0;
+            console.log('📍 Fetching announcements for bounds:', bounds);
 
-            console.log('📍 Fetching all announcements...');
+            const data = await api.getAnnouncementsForMap(bounds);
+            const results = data.results || [];
+            setTotalCount(data.count || 0);
 
-            while (true) {
-                const data = await api.getAnnouncements(page, limit);
-                const results = data.results || [];
-                totalCount = data.count || 0;
-
-                allResults = [...allResults, ...results];
-                console.log(`📍 Page ${page}: got ${results.length}, total so far: ${allResults.length}/${totalCount}`);
-
-                if (results.length < limit || allResults.length >= totalCount) {
-                    break;
-                }
-                page++;
-            }
-
-            setTotalCount(totalCount);
-
-            // TEMPORARY: Fetch details for each to get coordinates
-            // TODO: Remove this when backend includes lat/lng in list endpoint
-            console.log(`📍 Fetching details for ${allResults.length} announcements...`);
-
-            const detailedResults = await Promise.all(
-                allResults.map(async (a: any) => {
-                    try {
-                        const detail = await api.getAnnouncementById(a.id);
-                        return {
-                            ...a,
-                            latitude: detail.latitude,
-                            longitude: detail.longitude,
-                            images: detail.images,
-                        };
-                    } catch (err) {
-                        return a;
-                    }
-                })
-            );
-
-            // Filter only announcements with coordinates
-            const withCoords = detailedResults.filter(
+            const withCoords = results.filter(
                 (a: any) => a.latitude != null && a.longitude != null
             );
 
-            console.log(`📍 Total: ${allResults.length}, With coords: ${withCoords.length}`);
+            console.log(`📍 Got ${results.length} results, ${withCoords.length} with coords`);
             setAnnouncements(withCoords);
         } catch (err: any) {
             console.error('Error fetching announcements:', err);
             setError(t.errors.somethingWentWrong);
         } finally {
             setLoading(false);
+            setFetching(false);
         }
     };
+
+    const onBoundsChanged = useCallback((bounds: MapBounds) => {
+        if (fetchTimerRef.current) {
+            clearTimeout(fetchTimerRef.current);
+        }
+        fetchTimerRef.current = setTimeout(() => {
+            fetchAnnouncements(bounds);
+        }, 500);
+    }, []);
 
     const handleMessage = (event: any) => {
         try {
             const data = JSON.parse(event.nativeEvent.data);
             if (data.type === 'markerClick') {
                 navigation.navigate('ListingDetail', { listingId: data.id });
+            } else if (data.type === 'boundsChanged') {
+                onBoundsChanged({
+                    lat_min: data.lat_min,
+                    lat_max: data.lat_max,
+                    lng_min: data.lng_min,
+                    lng_max: data.lng_max,
+                });
             }
         } catch (error) {
             console.error('Error parsing map message:', error);
@@ -144,21 +137,33 @@ const MapScreen = () => {
         return null;
     };
 
-    const markersJson = JSON.stringify(
-        announcements.map(a => ({
-            id: a.id,
-            lat: a.latitude,
-            lng: a.longitude,
-            title: a.title,
-            price: formatPrice(a.price, a.currency),
-            color: getPropertyTypeColor(a.property_type),
-            propertyType: a.property_type,
-            listingType: a.listing_type,
-            image: getImageUrl(a),
-        }))
-    );
+    const getMarkersJson = useCallback(() => {
+        return JSON.stringify(
+            announcements.map(a => ({
+                id: a.id,
+                lat: a.latitude,
+                lng: a.longitude,
+                title: a.title,
+                price: formatPrice(a.price, a.currency),
+                color: getPropertyTypeColor(a.property_type),
+                propertyType: a.property_type,
+                listingType: a.listing_type,
+                image: getImageUrl(a),
+            }))
+        );
+    }, [announcements]);
 
-    const htmlContent = `
+    // Send translations + updated markers to WebView via JS injection (no remount)
+    useEffect(() => {
+        if (webViewRef.current && !loading) {
+            const translationsJs = `setTranslations(${JSON.stringify({ noImage: t.map.noImage, view: t.map.view })}); true;`;
+            const markersJs = `updateMarkers(${getMarkersJson()}); true;`;
+            webViewRef.current.injectJavaScript(translationsJs);
+            webViewRef.current.injectJavaScript(markersJs);
+        }
+    }, [announcements]);
+
+    const [htmlContent] = useState(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -224,20 +229,9 @@ const MapScreen = () => {
         <body>
             <div id="map"></div>
             <script>
-                var markers = ${markersJson};
-
-                // Default center to Nukus if no markers
                 var defaultLat = 42.4602;
                 var defaultLng = 59.6034;
                 var defaultZoom = 12;
-
-                // Calculate bounds if we have markers
-                if (markers.length > 0) {
-                    var lats = markers.map(m => m.lat);
-                    var lngs = markers.map(m => m.lng);
-                    defaultLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-                    defaultLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-                }
 
                 var map = L.map('map', {
                     zoomControl: true,
@@ -246,41 +240,63 @@ const MapScreen = () => {
 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-                // Add markers
-                var markerGroup = L.featureGroup();
+                var markerGroup = L.featureGroup().addTo(map);
 
-                markers.forEach(function(m) {
-                    var markerIcon = L.divIcon({
-                        html: '<div style="background-color: ' + m.color + '; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></div>',
-                        className: 'custom-marker',
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16],
-                        popupAnchor: [0, -16]
-                    });
+                // Translatable strings — updated via injectJavaScript
+                var i18n = { noImage: 'No image', view: 'View' };
 
-                    var marker = L.marker([m.lat, m.lng], { icon: markerIcon });
-
-                    var imageHtml = m.image
-                        ? '<img class="image" src="' + m.image + '" onerror="this.style.display=\\'none\\'" />'
-                        : '<div class="no-image">Rasm yo\\'q</div>';
-
-                    var popupContent = '<div class="custom-popup">' +
-                        imageHtml +
-                        '<div class="title">' + m.title + '</div>' +
-                        '<div class="price">' + m.price + '</div>' +
-                        '<button class="view-btn" onclick="viewDetail(\\'' + m.id + '\\')">Ko\\'rish</button>' +
-                        '</div>';
-
-                    marker.bindPopup(popupContent);
-                    marker.addTo(markerGroup);
-                });
-
-                markerGroup.addTo(map);
-
-                // Fit bounds to show all markers
-                if (markers.length > 0) {
-                    map.fitBounds(markerGroup.getBounds(), { padding: [50, 50] });
+                function setTranslations(translations) {
+                    i18n = translations;
                 }
+
+                function sendBounds() {
+                    var b = map.getBounds();
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'boundsChanged',
+                        lat_min: b.getSouth(),
+                        lat_max: b.getNorth(),
+                        lng_min: b.getWest(),
+                        lng_max: b.getEast()
+                    }));
+                }
+
+                map.on('moveend', sendBounds);
+
+                function updateMarkers(markers) {
+                    markerGroup.clearLayers();
+
+                    markers.forEach(function(m) {
+                        var markerIcon = L.divIcon({
+                            html: '<div style="background-color: ' + m.color + '; width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></div>',
+                            className: 'custom-marker',
+                            iconSize: [32, 32],
+                            iconAnchor: [16, 16],
+                            popupAnchor: [0, -16]
+                        });
+
+                        var marker = L.marker([m.lat, m.lng], { icon: markerIcon });
+
+                        var imageHtml = m.image
+                            ? '<img class="image" src="' + m.image + '" onerror="this.style.display=\\'none\\'" />'
+                            : '<div class="no-image">' + i18n.noImage + '</div>';
+
+                        var popupContent = '<div class="custom-popup">' +
+                            imageHtml +
+                            '<div class="title">' + m.title + '</div>' +
+                            '<div class="price">' + m.price + '</div>' +
+                            '<button class="view-btn" onclick="viewDetail(\\'' + m.id + '\\')">' + i18n.view + '</button>' +
+                            '</div>';
+
+                        marker.bindPopup(popupContent);
+                        marker.addTo(markerGroup);
+                    });
+                }
+
+                // Initial empty markers — real data is injected via injectJavaScript
+                updateMarkers([]);
+
+                // Trigger initial bounds fetch so markers load
+                setTimeout(function() { sendBounds(); }, 300);
 
                 function viewDetail(id) {
                     window.ReactNativeWebView.postMessage(JSON.stringify({
@@ -291,14 +307,14 @@ const MapScreen = () => {
             </script>
         </body>
         </html>
-    `;
+    `);
 
     if (loading) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={COLORS.purple} />
-                    <Text style={styles.loadingText}>Xarita yuklanmoqda...</Text>
+                    <Text style={styles.loadingText}>{t.map.loading}</Text>
                 </View>
                 <BottomNav />
             </SafeAreaView>
@@ -310,8 +326,10 @@ const MapScreen = () => {
             <SafeAreaView style={styles.container}>
                 <View style={styles.errorContainer}>
                     <Text style={styles.errorText}>{error}</Text>
-                    <TouchableOpacity style={styles.retryButton} onPress={fetchAnnouncements}>
-                        <Text style={styles.retryText}>Qayta urinish</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={() => fetchAnnouncements({
+                        lat_min: 42.43, lat_max: 42.49, lng_min: 59.57, lng_max: 59.64,
+                    })}>
+                        <Text style={styles.retryText}>{t.map.retry}</Text>
                     </TouchableOpacity>
                 </View>
                 <BottomNav />
@@ -329,7 +347,7 @@ const MapScreen = () => {
                 >
                     <ArrowLeft size={24} color="#0f172a" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Xaritada ko'rish</Text>
+                <Text style={styles.headerTitle}>{t.map.viewOnMap}</Text>
                 <TouchableOpacity
                     style={styles.listButton}
                     onPress={() => navigation.navigate('Home')}
@@ -343,7 +361,7 @@ const MapScreen = () => {
                 <View style={styles.warningBanner}>
                     <AlertCircle size={16} color="#92400e" />
                     <Text style={styles.warningText}>
-                        E'lonlarda joylashuv ma'lumoti yo'q. Backend'da latitude/longitude qo'shilishi kerak.
+                        {t.map.noLocationData}
                     </Text>
                 </View>
             )}
@@ -352,19 +370,19 @@ const MapScreen = () => {
             <View style={styles.legend}>
                 <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: '#6366f1' }]} />
-                    <Text style={styles.legendText}>Kvartira</Text>
+                    <Text style={styles.legendText}>{t.map.apartment}</Text>
                 </View>
                 <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: '#22c55e' }]} />
-                    <Text style={styles.legendText}>Uy</Text>
+                    <Text style={styles.legendText}>{t.map.house}</Text>
                 </View>
                 <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: '#f59e0b' }]} />
-                    <Text style={styles.legendText}>Yer</Text>
+                    <Text style={styles.legendText}>{t.map.land}</Text>
                 </View>
                 <View style={styles.legendItem}>
                     <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
-                    <Text style={styles.legendText}>Tijorat</Text>
+                    <Text style={styles.legendText}>{t.map.commercial}</Text>
                 </View>
             </View>
 
@@ -382,8 +400,11 @@ const MapScreen = () => {
 
             {/* Count Badge */}
             <View style={styles.countBadge}>
+                {fetching && (
+                    <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                )}
                 <Text style={styles.countText}>
-                    {announcements.length} / {totalCount} ta e'lon xaritada
+                    {announcements.length} / {totalCount} {t.map.listingsOnMap}
                 </Text>
             </View>
 
@@ -504,6 +525,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     countText: {
         color: '#fff',

@@ -40,7 +40,23 @@
     "postRejected": "E'lon rad etildi",
     "rejectionReason": "Rad etish sababi:",
     "canEditAndResubmit": "E'loningizni tahrirlashingiz va qayta yuborishingiz mumkin. Iltimos, yuqoridagi sabablarga e'tibor bering.",
-    "understood": "Tushunarli"
+    "understood": "Tushunarli",
+    "details": "Tafsilotlar",
+    "markAllConfirm": "Barcha bildirishnomalarni o'qilgan deb belgilaysizmi?",
+    "clearAllConfirm": "Barcha bildirishnomalarni o'chirasizmi? Bu amalni ortga qaytarib bo'lmaydi.",
+    "deleteSelected": "Tanlanganlarni o'chirish",
+    "deleteSelectedConfirm": "tanlangan bildirishnomani o'chirasizmi?",
+    "cancel": "Bekor qilish",
+    "markAsRead": "O'qilgan deb belgilash",
+    "deleteAll": "Hammasini o'chirish",
+    "delete": "O'chirish",
+    "justNow": "Hozirgina",
+    "minutesAgo": "daq oldin",
+    "hoursAgo": "soat oldin",
+    "daysAgo": "kun oldin",
+    "postApproved": "E'lon tasdiqlandi",
+    "postApprovedMessage": "E'loningiz tasdiqlandi va jonli efirga chiqdi!",
+    "postRejectedMessage": "E'loningiz rad etildi."
   },
 
   "home": {
@@ -188,7 +204,18 @@
     "myLocation": "Mening joylashuvim",
     "showList": "Ro'yxatni ko'rsatish",
     "showMap": "Xaritani ko'rsatish",
-    "nearbyProperties": "Yaqin atrofdagi mulklar"
+    "nearbyProperties": "Yaqin atrofdagi mulklar",
+    "loading": "Xarita yuklanmoqda...",
+    "retry": "Qayta urinish",
+    "viewOnMap": "Xaritada ko'rish",
+    "view": "Ko'rish",
+    "noImage": "Rasm yo'q",
+    "noLocationData": "E'lonlarda joylashuv ma'lumoti yo'q",
+    "apartment": "Kvartira",
+    "house": "Uy",
+    "land": "Yer",
+    "commercial": "Tijorat",
+    "listingsOnMap": "ta e'lon xaritada"
   },
 
   "filter": {
@@ -329,8 +356,24 @@
     "promoteListing": "E'lonni ko'tarish"
   },
 
+  "paymentHistory": {
+    "title": "To'lovlar tarixi",
+    "noPayments": "To'lovlar yo'q",
+    "noPaymentsDesc": "Hozircha to'lovlar mavjud emas",
+    "loadError": "To'lovlar yuklanmadi",
+    "retry": "Qayta urinish",
+    "paidAt": "To'langan",
+    "statusPaid": "To'langan",
+    "statusCancelled": "Bekor qilingan",
+    "statusFailed": "Amalga oshmadi",
+    "statusPending": "Kutilmoqda",
+    "purposeFeatured": "TOP ga chiqarish",
+    "purposePost": "E'lon joylash"
+  },
+
   "bottomNav": {
     "home": "Bosh sahifa",
+    "map": "Xarita",
     "add": "Qo'shish",
     "favorites": "Sevimlilar",
     "profile": "Profil"

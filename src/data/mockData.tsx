@@ -9,6 +9,16 @@ export interface Listing {
   imageUrl?: string;
   hasHotDeal?: boolean;
   location?: string;
+  listing_type?: string;
+  rooms?: number | null;
+  area?: string;
+  area_unit?: string;
+  floor?: number | null;
+  total_floors?: number | null;
+  views_count?: number;
+  favorites_count?: number;
+  posted_at?: string | null;
+  is_featured_active?: boolean;
 }
 
 export interface ListingDetail extends Listing {

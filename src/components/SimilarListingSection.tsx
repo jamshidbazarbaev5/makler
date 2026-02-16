@@ -1,20 +1,23 @@
 import React, { useRef } from 'react';
 import { Text, View, ScrollView, StyleSheet, Animated } from 'react-native';
-import { Listing } from '../data/mockData';
-import SimilarListingCard from './SimilarListingCard';
+import SimilarListingCard, { RelatedListing } from './SimilarListingCard';
+import { useNavigation } from '@react-navigation/native';
 
 interface SimilarListingsSectionProps {
-    listings: Listing[];
+    listings: RelatedListing[];
 }
 
 const SimilarListingsSection = ({ listings }: SimilarListingsSectionProps) => {
     const scrollViewRef = useRef<ScrollView>(null);
     const scrollX = useRef(new Animated.Value(0)).current;
+    const navigation = useNavigation<any>();
 
     const handleScroll = Animated.event(
         [{ nativeEvent: { contentOffset: { x: scrollX } } }],
         { useNativeDriver: false }
     );
+
+    if (listings.length === 0) return null;
 
     return (
         <View style={styles.container}>
@@ -32,7 +35,11 @@ const SimilarListingsSection = ({ listings }: SimilarListingsSectionProps) => {
                 snapToAlignment="start"
             >
                 {listings.map((listing) => (
-                    <SimilarListingCard key={listing.id} listing={listing} />
+                    <SimilarListingCard
+                        key={listing.id}
+                        listing={listing}
+                        onPress={() => navigation.push('ListingDetail', { listingId: listing.id })}
+                    />
                 ))}
             </ScrollView>
         </View>

@@ -22,8 +22,9 @@ export const addToFavoritesAsync = createAsyncThunk(
   'likes/addToFavorites',
   async (listing: Property & { id: string }, { rejectWithValue }) => {
     try {
-      await api.addToFavorites(listing.id);
-      return listing;
+      const response = await api.addToFavorites(listing.id);
+      // response contains the created favorite with its id
+      return { listing, favoriteId: response.id as number };
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to add to favorites');
     }
@@ -103,9 +104,13 @@ const likesSlice = createSlice({
       })
       .addCase(addToFavoritesAsync.fulfilled, (state, action) => {
         state.loading = false;
-        if (!state.likedIds.includes(action.payload.id)) {
-          state.likedListings.push(action.payload);
-          state.likedIds.push(action.payload.id);
+        const { listing, favoriteId } = action.payload;
+        if (!state.likedIds.includes(listing.id)) {
+          state.likedListings.push(listing);
+          state.likedIds.push(listing.id);
+        }
+        if (favoriteId) {
+          state.favoriteMap[listing.id] = favoriteId;
         }
       })
       .addCase(addToFavoritesAsync.rejected, (state, action) => {

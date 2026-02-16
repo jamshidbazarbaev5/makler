@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
 import { Image, Text, View, StyleSheet, Animated, Pressable } from 'react-native';
 import { ImageIcon, Heart } from 'lucide-react-native';
-import { Listing } from '../data/mockData';
+
+export interface RelatedListing {
+    id: string;
+    title: string;
+    price: string;
+    currency: string;
+    seller_name: string;
+    seller_avatar: string | null;
+    main_image: string | null;
+    images?: { image_url: string }[];
+}
 
 interface SimilarListingCardProps {
-    listing: Listing;
+    listing: RelatedListing;
     onPress?: () => void;
 }
 
 const SimilarListingCard = ({ listing, onPress }: SimilarListingCardProps) => {
     const [scaleAnim] = useState(new Animated.Value(1));
-    const [isLiked, setIsLiked] = useState(false);
 
     const handlePressIn = () => {
         Animated.timing(scaleAnim, {
@@ -29,9 +38,13 @@ const SimilarListingCard = ({ listing, onPress }: SimilarListingCardProps) => {
         onPress?.();
     };
 
-    const handleLike = (e: any) => {
-        e.stopPropagation?.();
-        setIsLiked(!isLiked);
+    const imageUrl = listing.main_image || listing.images?.[0]?.image_url;
+
+    const formatPrice = (price: string, currency: string) => {
+        const num = parseFloat(price);
+        if (isNaN(num)) return price;
+        if (currency === 'usd') return `$${num.toLocaleString()}`;
+        return `${num.toLocaleString()} so'm`;
     };
 
     return (
@@ -50,9 +63,9 @@ const SimilarListingCard = ({ listing, onPress }: SimilarListingCardProps) => {
             >
                 {/* Image */}
                 <View style={styles.imageContainer}>
-                    {listing.hasImage && listing.imageUrl ? (
+                    {imageUrl ? (
                         <Image
-                            source={{ uri: listing.imageUrl }}
+                            source={{ uri: imageUrl }}
                             style={styles.image}
                             resizeMode="cover"
                         />
@@ -65,28 +78,17 @@ const SimilarListingCard = ({ listing, onPress }: SimilarListingCardProps) => {
                     {/* Gradient overlay */}
                     <View style={styles.gradientOverlay} />
 
-                    {/* Like Button */}
-                    <Pressable 
-                        style={styles.likeButton}
-                        onPress={handleLike}
-                    >
-                        <Heart
-                            size={20}
-                            color="#fff"
-                            fill={isLiked ? '#ff6b6b' : 'none'}
-                            strokeWidth={2}
-                        />
-                    </Pressable>
-
                     {/* User Badge */}
                     <View style={styles.userBadge}>
-                        <Image source={{ uri: listing.avatar }} style={styles.userAvatar} />
-                        <Text style={styles.userText} numberOfLines={1}>{listing.username}</Text>
+                        {listing.seller_avatar && (
+                            <Image source={{ uri: listing.seller_avatar }} style={styles.userAvatar} />
+                        )}
+                        <Text style={styles.userText} numberOfLines={1}>{listing.seller_name}</Text>
                     </View>
 
                     {/* Content overlay */}
                     <View style={styles.contentOverlay}>
-                        <Text style={styles.price}>{listing.price}</Text>
+                        <Text style={styles.price}>{formatPrice(listing.price, listing.currency)}</Text>
                         <Text style={styles.title} numberOfLines={2}>{listing.title}</Text>
                     </View>
                 </View>
@@ -136,22 +138,6 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    },
-    likeButton: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 4,
     },
     userBadge: {
         position: 'absolute',
@@ -205,11 +191,3 @@ const styles = StyleSheet.create({
         lineHeight: 16,
     },
 });
-
-// Note: For the gradient, you might want to use react-native-linear-gradient
-// import LinearGradient from 'react-native-linear-gradient';
-// And replace the gradientOverlay View with:
-// <LinearGradient
-//   colors={['transparent', 'rgba(0, 0, 0, 0.8)']}
-//   style={styles.gradientOverlay}
-// />

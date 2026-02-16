@@ -53,4 +53,4 @@ target 'maklerapp' do
     )
   end
 end
-  
+    

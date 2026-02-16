@@ -11,10 +11,11 @@ import {
   FlatList,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTheme } from '@react-navigation/native';
-import { ArrowLeft, MapPin, Camera, ImageIcon, X } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Camera, ImageIcon, X, CheckCircle, XCircle } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import BottomNav from '../components/BottomNav';
 import MapPicker from '../components/MapPicker';
@@ -130,6 +131,12 @@ const PropertyFormScreen = () => {
   const [showImageSourceModal, setShowImageSourceModal] = useState(false);
   const [regionOptions, setRegionOptions] = useState<string[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [resultModal, setResultModal] = useState<{ visible: boolean; success: boolean; message: string }>({
+    visible: false,
+    success: false,
+    message: '',
+  });
 
   const currencyOptions = ['USD', 'UZS', 'EUR'];
 
@@ -289,15 +296,17 @@ const PropertyFormScreen = () => {
     try {
       // Validation based on property type
       if (!formData.title || !formData.price) {
-        Alert.alert(t?.propertyForm?.validationError || 'Error', t?.propertyForm?.titlePriceRequired || 'Title and price are required');
+        setResultModal({ visible: true, success: false, message: t?.propertyForm?.titlePriceRequired || 'Title and price are required' });
         return;
       }
 
       // For apartment/house, rooms are required
       if ((normalizedPropertyType === 'apartment' || normalizedPropertyType === 'house') && !formData.roomsCount) {
-        Alert.alert(t?.propertyForm?.validationError || 'Error', t?.propertyForm?.roomsRequired || 'Number of rooms is required');
+        setResultModal({ visible: true, success: false, message: t?.propertyForm?.roomsRequired || 'Number of rooms is required' });
         return;
       }
+
+      setSubmitting(true);
 
       // Find district ID
       // This logic assumes we have the full district object or can map the name back to ID
@@ -338,8 +347,10 @@ const PropertyFormScreen = () => {
           area_unit: 'sqm'
         }),
 
-        building_type: formData.apartmentType === 'secondary' ? 'old' : 'new',
-        condition: renovationItems.find(r => r.label === formData.renovation)?.value || 'cosmetic',
+        ...(normalizedPropertyType !== 'land' && {
+          building_type: formData.apartmentType === 'secondary' ? 'old' : 'new',
+          condition: renovationItems.find(r => r.label === formData.renovation)?.value || 'cosmetic',
+        }),
 
         // Mock district ID since we don't have the full map here yet
         district_id: 3,
@@ -370,14 +381,28 @@ const PropertyFormScreen = () => {
         ));
       }
 
-      Alert.alert(t?.propertyForm?.successTitle || 'Success', t?.propertyForm?.successMessage || 'Listing created successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
+      setSubmitting(false);
+      setResultModal({
+        visible: true,
+        success: true,
+        message: t?.propertyForm?.successMessage || 'Listing created successfully!',
+      });
     } catch (error: any) {
       console.error('Submission Error:', error);
       console.error('Error Response:', error.response?.data);
       console.error('Error Status:', error.response?.status);
-      Alert.alert(t?.propertyForm?.validationError || 'Error', (t?.propertyForm?.submitError || 'Error creating listing') + ': ' + JSON.stringify(error.response?.data || error.message || ''));
+      setSubmitting(false);
+      const errorData = error.response?.data;
+      let errorMsg = t?.propertyForm?.submitError || 'Error creating listing';
+      if (errorData && typeof errorData === 'object') {
+        const details = Object.entries(errorData)
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+          .join('\n');
+        if (details) errorMsg += '\n\n' + details;
+      } else if (error.message) {
+        errorMsg += '\n\n' + error.message;
+      }
+      setResultModal({ visible: true, success: false, message: errorMsg });
     }
   };
 
@@ -809,6 +834,56 @@ const PropertyFormScreen = () => {
         </SafeAreaView>
       </Modal>
 
+      {/* Submitting Overlay */}
+      {submitting && (
+        <View style={styles.submittingOverlay}>
+          <View style={styles.submittingCard}>
+            <ActivityIndicator size="large" color="#6366f1" />
+            <Text style={styles.submittingText}>{t?.propertyForm?.submitting || "E'lon yuklanmoqda..."}</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Result Modal */}
+      <Modal
+        visible={resultModal.visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setResultModal(prev => ({ ...prev, visible: false }));
+          if (resultModal.success) navigation.goBack();
+        }}
+      >
+        <View style={styles.resultOverlay}>
+          <View style={styles.resultCard}>
+            <View style={[styles.resultIconCircle, { backgroundColor: resultModal.success ? '#ecfdf5' : '#fef2f2' }]}>
+              {resultModal.success ? (
+                <CheckCircle size={48} color="#22c55e" />
+              ) : (
+                <XCircle size={48} color="#ef4444" />
+              )}
+            </View>
+            <Text style={styles.resultTitle}>
+              {resultModal.success
+                ? (t?.propertyForm?.successTitle || 'Muvaffaqiyatli!')
+                : (t?.propertyForm?.validationError || 'Xatolik')}
+            </Text>
+            <Text style={styles.resultMessage}>{resultModal.message}</Text>
+            <TouchableOpacity
+              style={[styles.resultButton, { backgroundColor: resultModal.success ? '#22c55e' : '#6366f1' }]}
+              onPress={() => {
+                setResultModal(prev => ({ ...prev, visible: false }));
+                if (resultModal.success) navigation.goBack();
+              }}
+            >
+              <Text style={styles.resultButtonText}>
+                {resultModal.success ? (t?.common?.ok || 'OK') : (t?.common?.ok || 'OK')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <BottomNav />
     </SafeAreaView>
   );
@@ -1164,6 +1239,85 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+  },
+  // Submitting Overlay
+  submittingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  submittingCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  submittingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  // Result Modal
+  resultOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  resultCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  resultIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  resultTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  resultMessage: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  resultButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 48,
+    borderRadius: 12,
+    minWidth: 160,
+    alignItems: 'center',
+  },
+  resultButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
 
