@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     ScrollView,
     View,
@@ -7,7 +7,9 @@ import {
     TouchableOpacity,
     StyleSheet,
     Dimensions,
-    PanResponder,
+    FlatList,
+    NativeSyntheticEvent,
+    NativeScrollEvent,
     ActivityIndicator,
     Alert,
     Platform,
@@ -15,9 +17,11 @@ import {
     Modal,
     Animated,
 } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Navigation, CreditCard, MoreHorizontal, Power, CheckCircle, TrendingUp, X } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants';
 import api from '../services/api';
 import { useLanguage } from '../localization';
@@ -83,22 +87,23 @@ const MyListingDetailScreen = () => {
     const route = useRoute<any>();
     const { t } = useLanguage();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [imageLoading, setImageLoading] = useState(true);
     const [listing, setListing] = useState<MyAnnouncementDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
     const [moreModalVisible, setMoreModalVisible] = useState(false);
-    const panResponder = useRef<any>(null);
+    const imageListRef = useRef<FlatList>(null);
 
     const listingId = route.params?.listingId;
 
-    useEffect(() => {
-        if (listingId) {
-            fetchListing();
-            fetchPaymentSettings();
-        }
-    }, [listingId]);
+    useFocusEffect(
+        useCallback(() => {
+            if (listingId) {
+                fetchListing();
+                fetchPaymentSettings();
+            }
+        }, [listingId])
+    );
 
     const fetchPaymentSettings = async () => {
         try {
@@ -128,30 +133,11 @@ const MyListingDetailScreen = () => {
 
     const images = listing?.images?.map(img => img.image_url) || [];
 
-    useEffect(() => {
-        if (images.length === 0) return;
-
-        setImageLoading(true);
-        panResponder.current = PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderRelease: (_evt, gestureState) => {
-                const { dx, vx } = gestureState;
-                const SWIPE_THRESHOLD = 50;
-                const VELOCITY_THRESHOLD = 0.5;
-
-                if (dx > SWIPE_THRESHOLD || vx > VELOCITY_THRESHOLD) {
-                    setCurrentImageIndex((prevIndex) =>
-                        prevIndex === 0 ? images.length - 1 : prevIndex - 1
-                    );
-                } else if (dx < -SWIPE_THRESHOLD || vx < -VELOCITY_THRESHOLD) {
-                    setCurrentImageIndex((prevIndex) =>
-                        prevIndex === images.length - 1 ? 0 : prevIndex + 1
-                    );
-                }
-            },
-        });
-    }, [images.length]);
+    const onImageScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const offsetX = e.nativeEvent.contentOffset.x;
+        const index = Math.round(offsetX / SCREEN_WIDTH);
+        setCurrentImageIndex(index);
+    }, []);
 
     const formatPrice = (price: string, currency: string) => {
         const num = parseFloat(price);
@@ -253,10 +239,11 @@ const MyListingDetailScreen = () => {
     };
 
     const handleEdit = () => {
-        navigation.navigate('PropertyForm', {
-            listingId: listing?.id,
-            editMode: true,
-        });
+        if (listing?.id) {
+            navigation.navigate('EditAnnouncement', {
+                listingId: listing.id,
+            });
+        }
     };
 
     const handleDelete = () => {
@@ -351,6 +338,7 @@ const MyListingDetailScreen = () => {
                 announcementId: listing.id,
                 paymentType: 'post',
                 amount: parseFloat(paymentSettings.post_price),
+                durationDays: paymentSettings.post_duration_days,
             });
         }
     };
@@ -363,6 +351,7 @@ const MyListingDetailScreen = () => {
                 announcementId: listing.id,
                 paymentType: 'featured',
                 amount: parseFloat(paymentSettings.featured_price),
+                durationDays: paymentSettings.featured_duration_days,
             });
         }
     };
@@ -402,29 +391,33 @@ const MyListingDetailScreen = () => {
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>
                 {/* Image Carousel */}
-                <View
-                    style={styles.carouselContainer}
-                    {...panResponder.current?.panHandlers}
-                >
+                <View style={styles.carouselContainer}>
                     {images.length > 0 ? (
-                        <Image
-                            source={{ uri: images[currentImageIndex] }}
-                            style={styles.image}
-                            resizeMode="cover"
-                            onLoadStart={() => setImageLoading(true)}
-                            onLoadEnd={() => setImageLoading(false)}
-                            onError={() => setImageLoading(false)}
+                        <FlatList
+                            ref={imageListRef}
+                            data={images}
+                            keyExtractor={(_, i) => i.toString()}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            onMomentumScrollEnd={onImageScroll}
+                            getItemLayout={(_, index) => ({
+                                length: SCREEN_WIDTH,
+                                offset: SCREEN_WIDTH * index,
+                                index,
+                            })}
+                            renderItem={({ item }) => (
+                                <Image
+                                    source={{ uri: item }}
+                                    style={{ width: SCREEN_WIDTH, height: IMAGE_HEIGHT }}
+                                    resizeMode="cover"
+                                />
+                            )}
                         />
                     ) : (
                         <View style={[styles.image, styles.noImagePlaceholder]}>
                             <ImageIcon size={48} color="#94a3b8" />
                             <Text style={styles.noImageText}>Rasm yo'q</Text>
-                        </View>
-                    )}
-
-                    {imageLoading && images.length > 0 && (
-                        <View style={styles.loadingOverlay}>
-                            <ActivityIndicator size="large" color={COLORS.purple} />
                         </View>
                     )}
 
@@ -442,18 +435,25 @@ const MyListingDetailScreen = () => {
                         <Text style={styles.statusBadgeText}>{getStatusLabel(listing.status)}</Text>
                     </View>
 
+                    {/* Image Counter */}
+                    {images.length > 1 && (
+                        <View style={styles.imageCounter}>
+                            <Text style={styles.imageCounterText}>
+                                {currentImageIndex + 1}/{images.length}
+                            </Text>
+                        </View>
+                    )}
+
                     {/* Pagination Dots */}
                     {images.length > 1 && (
                         <View style={styles.paginationContainer}>
                             {images.map((_, index) => (
-                                <TouchableOpacity
+                                <View
                                     key={index}
-                                    onPress={() => setCurrentImageIndex(index)}
                                     style={[
                                         styles.paginationDot,
                                         index === currentImageIndex ? styles.paginationDotActive : styles.paginationDotInactive,
                                     ]}
-                                    activeOpacity={0.7}
                                 />
                             ))}
                         </View>
@@ -650,14 +650,16 @@ const MyListingDetailScreen = () => {
 
                 {/* Compact Actions Row */}
                 <View style={styles.mainActionsRow}>
-                    <TouchableOpacity
-                        style={styles.editButton}
-                        activeOpacity={0.7}
-                        onPress={handleEdit}
-                    >
-                        <Edit2 size={20} color="#fff" />
-                        <Text style={styles.editButtonText}>{t.myListings.edit}</Text>
-                    </TouchableOpacity>
+                    {listing?.status !== 'active' && (
+                        <TouchableOpacity
+                            style={styles.editButton}
+                            activeOpacity={0.7}
+                            onPress={handleEdit}
+                        >
+                            <Edit2 size={20} color="#fff" />
+                            <Text style={styles.editButtonText}>{t.myListings.edit}</Text>
+                        </TouchableOpacity>
+                    )}
                     <View style={styles.bottomButtonsRow}>
                         <TouchableOpacity style={styles.shareButton} activeOpacity={0.7}>
                             <Share2 size={20} color={COLORS.gray700} />
@@ -831,15 +833,19 @@ const styles = StyleSheet.create({
         color: '#94a3b8',
         marginTop: 8,
     },
-    loadingOverlay: {
+    imageCounter: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        top: 16,
+        right: 70,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    imageCounterText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
     },
     backButton: {
         position: 'absolute',
@@ -1106,6 +1112,7 @@ const styles = StyleSheet.create({
     },
     mainActionsRow: {
         flexDirection: 'row',
+        justifyContent: 'center',
         gap: 12,
     },
     editButton: {

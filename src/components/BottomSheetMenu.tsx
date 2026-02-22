@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,9 +9,11 @@ import {
   Animated,
   PanResponder,
   Alert,
+  Linking,
 } from 'react-native';
-import { Globe, Settings, HelpCircle, Info, LogOut, ChevronRight, Trash2 } from 'lucide-react-native';
+import { Globe, HelpCircle, Code2, LogOut, ChevronRight, ChevronLeft, Trash2, Phone, Send, Mail } from 'lucide-react-native';
 import { COLORS } from '../constants';
+import { useLanguage } from '../localization/LanguageContext';
 
 interface BottomSheetMenuProps {
   visible: boolean;
@@ -19,9 +21,12 @@ interface BottomSheetMenuProps {
   onLogout: () => void;
   onLanguagePress: () => void;
   onDeleteAccount: () => void;
+  adminPhone?: string;
 }
 
 const { height: screenHeight } = Dimensions.get('window');
+
+type Screen = 'menu' | 'help';
 
 export default function BottomSheetMenu({
   visible,
@@ -29,8 +34,18 @@ export default function BottomSheetMenu({
   onLogout,
   onLanguagePress,
   onDeleteAccount,
+  adminPhone,
 }: BottomSheetMenuProps) {
+  const { t } = useLanguage();
   const [pan] = useState(new Animated.ValueXY());
+  const [screen, setScreen] = useState<Screen>('menu');
+
+  // Reset to menu when modal opens
+  useEffect(() => {
+    if (visible) {
+      setScreen('menu');
+    }
+  }, [visible]);
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => true,
@@ -54,15 +69,12 @@ export default function BottomSheetMenu({
 
   const handleLogout = () => {
     Alert.alert(
-      'Chiqish',
-      'Hisobs\x27dan chiqmoqchimisiz?',
+      t.bottomSheet.logout,
+      t.bottomSheet.logoutConfirm,
       [
+        { text: t.common.cancel, style: 'cancel' },
         {
-          text: 'Bekor qilish',
-          style: 'cancel',
-        },
-        {
-          text: 'Chiqish',
+          text: t.bottomSheet.logout,
           onPress: () => {
             onClose();
             onLogout();
@@ -76,6 +88,36 @@ export default function BottomSheetMenu({
   const handleLanguage = () => {
     onClose();
     onLanguagePress();
+  };
+
+  const handleDevelopers = () => {
+    onClose();
+    Linking.openURL('https://softium.uz');
+  };
+
+  const phone = adminPhone || '+998970953905';
+
+  const formatPhone = (p: string) => {
+    const digits = p.replace(/\D/g, '');
+    if (digits.length === 12) {
+      return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10)}`;
+    }
+    return p;
+  };
+
+  const handleCall = () => {
+    onClose();
+    Linking.openURL(`tel:${phone}`);
+  };
+
+  const handleTelegram = () => {
+    onClose();
+    Linking.openURL(`https://t.me/${phone}`);
+  };
+
+  const handleEmail = () => {
+    onClose();
+    Linking.openURL('mailto:support@softium.uz');
   };
 
   return (
@@ -98,9 +140,7 @@ export default function BottomSheetMenu({
       <Animated.View
         style={[
           styles.bottomSheet,
-          {
-            transform: [{ translateY: pan.y }],
-          },
+          { transform: [{ translateY: pan.y }] },
         ]}
         {...panResponder.panHandlers}
       >
@@ -111,129 +151,166 @@ export default function BottomSheetMenu({
 
         {/* Content */}
         <View style={styles.content}>
-          {/* Menu Title */}
-          <Text style={styles.menuTitle}>Sozlamalar</Text>
+          {screen === 'menu' ? (
+            <>
+              <Text style={styles.menuTitle}>{t.bottomSheet.menu}</Text>
+              <View style={styles.divider} />
 
-          {/* Divider */}
-          <View style={styles.divider} />
+              {/* Language */}
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleLanguage}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, { backgroundColor: '#E8F5FF' }]}>
+                    <Globe size={20} color={COLORS.purple} />
+                  </View>
+                  <View>
+                    <Text style={styles.menuItemTitle}>{t.bottomSheet.language}</Text>
+                    <Text style={styles.menuItemSubtitle}>{t.bottomSheet.languageOptions}</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={COLORS.gray400} />
+              </TouchableOpacity>
 
-          {/* Menu Items */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleLanguage}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: '#E8F5FF' }]}>
-                <Globe size={20} color={COLORS.purple} />
-              </View>
-              <View>
-                <Text style={styles.menuItemTitle}>Til</Text>
-                <Text style={styles.menuItemSubtitle}>O'zbek, Rus, English</Text>
-              </View>
-            </View>
-            <ChevronRight
-              size={20}
-              color={COLORS.gray400}
-            />
-          </TouchableOpacity>
+              {/* Help */}
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => setScreen('help')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, { backgroundColor: '#F0E6FF' }]}>
+                    <HelpCircle size={20} color={COLORS.purple} />
+                  </View>
+                  <View>
+                    <Text style={styles.menuItemTitle}>{t.bottomSheet.help}</Text>
+                    <Text style={styles.menuItemSubtitle}>{t.bottomSheet.helpSubtitle}</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={COLORS.gray400} />
+              </TouchableOpacity>
 
-          {/* Settings */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: '#FFF4E6' }]}>
-                <Settings size={20} color={COLORS.warning} />
-              </View>
-              <View>
-                <Text style={styles.menuItemTitle}>Sozlamalar</Text>
-                <Text style={styles.menuItemSubtitle}>Xabarlar, Privatlik</Text>
-              </View>
-            </View>
-            <ChevronRight
-              size={20}
-              color={COLORS.gray400}
-            />
-          </TouchableOpacity>
+              {/* Developers */}
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleDevelopers}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, { backgroundColor: '#E6F7F0' }]}>
+                    <Code2 size={20} color={COLORS.success} />
+                  </View>
+                  <View>
+                    <Text style={styles.menuItemTitle}>{t.bottomSheet.developers}</Text>
+                    <Text style={styles.menuItemSubtitle}>softium.uz</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={COLORS.gray400} />
+              </TouchableOpacity>
 
-          {/* Help & Support */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: '#F0E6FF' }]}>
-                <HelpCircle  size={20} color={COLORS.purple} />
-              </View>
-              <View>
-                <Text style={styles.menuItemTitle}>Yordam va qo'llab-quvvatlash</Text>
-                <Text style={styles.menuItemSubtitle}>FAQ, Muammoni xabar qilish</Text>
-              </View>
-            </View>
-            <ChevronRight
-              size={20}
-              color={COLORS.gray400}
-            />
-          </TouchableOpacity>
+              {/* Delete Account */}
+              <TouchableOpacity
+                style={[styles.menuItem, { marginTop: 8 }]}
+                onPress={() => {
+                  onClose();
+                  onDeleteAccount();
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, { backgroundColor: '#FFE6E6' }]}>
+                    <Trash2 size={20} color={COLORS.error} />
+                  </View>
+                  <View>
+                    <Text style={[styles.menuItemTitle, { color: COLORS.error }]}>{t.bottomSheet.deleteAccount}</Text>
+                    <Text style={styles.menuItemSubtitle}>{t.bottomSheet.deleteAccountWarning}</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={COLORS.error} />
+              </TouchableOpacity>
 
-          {/* About */}
-          <TouchableOpacity
-            style={styles.menuItem}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: '#E6F7F0' }]}>
-                <Info size={20} color={COLORS.success} />
-              </View>
-              <View>
-                <Text style={styles.menuItemTitle}>Ilovamiz haqida</Text>
-                <Text style={styles.menuItemSubtitle}>Versiya 1.0.0</Text>
-              </View>
-            </View>
-            <ChevronRight
-              size={20}
-              color={COLORS.gray400}
-            />
-          </TouchableOpacity>
+              <View style={styles.divider} />
 
-          {/* Delete Account */}
-          <TouchableOpacity
-            style={[styles.menuItem, { marginTop: 8 }]}
-            onPress={() => {
-              onClose();
-              onDeleteAccount();
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: '#FFE6E6' }]}>
-                <Trash2 size={20} color={COLORS.error} />
+              {/* Logout */}
+              <TouchableOpacity
+                style={styles.logoutButton}
+                onPress={handleLogout}
+                activeOpacity={0.8}
+              >
+                <LogOut size={20} color={COLORS.white} />
+                <Text style={styles.logoutButtonText}>{t.bottomSheet.logout}</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {/* Help Screen */}
+              <View style={styles.helpHeader}>
+                <TouchableOpacity onPress={() => setScreen('menu')} style={styles.backButton}>
+                  <ChevronLeft size={24} color={COLORS.gray900} />
+                </TouchableOpacity>
+                <Text style={styles.menuTitle}>{t.bottomSheet.help}</Text>
+                <View style={{ width: 24 }} />
               </View>
-              <View>
-                <Text style={[styles.menuItemTitle, { color: COLORS.error }]}>Hisobni o'chirish</Text>
-                <Text style={styles.menuItemSubtitle}>Bu amalni ortga qaytarib bo'lmaydi</Text>
-              </View>
-            </View>
-            <ChevronRight
-              size={20}
-              color={COLORS.error}
-            />
-          </TouchableOpacity>
+              {/*<Text style={styles.helpSubtitle}>Biz bilan bog'laning</Text>*/}
+              <View style={styles.divider} />
 
-          {/* Divider */}
-          <View style={styles.divider} />
+              {/* Phone */}
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleCall}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, { backgroundColor: '#E6F7F0' }]}>
+                    <Phone size={20} color={COLORS.success} />
+                  </View>
+                  <View>
+                    <Text style={styles.menuItemTitle}>{t.bottomSheet.phone}</Text>
+                    <Text style={styles.menuItemSubtitle}>{formatPhone(phone)}</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={COLORS.gray400} />
+              </TouchableOpacity>
 
-          {/* Logout Button */}
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-            activeOpacity={0.8}
-          >
-            <LogOut size={20} color={COLORS.white} />
-            <Text style={styles.logoutButtonText}>Chiqish</Text>
-          </TouchableOpacity>
+              {/* Telegram */}
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleTelegram}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, { backgroundColor: '#E8F5FF' }]}>
+                    <Send size={20} color="#0088cc" />
+                  </View>
+                  <View>
+                    <Text style={styles.menuItemTitle}>Telegram</Text>
+                    <Text style={styles.menuItemSubtitle}>@maklerapp</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={COLORS.gray400} />
+              </TouchableOpacity>
+
+              {/* Email */}
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleEmail}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, { backgroundColor: '#FFF4E6' }]}>
+                    <Mail size={20} color={COLORS.warning} />
+                  </View>
+                  <View>
+                    <Text style={styles.menuItemTitle}>Email</Text>
+                    <Text style={styles.menuItemSubtitle}>support@softium.uz</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={COLORS.gray400} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </Animated.View>
     </Modal>
@@ -275,13 +352,27 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 36,
   },
   menuTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.gray900,
-    marginBottom: 16,
+  },
+  helpHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  backButton: {
+    padding: 4,
+    marginLeft: -4,
+  },
+  helpSubtitle: {
+    fontSize: 14,
+    color: COLORS.gray500,
+    marginBottom: 4,
   },
   divider: {
     height: 1,
@@ -298,14 +389,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   menuItemLeft: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -314,11 +405,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: COLORS.gray900,
-    marginBottom: 4,
   },
   menuItemSubtitle: {
     fontSize: 12,
     color: COLORS.gray500,
+    marginTop: 2,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -328,16 +419,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.error,
     borderRadius: 12,
     paddingVertical: 14,
-    marginTop: 12,
-    shadowColor: COLORS.error,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 5,
+    marginTop: 4,
   },
   logoutButtonText: {
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.white,
   },
 });

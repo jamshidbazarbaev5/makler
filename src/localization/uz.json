@@ -56,7 +56,9 @@
     "daysAgo": "kun oldin",
     "postApproved": "E'lon tasdiqlandi",
     "postApprovedMessage": "E'loningiz tasdiqlandi va jonli efirga chiqdi!",
-    "postRejectedMessage": "E'loningiz rad etildi."
+    "postRejectedMessage": "E'loningiz rad etildi.",
+    "postApprovedWithTitle": "E'loningiz \"{title}\" tasdiqlandi va jonli efirga chiqdi!",
+    "postRejectedWithTitle": "E'loningiz \"{title}\" rad etildi. Sabab: {reason}"
   },
 
   "home": {
@@ -353,7 +355,9 @@
     "termsLink": "Payme foydalanish shartlari",
     "payNow": "To'lov qilish",
     "makePayment": "To'lov qilish",
-    "promoteListing": "E'lonni ko'tarish"
+    "promoteListing": "E'lonni ko'tarish",
+    "durationLabel": "Amal qilish muddati",
+    "days": "kun"
   },
 
   "paymentHistory": {
@@ -407,6 +411,56 @@
     "loadMore": "Ko'proq yuklash"
   },
 
+  "allListings": {
+    "loading": "Yuklanmoqda...",
+    "errorMessage": "E'lonlarni yuklab bo'lmadi",
+    "retry": "Qayta yuklash",
+    "featuredTitle": "Tavsiya etilgan",
+    "latestListings": "So'nggi e'lonlar",
+    "filter": "Filter",
+    "sort": "Saralash",
+    "loadMore": "Yana yuklash"
+  },
+
+  "listingCard": {
+    "noImage": "Rasm yo'q",
+    "rooms": "xona",
+    "sotix": "sotix",
+    "minAgo": "daq oldin",
+    "hoursAgo": "soat oldin",
+    "daysAgo": "kun oldin",
+    "weeksAgo": "hafta oldin",
+    "monthsAgo": "oy oldin",
+    "sale": "Sotish",
+    "rent": "Ijara",
+    "rentDaily": "Kunlik ijara",
+    "unknown": "Noma'lum",
+    "similarListings": "O'xshash e'lonlar",
+    "count": "ta",
+    "sum": "so'm",
+    "today": "Bugun",
+    "yesterday": "Kecha",
+    "apartment": "Kvartira",
+    "house": "Uy",
+    "land": "Yer",
+    "commercial": "Tijorat",
+    "area": "Maydon",
+    "roomsLabel": "Xonalar",
+    "floor": "Qavat",
+    "buildingType": "Bino turi",
+    "buildingNew": "Yangi",
+    "buildingOld": "Eski",
+    "condition": "Holati",
+    "conditionEuro": "Yevroremont",
+    "conditionGood": "Yaxshi",
+    "conditionRepair": "Ta'mir talab",
+    "location": "Joylashuv",
+    "noLocation": "Joylashuv ko'rsatilmagan",
+    "openOnMap": "Xaritada ochish",
+    "callNow": "Qo'ng'iroq qiling",
+    "noPhone": "Telefon yo'q"
+  },
+
   "likedPosts": {
     "title": "Sevimli",
     "listings": "e'lon",
@@ -421,7 +475,8 @@
     "removeTitle": "Sevimlilardan olib tashlash",
     "removeConfirm": "Ushbu e'lonni sevimlilardan olib tashlamoqchimisiz?",
     "removeButton": "Olib tashlash",
-    "noPrice": "Narxsiz"
+    "noPrice": "Narxsiz",
+    "sortArea": "Maydon"
   },
 
   "propertyTypeScreen": {
@@ -438,6 +493,7 @@
   },
 
   "propertyForm": {
+    "submitting": "Yuborilmoqda",
     "dailyRent": "Kunlik Ijara",
     "monthlyRent": "Oylik Ijara",
     "sell": "Sotish",
@@ -495,5 +551,22 @@
     "successTitle": "Muvaffaqiyat",
     "successMessage": "E'lon muvaffaqiyatli yaratildi!",
     "submitError": "E'lon yaratishda xatolik yuz berdi"
+  },
+
+  "bottomSheet": {
+    "menu": "Menyu",
+    "language": "Til",
+    "languageOptions": "O'zbek, Rus, English, Qaraqalpaq",
+    "help": "Yordam",
+    "helpSubtitle": "Biz bilan bog'laning",
+    "developers": "Ishlab chiquvchilar",
+    "deleteAccount": "Hisobni o'chirish",
+    "deleteAccountWarning": "Bu amalni ortga qaytarib bo'lmaydi",
+    "logout": "Chiqish",
+    "logoutConfirm": "Hisobdan chiqmoqchimisiz?",
+    "phone": "Telefon",
+    "loadMore": "Ko'proq yuklash",
+    "user": "Foydalanuvchi",
+    "logoutMessage": "Siz hisobingizdan chiqdingiz"
   }
 }

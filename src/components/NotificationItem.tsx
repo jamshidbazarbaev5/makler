@@ -44,14 +44,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     const approvedMatch = message.match(approvedPattern);
     if (approvedMatch) {
       const postTitle = approvedMatch[1];
-      // Build translated message based on language
-      if (t.common.close === 'Yopish') { // Uzbek
-        return `E'loningiz "${postTitle}" tasdiqlandi va jonli efirga chiqdi!`;
-      } else if (t.common.close === 'Закрыть') { // Russian
-        return `Ваше объявление "${postTitle}" одобрено и опубликовано!`;
-      } else { // English
-        return `Your post "${postTitle}" has been approved and is now live!`;
-      }
+      return (t.notifications as any).postApprovedWithTitle
+        ? (t.notifications as any).postApprovedWithTitle
+            .replace('{title}', postTitle)
+        : message;
     }
 
     // Pattern for rejected posts: Your post "TITLE" was rejected. Reason: REASON
@@ -60,14 +56,11 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     if (rejectedMatch) {
       const postTitle = rejectedMatch[1];
       const reason = rejectedMatch[2];
-      // Build translated message based on language
-      if (t.common.close === 'Yopish') { // Uzbek
-        return `E'loningiz "${postTitle}" rad etildi. Sabab: ${reason}`;
-      } else if (t.common.close === 'Закрыть') { // Russian
-        return `Ваше объявление "${postTitle}" отклонено. Причина: ${reason}`;
-      } else { // English
-        return `Your post "${postTitle}" was rejected. Reason: ${reason}`;
-      }
+      return (t.notifications as any).postRejectedWithTitle
+        ? (t.notifications as any).postRejectedWithTitle
+            .replace('{title}', postTitle)
+            .replace('{reason}', reason)
+        : message;
     }
 
     // If no pattern matches, return original message

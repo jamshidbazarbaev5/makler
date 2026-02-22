@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
-import { Image, Text, View, StyleSheet, Animated, Pressable } from 'react-native';
-import { ImageIcon, Heart } from 'lucide-react-native';
+import { Image, Text, View, StyleSheet, TouchableOpacity } from 'react-native';
+import { ImageIcon, MapPin, Bed, Maximize2 } from 'lucide-react-native';
+import { useLanguage } from '../localization/LanguageContext';
 
 export interface RelatedListing {
     id: string;
     title: string;
     price: string;
     currency: string;
+    listing_type?: string;
+    property_type?: string;
     seller_name: string;
     seller_avatar: string | null;
     main_image: string | null;
     images?: { image_url: string }[];
+    rooms?: number | null;
+    area?: string | null;
+    area_unit?: string;
+    district?: { translations?: { ru?: { name?: string } } } | null;
+    location?: string;
 }
 
 interface SimilarListingCardProps {
@@ -19,81 +27,88 @@ interface SimilarListingCardProps {
 }
 
 const SimilarListingCard = ({ listing, onPress }: SimilarListingCardProps) => {
-    const [scaleAnim] = useState(new Animated.Value(1));
-
-    const handlePressIn = () => {
-        Animated.timing(scaleAnim, {
-            toValue: 0.95,
-            duration: 100,
-            useNativeDriver: true,
-        }).start();
-    };
-
-    const handlePressOut = () => {
-        Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: true,
-        }).start();
-        onPress?.();
-    };
-
+    const { t } = useLanguage();
     const imageUrl = listing.main_image || listing.images?.[0]?.image_url;
 
     const formatPrice = (price: string, currency: string) => {
         const num = parseFloat(price);
         if (isNaN(num)) return price;
         if (currency === 'usd') return `$${num.toLocaleString()}`;
-        return `${num.toLocaleString()} so'm`;
+        return `${num.toLocaleString()} ${t.listingCard.sum}`;
     };
 
+    const getListingTypeLabel = (type?: string) => {
+        const map: Record<string, string> = { sale: t.listingCard.sale, rent: t.listingCard.rent, rent_daily: t.listingCard.rentDaily };
+        return map[type || ''] || '';
+    };
+
+    const getListingTypeBg = (type?: string) => {
+        if (type === 'sale') return '#3b82f6';
+        return '#10b981';
+    };
+
+    const districtName = listing.district?.translations?.ru?.name || listing.location || '';
+
     return (
-        <Animated.View
-            style={[
-                styles.card,
-                {
-                    transform: [{ scale: scaleAnim }],
-                },
-            ]}
+        <TouchableOpacity
+            style={styles.card}
+            onPress={onPress}
+            activeOpacity={0.85}
         >
-            <Pressable
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                style={styles.pressable}
-            >
-                {/* Image */}
-                <View style={styles.imageContainer}>
-                    {imageUrl ? (
-                        <Image
-                            source={{ uri: imageUrl }}
-                            style={styles.image}
-                            resizeMode="cover"
-                        />
-                    ) : (
-                        <View style={styles.placeholderContainer}>
-                            <ImageIcon size={32} color="#cbd5e1" strokeWidth={1.5} />
+            {/* Image */}
+            <View style={styles.imageContainer}>
+                {imageUrl ? (
+                    <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.image}
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <View style={styles.placeholderContainer}>
+                        <ImageIcon size={28} color="#cbd5e1" strokeWidth={1.5} />
+                    </View>
+                )}
+
+                {/* Listing type badge */}
+                {listing.listing_type && (
+                    <View style={[styles.typeBadge, { backgroundColor: getListingTypeBg(listing.listing_type) }]}>
+                        <Text style={styles.typeBadgeText}>{getListingTypeLabel(listing.listing_type)}</Text>
+                    </View>
+                )}
+            </View>
+
+            {/* Content */}
+            <View style={styles.content}>
+                <Text style={styles.price}>{formatPrice(listing.price, listing.currency)}</Text>
+                <Text style={styles.title} numberOfLines={1}>{listing.title}</Text>
+
+                {/* Details row */}
+                <View style={styles.detailsRow}>
+                    {listing.rooms ? (
+                        <View style={styles.detailItem}>
+                            <Bed size={12} color="#94a3b8" />
+                            <Text style={styles.detailText}>{listing.rooms}</Text>
                         </View>
-                    )}
-
-                    {/* Gradient overlay */}
-                    <View style={styles.gradientOverlay} />
-
-                    {/* User Badge */}
-                    <View style={styles.userBadge}>
-                        {listing.seller_avatar && (
-                            <Image source={{ uri: listing.seller_avatar }} style={styles.userAvatar} />
-                        )}
-                        <Text style={styles.userText} numberOfLines={1}>{listing.seller_name}</Text>
-                    </View>
-
-                    {/* Content overlay */}
-                    <View style={styles.contentOverlay}>
-                        <Text style={styles.price}>{formatPrice(listing.price, listing.currency)}</Text>
-                        <Text style={styles.title} numberOfLines={2}>{listing.title}</Text>
-                    </View>
+                    ) : null}
+                    {listing.area ? (
+                        <View style={styles.detailItem}>
+                            <Maximize2 size={12} color="#94a3b8" />
+                            <Text style={styles.detailText}>
+                                {parseFloat(listing.area)} {listing.area_unit === 'sqm' ? 'm²' : t.listingCard.sotix}
+                            </Text>
+                        </View>
+                    ) : null}
                 </View>
-            </Pressable>
-        </Animated.View>
+
+                {/* Location */}
+                {districtName ? (
+                    <View style={styles.locationRow}>
+                        <MapPin size={11} color="#94a3b8" />
+                        <Text style={styles.locationText} numberOfLines={1}>{districtName}</Text>
+                    </View>
+                ) : null}
+            </View>
+        </TouchableOpacity>
     );
 };
 
@@ -101,25 +116,23 @@ export default SimilarListingCard;
 
 const styles = StyleSheet.create({
     card: {
-        minWidth: 180,
-        width: 180,
-        borderRadius: 16,
-        overflow: 'hidden',
-        flexShrink: 0,
+        width: 160,
         backgroundColor: '#fff',
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginRight: 10,
+        borderWidth: 1,
+        borderColor: '#f1f5f9',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        elevation: 6,
-        marginRight: 12,
-    },
-    pressable: {
-        flex: 1,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+        elevation: 2,
     },
     imageContainer: {
-        height: 220,
+        height: 110,
         position: 'relative',
+        backgroundColor: '#f1f5f9',
     },
     image: {
         width: '100%',
@@ -131,63 +144,60 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#f1f5f9',
     },
-    gradientOverlay: {
+    typeBadge: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+        top: 8,
+        left: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 6,
     },
-    userBadge: {
-        position: 'absolute',
-        top: 12,
-        left: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3,
+    typeBadgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '700',
     },
-    userAvatar: {
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        backgroundColor: '#e2e8f0',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-    },
-    userText: {
-        color: 'white',
-        fontSize: 11,
-        fontWeight: '600',
-        maxWidth: 90,
-    },
-    contentOverlay: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: 14,
-        gap: 4,
+    content: {
+        padding: 10,
+        gap: 3,
     },
     price: {
-        color: 'white',
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: '700',
+        color: '#0f172a',
         letterSpacing: -0.3,
     },
     title: {
-        color: 'rgba(255, 255, 255, 0.95)',
-        fontSize: 13,
-        fontWeight: '600',
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#475569',
         lineHeight: 16,
+    },
+    detailsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 4,
+    },
+    detailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+    },
+    detailText: {
+        fontSize: 11,
+        color: '#64748b',
+        fontWeight: '500',
+    },
+    locationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        marginTop: 4,
+    },
+    locationText: {
+        fontSize: 11,
+        color: '#94a3b8',
+        flex: 1,
     },
 });

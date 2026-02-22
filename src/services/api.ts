@@ -108,6 +108,16 @@ class ApiClient {
     return response.data;
   }
 
+  async updateAnnouncement(id: string, data: any): Promise<any> {
+    console.log('📝 Updating Announcement', id, 'with:', JSON.stringify(data, null, 2));
+    const response = await this.client.patch(`/announcements/${id}/`, data);
+    return response.data;
+  }
+
+  async deleteAnnouncementImage(announcementId: string, imageId: number): Promise<void> {
+    await this.client.delete(`/announcements/${announcementId}/images/${imageId}/`);
+  }
+
   async updateProperty(id: string, data: Partial<PropertyFormData>): Promise<Property> {
     const response = await this.client.put<ApiResponse<Property>>(
       `/properties/${id}`,
@@ -461,6 +471,19 @@ class ApiClient {
     featured_duration_days: number;
   }> {
     const response = await this.client.get('/payments/settings/');
+    return response.data;
+  }
+
+  /**
+   * Get app settings (admin phone, etc.)
+   * GET /api/admin/settings/app/
+   */
+  async getAppSettings(): Promise<{
+    admin_phone: string;
+    max_images_per_post: number;
+    max_draft_announcements: number;
+  }> {
+    const response = await axios.get('https://makler-qaraqalpaq.uz/api/admin/settings/app/');
     return response.data;
   }
 }

@@ -56,7 +56,9 @@
     "daysAgo": "дн назад",
     "postApproved": "Объявление одобрено",
     "postApprovedMessage": "Ваше объявление одобрено и опубликовано!",
-    "postRejectedMessage": "Ваше объявление было отклонено."
+    "postRejectedMessage": "Ваше объявление было отклонено.",
+    "postApprovedWithTitle": "Ваше объявление \"{title}\" одобрено и опубликовано!",
+    "postRejectedWithTitle": "Ваше объявление \"{title}\" отклонено. Причина: {reason}"
   },
 
   "home": {
@@ -353,7 +355,9 @@
     "termsLink": "Условия использования Payme",
     "payNow": "Оплатить",
     "makePayment": "Оплатить",
-    "promoteListing": "Поднять объявление"
+    "promoteListing": "Поднять объявление",
+    "durationLabel": "Срок действия",
+    "days": "дней"
   },
 
   "paymentHistory": {
@@ -407,6 +411,56 @@
     "loadMore": "Загрузить ещё"
   },
 
+  "allListings": {
+    "loading": "Загрузка...",
+    "errorMessage": "Не удалось загрузить объявления",
+    "retry": "Повторить",
+    "featuredTitle": "Рекомендуемые",
+    "latestListings": "Последние объявления",
+    "filter": "Фильтр",
+    "sort": "Сортировка",
+    "loadMore": "Загрузить ещё"
+  },
+
+  "listingCard": {
+    "noImage": "Нет фото",
+    "rooms": "комн.",
+    "sotix": "сот.",
+    "minAgo": "мин назад",
+    "hoursAgo": "ч назад",
+    "daysAgo": "дн назад",
+    "weeksAgo": "нед назад",
+    "monthsAgo": "мес назад",
+    "sale": "Продажа",
+    "rent": "Аренда",
+    "rentDaily": "Посуточно",
+    "unknown": "Неизвестно",
+    "similarListings": "Похожие объявления",
+    "count": "шт",
+    "sum": "сум",
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "apartment": "Квартира",
+    "house": "Дом",
+    "land": "Земля",
+    "commercial": "Коммерция",
+    "area": "Площадь",
+    "roomsLabel": "Комнаты",
+    "floor": "Этаж",
+    "buildingType": "Тип здания",
+    "buildingNew": "Новостройка",
+    "buildingOld": "Вторичка",
+    "condition": "Состояние",
+    "conditionEuro": "Евроремонт",
+    "conditionGood": "Хорошее",
+    "conditionRepair": "Требует ремонта",
+    "location": "Местоположение",
+    "noLocation": "Местоположение не указано",
+    "openOnMap": "Открыть на карте",
+    "callNow": "Позвонить",
+    "noPhone": "Нет телефона"
+  },
+
   "likedPosts": {
     "title": "Избранное",
     "listings": "объявл.",
@@ -421,7 +475,8 @@
     "removeTitle": "Удалить из избранного",
     "removeConfirm": "Вы хотите удалить это объявление из избранного?",
     "removeButton": "Удалить",
-    "noPrice": "Без цены"
+    "noPrice": "Без цены",
+    "sortArea": "Площадь"
   },
 
   "propertyTypeScreen": {
@@ -476,7 +531,7 @@
     "price": "Цена",
     "pricePlaceholder": "Введите цену",
     "country": "Страна",
-    "region": "Район",
+    "region": "Местоположение",
     "location": "Местоположение",
     "selectOnMap": "Выберите местоположение на карте",
     "selected": "Выбрано",
@@ -495,5 +550,22 @@
     "successTitle": "Успешно",
     "successMessage": "Объявление успешно создано!",
     "submitError": "Ошибка при создании объявления"
+  },
+
+  "bottomSheet": {
+    "menu": "Меню",
+    "language": "Язык",
+    "languageOptions": "Узбекский, Русский, English, Каракалпакский",
+    "help": "Помощь",
+    "helpSubtitle": "Свяжитесь с нами",
+    "developers": "Разработчики",
+    "deleteAccount": "Удалить аккаунт",
+    "deleteAccountWarning": "Это действие нельзя отменить",
+    "logout": "Выйти",
+    "logoutConfirm": "Вы хотите выйти из аккаунта?",
+    "phone": "Телефон",
+    "loadMore": "Загрузить ещё",
+    "user": "Пользователь",
+    "logoutMessage": "Вы вышли из аккаунта"
   }
 }

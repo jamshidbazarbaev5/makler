@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
     ScrollView,
     View,
@@ -7,14 +7,15 @@ import {
     TouchableOpacity,
     StyleSheet,
     Dimensions,
-    PanResponder,
+    FlatList,
     ActivityIndicator,
     Linking,
     Platform,
+    NativeSyntheticEvent,
+    NativeScrollEvent,
 } from 'react-native';
 import { ArrowLeft, MapPin, Heart, MessageCircle, Send, ImageIcon, Navigation } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
-import { similarListings } from '../data/mockData';
 import SimilarListingsSection from './SimilarListingSection';
 import BottomNav from './BottomNav';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -22,6 +23,7 @@ import { COLORS } from '../constants';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { addToFavoritesAsync, removeFromFavoritesAsync } from '../redux/slices/likesSlice';
 import api from '../services/api';
+import { useLanguage } from '../localization/LanguageContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const IMAGE_HEIGHT = 350;
@@ -68,13 +70,14 @@ const ListingDetail = () => {
     const route = useRoute<any>();
     const dispatch = useAppDispatch();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [imageLoading, setImageLoading] = useState(true);
     const [listing, setListing] = useState<AnnouncementDetail | null>(null);
+    const [relatedListings, setRelatedListings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const panResponder = useRef<any>(null);
+    const imageListRef = useRef<FlatList>(null);
     const likedIds = useAppSelector(state => state.likes.likedIds);
     const favoriteMap = useAppSelector(state => state.likes.favoriteMap);
+    const { t } = useLanguage();
 
     const listingId = route.params?.listingId;
 
@@ -90,8 +93,12 @@ const ListingDetail = () => {
         try {
             setLoading(true);
             setError(null);
-            const data = await api.getAnnouncementById(listingId);
+            const [data, related] = await Promise.all([
+                api.getAnnouncementById(listingId),
+                api.getRelatedAnnouncements(listingId).catch(() => []),
+            ]);
             setListing(data);
+            setRelatedListings(related);
         } catch (err: any) {
             console.error('Error fetching listing:', err);
             setError('Failed to load listing');
@@ -104,54 +111,35 @@ const ListingDetail = () => {
 
     const images = listing?.images?.map(img => img.image_url) || [];
 
-    useEffect(() => {
-        if (images.length === 0) return;
-
-        setImageLoading(true);
-        panResponder.current = PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: () => true,
-            onPanResponderRelease: (evt, gestureState) => {
-                const { dx, vx } = gestureState;
-                const SWIPE_THRESHOLD = 50;
-                const VELOCITY_THRESHOLD = 0.5;
-
-                if (dx > SWIPE_THRESHOLD || vx > VELOCITY_THRESHOLD) {
-                    setCurrentImageIndex((prevIndex) =>
-                        prevIndex === 0 ? images.length - 1 : prevIndex - 1
-                    );
-                } else if (dx < -SWIPE_THRESHOLD || vx < -VELOCITY_THRESHOLD) {
-                    setCurrentImageIndex((prevIndex) =>
-                        prevIndex === images.length - 1 ? 0 : prevIndex + 1
-                    );
-                }
-            },
-        });
-    }, [images.length]);
+    const onImageScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const offsetX = e.nativeEvent.contentOffset.x;
+        const index = Math.round(offsetX / SCREEN_WIDTH);
+        setCurrentImageIndex(index);
+    }, []);
 
     const formatPrice = (price: string, currency: string) => {
         const num = parseFloat(price);
         if (currency === 'usd') {
             return `$${num.toLocaleString()}`;
         }
-        return `${num.toLocaleString()} so'm`;
+        return `${num.toLocaleString()} ${t.listingCard.sum}`;
     };
 
     const getPropertyTypeLabel = (type: string) => {
         const types: Record<string, string> = {
-            apartment: 'Kvartira',
-            house: 'Uy',
-            land: 'Yer',
-            commercial: 'Tijorat',
+            apartment: t.listingCard.apartment,
+            house: t.listingCard.house,
+            land: t.listingCard.land,
+            commercial: t.listingCard.commercial,
         };
         return types[type] || type;
     };
 
     const getListingTypeLabel = (type: string) => {
         const types: Record<string, string> = {
-            sale: 'Sotish',
-            rent: 'Ijara',
-            rent_daily: 'Kunlik ijara',
+            sale: t.listingCard.sale,
+            rent: t.listingCard.rent,
+            rent_daily: t.listingCard.rentDaily,
         };
         return types[type] || type;
     };
@@ -162,11 +150,11 @@ const ListingDetail = () => {
         const diffMs = now.getTime() - date.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 0) return 'Bugun';
-        if (diffDays === 1) return 'Kecha';
-        if (diffDays < 7) return `${diffDays} kun oldin`;
-        if (diffDays < 30) return `${Math.floor(diffDays / 7)} hafta oldin`;
-        return `${Math.floor(diffDays / 30)} oy oldin`;
+        if (diffDays === 0) return t.listingCard.today;
+        if (diffDays === 1) return t.listingCard.yesterday;
+        if (diffDays < 7) return `${diffDays} ${t.listingCard.daysAgo}`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} ${t.listingCard.weeksAgo}`;
+        return `${Math.floor(diffDays / 30)} ${t.listingCard.monthsAgo}`;
     };
 
     const buildDetails = () => {
@@ -174,31 +162,42 @@ const ListingDetail = () => {
         const details: { label: string; value: string }[] = [];
 
         if (listing.area) {
-            const unit = listing.area_unit === 'sqm' ? 'm²' : 'sotix';
-            details.push({ label: 'Maydon', value: `${listing.area} ${unit}` });
+            const unit = listing.area_unit === 'sqm' ? 'm²' : t.listingCard.sotix;
+            details.push({ label: t.listingCard.area, value: `${listing.area} ${unit}` });
         }
         if (listing.rooms) {
-            details.push({ label: 'Xonalar', value: `${listing.rooms}` });
+            details.push({ label: t.listingCard.roomsLabel, value: `${listing.rooms}` });
         }
         if (listing.floor && listing.total_floors) {
-            details.push({ label: 'Qavat', value: `${listing.floor}/${listing.total_floors}` });
+            details.push({ label: t.listingCard.floor, value: `${listing.floor}/${listing.total_floors}` });
         }
         if (listing.building_type) {
             const buildingTypes: Record<string, string> = {
-                new: 'Yangi',
-                old: 'Eski',
+                new: t.listingCard.buildingNew,
+                old: t.listingCard.buildingOld,
             };
-            details.push({ label: 'Bino turi', value: buildingTypes[listing.building_type] || listing.building_type });
+            details.push({ label: t.listingCard.buildingType, value: buildingTypes[listing.building_type] || listing.building_type });
         }
         if (listing.condition) {
             const conditions: Record<string, string> = {
-                euro: 'Yevroremont',
-                good: 'Yaxshi',
-                needs_repair: "Ta'mir talab",
+                euro: t.listingCard.conditionEuro,
+                good: t.listingCard.conditionGood,
+                needs_repair: t.listingCard.conditionRepair,
             };
-            details.push({ label: 'Holati', value: conditions[listing.condition] || listing.condition });
+            details.push({ label: t.listingCard.condition, value: conditions[listing.condition] || listing.condition });
         }
         return details;
+    };
+
+    const formatPhone = (phone: string) => {
+        // Remove any non-digit chars except leading +
+        const digits = phone.replace(/\D/g, '');
+        // Format as +998 XX XXX XX XX
+        if (digits.length === 12) {
+            return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10)}`;
+        }
+        // Fallback: just add + prefix
+        return `+${digits}`;
     };
 
     const handleCall = () => {
@@ -293,29 +292,33 @@ const ListingDetail = () => {
         <View style={styles.container}>
             <ScrollView style={styles.scrollView}>
                 {/* Image Carousel */}
-                <View
-                    style={styles.carouselContainer}
-                    {...panResponder.current?.panHandlers}
-                >
+                <View style={styles.carouselContainer}>
                     {images.length > 0 ? (
-                        <Image
-                            source={{ uri: images[currentImageIndex] }}
-                            style={styles.image}
-                            resizeMode="cover"
-                            onLoadStart={() => setImageLoading(true)}
-                            onLoadEnd={() => setImageLoading(false)}
-                            onError={() => setImageLoading(false)}
+                        <FlatList
+                            ref={imageListRef}
+                            data={images}
+                            keyExtractor={(_, i) => i.toString()}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            onMomentumScrollEnd={onImageScroll}
+                            getItemLayout={(_, index) => ({
+                                length: SCREEN_WIDTH,
+                                offset: SCREEN_WIDTH * index,
+                                index,
+                            })}
+                            renderItem={({ item }) => (
+                                <Image
+                                    source={{ uri: item }}
+                                    style={{ width: SCREEN_WIDTH, height: IMAGE_HEIGHT }}
+                                    resizeMode="cover"
+                                />
+                            )}
                         />
                     ) : (
                         <View style={[styles.image, styles.noImagePlaceholder]}>
                             <ImageIcon size={48} color={COLORS.gray400} />
-                            <Text style={styles.noImageText}>Rasm yo'q</Text>
-                        </View>
-                    )}
-
-                    {imageLoading && images.length > 0 && (
-                        <View style={styles.loadingOverlay}>
-                            <ActivityIndicator size="large" color={COLORS.purple} />
+                            <Text style={styles.noImageText}>{t.listingCard.noImage}</Text>
                         </View>
                     )}
 
@@ -334,18 +337,25 @@ const ListingDetail = () => {
                         <Text style={styles.userText} numberOfLines={1}>{listing.seller_name}</Text>
                     </View>
 
+                    {/* Image counter */}
+                    {images.length > 1 && (
+                        <View style={styles.imageCounter}>
+                            <Text style={styles.imageCounterText}>
+                                {currentImageIndex + 1}/{images.length}
+                            </Text>
+                        </View>
+                    )}
+
                     {/* Pagination Dots */}
                     {images.length > 1 && (
                         <View style={styles.paginationContainer}>
                             {images.map((_, index) => (
-                                <TouchableOpacity
+                                <View
                                     key={index}
-                                    onPress={() => setCurrentImageIndex(index)}
                                     style={[
                                         styles.paginationDot,
                                         index === currentImageIndex ? styles.paginationDotActive : styles.paginationDotInactive,
                                     ]}
-                                    activeOpacity={0.7}
                                 />
                             ))}
                         </View>
@@ -391,12 +401,12 @@ const ListingDetail = () => {
                                     {listing.favorites_count}
                                 </Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                                <MessageCircle size={20} color="#0f172a" />
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
-                                <Send size={20} color="#0f172a" />
-                            </TouchableOpacity>
+                            {/*<TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>*/}
+                            {/*    <MessageCircle size={20} color="#0f172a" />*/}
+                            {/*</TouchableOpacity>*/}
+                            {/*<TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>*/}
+                            {/*    <Send size={20} color="#0f172a" />*/}
+                            {/*</TouchableOpacity>*/}
                         </View>
                     </View>
 
@@ -429,10 +439,10 @@ const ListingDetail = () => {
 
                     {/* Location Section */}
                     <View style={styles.locationContainer}>
-                        <Text style={styles.locationTitle}>Joylashuv</Text>
+                        <Text style={styles.locationTitle}>{t.listingCard.location}</Text>
                         <View style={styles.locationAddress}>
                             <MapPin size={16} color="#64748b" />
-                            <Text style={styles.locationText}>{listing.district?.translations?.ru?.name || 'Noma\'lum'}</Text>
+                            <Text style={styles.locationText}>{listing.district?.translations?.ru?.name || t.listingCard.unknown}</Text>
                         </View>
 
                         {/* Interactive Map */}
@@ -450,21 +460,21 @@ const ListingDetail = () => {
                                 />
                                 <View style={styles.mapTapOverlay}>
                                     <Navigation size={20} color="#fff" />
-                                    <Text style={styles.mapTapText}>Xaritada ochish</Text>
+                                    <Text style={styles.mapTapText}>{t.listingCard.openOnMap}</Text>
                                 </View>
                             </TouchableOpacity>
                         ) : (
                             <View style={styles.mapContainer}>
                                 <View style={styles.noLocationPlaceholder}>
                                     <MapPin size={32} color={COLORS.gray400} />
-                                    <Text style={styles.noLocationText}>Joylashuv ko'rsatilmagan</Text>
+                                    <Text style={styles.noLocationText}>{t.listingCard.noLocation}</Text>
                                 </View>
                             </View>
                         )}
                     </View>
 
                     {/* Similar Listings */}
-                    <SimilarListingsSection listings={similarListings} />
+                    <SimilarListingsSection listings={relatedListings} />
                 </View>
 
                 {/* Bottom Spacer for Fixed Buttons */}
@@ -473,12 +483,14 @@ const ListingDetail = () => {
 
             {/* Fixed Bottom Actions */}
             <View style={styles.bottomActionsContainer}>
-                <TouchableOpacity style={styles.messageButton} activeOpacity={0.7}>
-                    <Text style={styles.messageButtonText}>Sotuvchiga yozing</Text>
+                <TouchableOpacity style={styles.messageButton} activeOpacity={0.7} onPress={handleCall}>
+                    <Text style={styles.messageButtonText}>
+                        {listing?.phone ? formatPhone(listing.phone) : t.listingCard.noPhone}
+                    </Text>
                 </TouchableOpacity>
                 <View style={styles.bottomButtonsRow}>
                     <TouchableOpacity style={styles.callButton} activeOpacity={0.7} onPress={handleCall}>
-                        <Text style={styles.callButtonText}>Qo'ng'iroq qiling</Text>
+                        <Text style={styles.callButtonText}>{t.listingCard.callNow}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[
@@ -493,7 +505,7 @@ const ListingDetail = () => {
                         }}
                         disabled={!(listing?.latitude && listing?.longitude)}
                     >
-                        <Text style={styles.locationButtonText}>Joylashuv</Text>
+                        <Text style={styles.locationButtonText}>{t.listingCard.location}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -541,6 +553,7 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     noImagePlaceholder: {
+        height: IMAGE_HEIGHT,
         backgroundColor: COLORS.gray100,
         justifyContent: 'center',
         alignItems: 'center',
@@ -551,15 +564,19 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
     },
-    loadingOverlay: {
+    imageCounter: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        top: 16,
+        right: 16,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    imageCounterText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
     },
     backButton: {
         position: 'absolute',
@@ -583,7 +600,7 @@ const styles = StyleSheet.create({
     userBadge: {
         position: 'absolute',
         left: 16,
-        bottom: 16,
+        bottom: 32,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,

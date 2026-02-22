@@ -23,6 +23,7 @@ import MyListingDetailScreen from '../screens/MyListingDetailScreen';
 import MapScreen from '../screens/MapScreen';
 import PaymentScreen from '../screens/PaymentScreen';
 import PaymentHistoryScreen from '../screens/PaymentHistoryScreen';
+import EditAnnouncementScreen from '../screens/EditAnnouncementScreen';
 import {LoginScreen} from '../screens/LoginScreen';
 import {TelegramLoginScreen} from '../screens/TelegramLoginScreen';
 
@@ -44,8 +45,9 @@ export type RootStackParamList = {
   TopPosts: undefined;
   Notifications: undefined;
   Map: undefined;
-  Payment: {announcementId: string; paymentType: 'post' | 'featured'; amount?: number};
+  Payment: {announcementId: string; paymentType: 'post' | 'featured'; amount?: number; durationDays?: number};
   PaymentHistory: undefined;
+  EditAnnouncement: {listingId: string};
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -119,6 +121,13 @@ function ProfileStack() {
               animation: 'default',
             }}
           />
+          <Stack.Screen
+            name="EditAnnouncement"
+            component={EditAnnouncementScreen}
+            options={{
+              animation: 'default',
+            }}
+          />
         </>
       ) : (
         // User not logged in - show login screen
@@ -159,6 +168,13 @@ function AddListingStack() {
       <Stack.Screen
         name="PropertyForm"
         component={PropertyFormScreen}
+        options={{
+          animation: 'default',
+        }}
+      />
+      <Stack.Screen
+        name="Payment"
+        component={PaymentScreen}
         options={{
           animation: 'default',
         }}

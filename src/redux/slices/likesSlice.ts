@@ -49,10 +49,10 @@ export const loadFavoritesAsync = createAsyncThunk(
     try {
       const response = await api.getUserFavorites();
       // Extract announcement IDs and create a map of announcement ID to favorite ID
-      const announcementIds = response.results.map((fav: any) => fav.announcement);
+      const announcementIds = response.results.map((fav: any) => String(fav.announcement));
       const favoriteMap: { [key: string]: number } = {};
       response.results.forEach((fav: any) => {
-        favoriteMap[fav.announcement] = fav.id;
+        favoriteMap[String(fav.announcement)] = fav.id;
       });
       return { announcementIds, favoriteMap };
     } catch (error: any) {
@@ -98,40 +98,55 @@ const likesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(addToFavoritesAsync.pending, (state) => {
-        state.loading = true;
+      // Optimistic add: immediately show liked state
+      .addCase(addToFavoritesAsync.pending, (state, action) => {
         state.error = null;
+        const id = String(action.meta.arg.id);
+        if (!state.likedIds.includes(id)) {
+          state.likedIds.push(id);
+        }
       })
       .addCase(addToFavoritesAsync.fulfilled, (state, action) => {
         state.loading = false;
         const { listing, favoriteId } = action.payload;
-        if (!state.likedIds.includes(listing.id)) {
+        const id = String(listing.id);
+        if (!state.likedIds.includes(id)) {
+          state.likedIds.push(id);
+        }
+        if (!state.likedListings.find(l => String(l.id) === id)) {
           state.likedListings.push(listing);
-          state.likedIds.push(listing.id);
         }
         if (favoriteId) {
-          state.favoriteMap[listing.id] = favoriteId;
+          state.favoriteMap[id] = favoriteId;
         }
       })
       .addCase(addToFavoritesAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        // Rollback optimistic add
+        const id = String(action.meta.arg.id);
+        state.likedIds = state.likedIds.filter(i => i !== id);
+        state.likedListings = state.likedListings.filter(l => String(l.id) !== id);
       })
-      .addCase(removeFromFavoritesAsync.pending, (state) => {
-        state.loading = true;
+      // Optimistic remove: immediately show unliked state
+      .addCase(removeFromFavoritesAsync.pending, (state, action) => {
         state.error = null;
+        const id = String(action.meta.arg.announcementId);
+        state.likedIds = state.likedIds.filter(i => i !== id);
+        state.likedListings = state.likedListings.filter(l => String(l.id) !== id);
+        delete state.favoriteMap[id];
       })
       .addCase(removeFromFavoritesAsync.fulfilled, (state, action) => {
         state.loading = false;
-        state.likedListings = state.likedListings.filter(
-          listing => listing.id !== action.payload,
-        );
-        state.likedIds = state.likedIds.filter(id => id !== action.payload);
-        delete state.favoriteMap[action.payload];
+        // Already removed optimistically, just confirm
+        const id = String(action.payload);
+        state.likedIds = state.likedIds.filter(i => i !== id);
+        delete state.favoriteMap[id];
       })
       .addCase(removeFromFavoritesAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        // Rollback: re-add the item (will be corrected on next loadFavorites)
       })
       .addCase(loadFavoritesAsync.pending, (state) => {
         state.loading = true;

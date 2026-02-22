@@ -1,47 +1,39 @@
-import React, { useRef } from 'react';
-import { Text, View, ScrollView, StyleSheet, Animated } from 'react-native';
+import React from 'react';
+import { Text, View, FlatList, StyleSheet } from 'react-native';
 import SimilarListingCard, { RelatedListing } from './SimilarListingCard';
 import { useNavigation } from '@react-navigation/native';
+import { useLanguage } from '../localization/LanguageContext';
 
 interface SimilarListingsSectionProps {
     listings: RelatedListing[];
 }
 
 const SimilarListingsSection = ({ listings }: SimilarListingsSectionProps) => {
-    const scrollViewRef = useRef<ScrollView>(null);
-    const scrollX = useRef(new Animated.Value(0)).current;
     const navigation = useNavigation<any>();
+    const { t } = useLanguage();
 
-    const handleScroll = Animated.event(
-        [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-        { useNativeDriver: false }
-    );
-
-    if (listings.length === 0) return null;
+    if (!listings || listings.length === 0) return null;
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Shunga o'xshash e'lonlar</Text>
+            <View style={styles.header}>
+                <Text style={styles.title}>{t.listingCard.similarListings}</Text>
+                <Text style={styles.count}>{listings.length} {t.listingCard.count}</Text>
+            </View>
 
-            <ScrollView
-                ref={scrollViewRef}
+            <FlatList
+                data={listings}
+                keyExtractor={(item) => item.id}
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContainer}
-                scrollEventThrottle={16}
-                onScroll={handleScroll}
-                decelerationRate="fast"
-                snapToInterval={192}
-                snapToAlignment="start"
-            >
-                {listings.map((listing) => (
+                contentContainerStyle={styles.listContainer}
+                renderItem={({ item }) => (
                     <SimilarListingCard
-                        key={listing.id}
-                        listing={listing}
-                        onPress={() => navigation.push('ListingDetail', { listingId: listing.id })}
+                        listing={item}
+                        onPress={() => navigation.push('ListingDetail', { listingId: item.id })}
                     />
-                ))}
-            </ScrollView>
+                )}
+            />
         </View>
     );
 };
@@ -50,19 +42,28 @@ export default SimilarListingsSection;
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: 32,
+        marginTop: 24,
+        marginBottom: 16,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        marginBottom: 14,
     },
     title: {
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: '700',
         color: '#0f172a',
-        marginBottom: 16,
-        marginLeft: 16,
         letterSpacing: -0.3,
     },
-    scrollContainer: {
+    count: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#94a3b8',
+    },
+    listContainer: {
         paddingHorizontal: 16,
-        paddingBottom: 8,
-        gap: 0,
     },
 });

@@ -11,13 +11,15 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { ChevronDown, SlidersHorizontal, Star } from 'lucide-react-native';
+import { ChevronDown, SlidersHorizontal, Star, Flame } from 'lucide-react-native';
 import ListingCard from './ListingCard'
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
 import { COLORS } from '../constants';
 import { useAppSelector, useAppDispatch } from '../redux/hooks';
 import { loadFavoritesAsync, addToFavoritesAsync, removeFromFavoritesAsync } from '../redux/slices/likesSlice';
+import LinearGradient from 'react-native-linear-gradient';
+import { useLanguage } from '../localization/LanguageContext';
 
 interface Announcement {
   id: string;
@@ -46,13 +48,14 @@ interface Announcement {
   promotion_type?: string;
 }
 
-const GAP = 12;
+const GAP = 10;
 const PADDING = 16;
 
 const AllListingsSection = () => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const dispatch = useAppDispatch();
+  const { t } = useLanguage();
   const likedIds = useAppSelector(state => state.likes.likedIds);
   const favoriteMap = useAppSelector(state => state.likes.favoriteMap);
   const [listings, setListings] = useState<Announcement[]>([]);
@@ -92,11 +95,6 @@ const AllListingsSection = () => {
 
       const [announcementsRes, featuredRes] = await Promise.all(requests);
 
-      console.log('📋 Announcements response (page ' + page + '):', JSON.stringify(announcementsRes, null, 2));
-      if (featuredRes) {
-        console.log('⭐ Featured response:', JSON.stringify(featuredRes, null, 2));
-      }
-
       if (page === 1) {
         setListings(announcementsRes.results || []);
         if (featuredRes) {
@@ -114,7 +112,7 @@ const AllListingsSection = () => {
       setCurrentPage(page);
     } catch (err: any) {
       console.error('Error fetching announcements:', err);
-      setError('Failed to load listings');
+      setError(t.allListings.errorMessage);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -134,14 +132,15 @@ const AllListingsSection = () => {
   };
 
   const handleToggleFavorite = (announcementId: string) => {
-    const isFavorited = likedIds.includes(announcementId);
+    const id = String(announcementId);
+    const isFavorited = likedIds.includes(id);
     if (isFavorited) {
-      const favoriteId = favoriteMap[announcementId];
+      const favoriteId = favoriteMap[id];
       if (favoriteId) {
-        dispatch(removeFromFavoritesAsync({ announcementId, favoriteId }));
+        dispatch(removeFromFavoritesAsync({ announcementId: id, favoriteId }));
       }
     } else {
-      dispatch(addToFavoritesAsync({ id: announcementId } as any));
+      dispatch(addToFavoritesAsync({ id } as any));
     }
   };
 
@@ -172,14 +171,14 @@ const AllListingsSection = () => {
     if (currency === 'usd') {
       return `$${num.toLocaleString()}`;
     }
-    return `${num.toLocaleString()} so'm`;
+    return `${num.toLocaleString()} ${t.listingCard.sum}`;
   };
 
   const renderListingCard = ({ item }: { item: Announcement }) => (
-    <View style={{ width: itemWidth }}>
+    <View style={{ width: itemWidth, flex: 1 }}>
       <ListingCard
         listing={formatListing(item)}
-        isFavorited={likedIds.includes(item.id)}
+        isFavorited={likedIds.includes(String(item.id))}
         onToggleFavorite={handleToggleFavorite}
       />
     </View>
@@ -188,7 +187,8 @@ const AllListingsSection = () => {
   if (loading) {
     return (
       <View style={[styles.section, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={COLORS.purple} />
+        <Text style={styles.loadingText}>{t.allListings.loading}</Text>
       </View>
     );
   }
@@ -196,15 +196,16 @@ const AllListingsSection = () => {
   if (error) {
     return (
       <View style={[styles.section, styles.errorContainer]}>
+        <Text style={styles.errorEmoji}>:(</Text>
         <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
         <TouchableOpacity onPress={() => fetchData(1)} style={styles.retryButton}>
-          <Text style={styles.retryText}>Retry</Text>
+          <Text style={styles.retryText}>{t.allListings.retry}</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const FEATURED_CARD_WIDTH = 260;
+  const FEATURED_CARD_WIDTH = 240;
 
   return (
     <View style={styles.section}>
@@ -212,8 +213,16 @@ const AllListingsSection = () => {
       {featuredListings.length > 0 && (
         <View style={styles.featuredSection}>
           <View style={styles.featuredHeader}>
-            <Star size={16} color="#fbbf24" fill="#fbbf24" />
-            <Text style={[styles.featuredTitle, { color: colors.text }]}>Tavsiya etilgan</Text>
+            <LinearGradient
+              colors={['#fbbf24', '#f59e0b']}
+              style={styles.featuredIconBg}
+            >
+              <Star size={14} color="#fff" fill="#fff" />
+            </LinearGradient>
+            <Text style={[styles.featuredTitle, { color: colors.text }]}>{t.allListings.featuredTitle}</Text>
+            <View style={styles.featuredCountBadge}>
+              <Text style={styles.featuredCountText}>{featuredListings.length}</Text>
+            </View>
           </View>
           <ScrollView
             horizontal
@@ -227,7 +236,7 @@ const AllListingsSection = () => {
               <View key={item.id} style={{ width: FEATURED_CARD_WIDTH }}>
                 <ListingCard
                   listing={formatListing(item)}
-                  isFavorited={likedIds.includes(item.id)}
+                  isFavorited={likedIds.includes(String(item.id))}
                   onToggleFavorite={handleToggleFavorite}
                 />
               </View>
@@ -239,21 +248,24 @@ const AllListingsSection = () => {
       {/* Header */}
       <View style={styles.headerContainer}>
         <View style={styles.titleRow}>
+          <Flame size={20} color={COLORS.purple} fill={COLORS.purpleLight} />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            So'nggi e'lonlar
+            {t.allListings.latestListings}
           </Text>
-          <Text style={styles.countBadge}>{totalCount}</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{totalCount}</Text>
+          </View>
         </View>
 
         {/* Filter Chips */}
         <View style={styles.filterRow}>
           <TouchableOpacity style={styles.filterChip} activeOpacity={0.7}>
-            <SlidersHorizontal size={14} color="#334155" />
-            <Text style={styles.filterText}>Filter</Text>
+            <SlidersHorizontal size={14} color={COLORS.purple} />
+            <Text style={styles.filterText}>{t.allListings.filter}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.sortChip} activeOpacity={0.7}>
-            <Text style={styles.sortText}>Saralash</Text>
+            <Text style={styles.sortText}>{t.allListings.sort}</Text>
             <ChevronDown size={14} color="#64748b" />
           </TouchableOpacity>
         </View>
@@ -274,14 +286,14 @@ const AllListingsSection = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={colors.primary}
+              tintColor={COLORS.purple}
             />
           }
         />
 
         {hasNextPage && (
           <TouchableOpacity
-            style={[styles.loadMoreButton, { borderColor: colors.border }]}
+            style={styles.loadMoreButton}
             onPress={handleLoadMore}
             disabled={loadingMore}
             activeOpacity={0.7}
@@ -289,7 +301,14 @@ const AllListingsSection = () => {
             {loadingMore ? (
               <ActivityIndicator size="small" color={COLORS.purple} />
             ) : (
-              <Text style={[styles.loadMoreText, { color: colors.text }]}>Yana yuklash</Text>
+              <LinearGradient
+                colors={[COLORS.purple, COLORS.purpleDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.loadMoreGradient}
+              >
+                <Text style={styles.loadMoreText}>{t.allListings.loadMore}</Text>
+              </LinearGradient>
             )}
           </TouchableOpacity>
         )}
@@ -302,54 +321,90 @@ const styles = StyleSheet.create({
   section: {
     paddingBottom: 40,
   },
-  sectionPadded: {
-    paddingHorizontal: PADDING,
-  },
   // Featured Carousel
   featuredSection: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   featuredHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: PADDING,
-    marginBottom: 12,
+    marginBottom: 14,
+  },
+  featuredIconBg: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   featuredTitle: {
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  featuredCountBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  featuredCountText: {
+    fontSize: 12,
     fontWeight: '700',
+    color: '#d97706',
   },
   featuredScrollContent: {
     paddingHorizontal: PADDING,
     gap: 12,
-    paddingBottom: 4,
+    paddingBottom: 6,
   },
+  // Loading
   loadingContainer: {
-    paddingVertical: 40,
+    paddingVertical: 60,
+    paddingHorizontal: PADDING,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#94a3b8',
+    fontWeight: '500',
+  },
+  // Error
+  errorContainer: {
+    paddingVertical: 60,
     paddingHorizontal: PADDING,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  errorContainer: {
-    paddingVertical: 40,
-    paddingHorizontal: PADDING,
-    alignItems: 'center',
-    justifyContent: 'center',
+  errorEmoji: {
+    fontSize: 32,
+    marginBottom: 8,
+    color: '#94a3b8',
   },
   errorText: {
-    fontSize: 14,
-    marginBottom: 12,
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: COLORS.purple,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    shadowColor: COLORS.purple,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   retryText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 14,
   },
   // Header
   headerContainer: {
@@ -359,7 +414,7 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
     gap: 8,
   },
   sectionTitle: {
@@ -368,14 +423,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   countBadge: {
+    backgroundColor: '#ede9fe',
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  countText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#64748b',
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    overflow: 'hidden',
+    color: COLORS.purple,
   },
   filterRow: {
     flexDirection: 'row',
@@ -384,24 +440,28 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    backgroundColor: '#f5f3ff',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#e9e5ff',
     gap: 6,
   },
   filterText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#334155',
+    color: COLORS.purple,
   },
   sortChip: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 9,
+    borderRadius: 22,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     gap: 4,
   },
   sortText: {
@@ -415,21 +475,26 @@ const styles = StyleSheet.create({
   },
   columnWrapper: {
     gap: GAP,
+    alignItems: 'stretch',
   },
   // Load More
   loadMoreButton: {
     marginTop: 24,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderRadius: 12,
-    borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
+  },
+  loadMoreGradient: {
+    width: '100%',
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadMoreText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.2,
   },
 });
 

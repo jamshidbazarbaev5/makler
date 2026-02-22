@@ -56,7 +56,9 @@
     "daysAgo": "d ago",
     "postApproved": "Post approved",
     "postApprovedMessage": "Your post has been approved and is now live!",
-    "postRejectedMessage": "Your post was rejected."
+    "postRejectedMessage": "Your post was rejected.",
+    "postApprovedWithTitle": "Your post \"{title}\" has been approved and is now live!",
+    "postRejectedWithTitle": "Your post \"{title}\" was rejected. Reason: {reason}"
   },
 
   "home": {
@@ -353,7 +355,9 @@
     "termsLink": "Payme Terms of Service",
     "payNow": "Pay Now",
     "makePayment": "Make Payment",
-    "promoteListing": "Promote Listing"
+    "promoteListing": "Promote Listing",
+    "durationLabel": "Validity period",
+    "days": "days"
   },
 
   "paymentHistory": {
@@ -407,6 +411,56 @@
     "loadMore": "Load More"
   },
 
+  "allListings": {
+    "loading": "Loading...",
+    "errorMessage": "Failed to load listings",
+    "retry": "Retry",
+    "featuredTitle": "Recommended",
+    "latestListings": "Latest listings",
+    "filter": "Filter",
+    "sort": "Sort",
+    "loadMore": "Load more"
+  },
+
+  "listingCard": {
+    "noImage": "No image",
+    "rooms": "rooms",
+    "sotix": "sotix",
+    "minAgo": "min ago",
+    "hoursAgo": "h ago",
+    "daysAgo": "d ago",
+    "weeksAgo": "w ago",
+    "monthsAgo": "mo ago",
+    "sale": "Sale",
+    "rent": "Rent",
+    "rentDaily": "Daily rent",
+    "unknown": "Unknown",
+    "similarListings": "Similar listings",
+    "count": "pcs",
+    "sum": "UZS",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "apartment": "Apartment",
+    "house": "House",
+    "land": "Land",
+    "commercial": "Commercial",
+    "area": "Area",
+    "roomsLabel": "Rooms",
+    "floor": "Floor",
+    "buildingType": "Building type",
+    "buildingNew": "New",
+    "buildingOld": "Old",
+    "condition": "Condition",
+    "conditionEuro": "Euro renovation",
+    "conditionGood": "Good",
+    "conditionRepair": "Needs repair",
+    "location": "Location",
+    "noLocation": "Location not specified",
+    "openOnMap": "Open on map",
+    "callNow": "Call",
+    "noPhone": "No phone"
+  },
+
   "likedPosts": {
     "title": "Favorites",
     "listings": "listing(s)",
@@ -421,7 +475,8 @@
     "removeTitle": "Remove from favorites",
     "removeConfirm": "Do you want to remove this listing from favorites?",
     "removeButton": "Remove",
-    "noPrice": "No price"
+    "noPrice": "No price",
+    "sortArea": "Area"
   },
 
   "propertyTypeScreen": {
@@ -495,5 +550,22 @@
     "successTitle": "Success",
     "successMessage": "Listing created successfully!",
     "submitError": "Error creating listing"
+  },
+
+  "bottomSheet": {
+    "menu": "Menu",
+    "language": "Language",
+    "languageOptions": "Uzbek, Russian, English, Karakalpak",
+    "help": "Help",
+    "helpSubtitle": "Contact us",
+    "developers": "Developers",
+    "deleteAccount": "Delete account",
+    "deleteAccountWarning": "This action cannot be undone",
+    "logout": "Logout",
+    "logoutConfirm": "Are you sure you want to logout?",
+    "phone": "Phone",
+    "loadMore": "Load more",
+    "user": "User",
+    "logoutMessage": "You have logged out"
   }
 }

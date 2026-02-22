@@ -34,12 +34,14 @@ type Props = NativeStackScreenProps<any, 'Profile'>;
 const tabs = [
   { id: 'listings', icon: 'Home', activeIcon: 'Home' },
   { id: 'favorites', icon: 'Heart', activeIcon: 'Heart' },
+  { id: 'payments', icon: 'Wallet', activeIcon: 'Wallet' },
 ];
 
 const iconMap: any = {
   Home,
   Handshake,
   Heart,
+  Wallet,
 };
 
 // Status mapping for API (labels will be resolved dynamically via translations)
@@ -96,6 +98,7 @@ export default function Profile({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
+  const [adminPhone, setAdminPhone] = useState<string | undefined>(undefined);
 
   const { width } = useWindowDimensions();
   const numColumns = 2;
@@ -103,6 +106,10 @@ export default function Profile({ navigation }: Props) {
 
   useEffect(() => {
     dispatch(fetchProfile());
+    // Fetch admin phone from app settings
+    api.getAppSettings()
+      .then(settings => setAdminPhone(settings.admin_phone))
+      .catch(err => console.error('Error fetching app settings:', err));
   }, [dispatch]);
 
   // Refresh listings and counts when screen comes into focus (after delete/edit)
@@ -191,7 +198,7 @@ export default function Profile({ navigation }: Props) {
     if (currency === 'usd') {
       return `$${num.toLocaleString()}`;
     }
-    return `${num.toLocaleString()} so'm`;
+    return `${num.toLocaleString()} ${t.listingCard.sum}`;
   };
 
   const getStatusColor = (status: string) => {
@@ -206,13 +213,13 @@ export default function Profile({ navigation }: Props) {
   };
 
   const handleLogout = () => {
-    Alert.alert('Chiqish', 'Siz hisobingizdan chiqdingiz', [
+    Alert.alert(t.bottomSheet.logout, t.bottomSheet.logoutMessage, [
       {
-        text: 'Bekor qilish',
+        text: t.common.cancel,
         style: 'cancel',
       },
       {
-        text: 'Chiqish',
+        text: t.bottomSheet.logout,
         onPress: () => {
           dispatch(logout() as any);
         },
@@ -267,7 +274,7 @@ export default function Profile({ navigation }: Props) {
       return 'U';
   };
 
-  const displayName = user?.full_name || user?.first_name || user?.username || 'Foydalanuvchi';
+  const displayName = user?.full_name || user?.first_name || user?.username || t.bottomSheet.user;
   const displayUsername = user?.username ? `@${user.username}` : '';
   const photoUrl = user?.photo_url || user?.avatar;
 
@@ -288,7 +295,7 @@ export default function Profile({ navigation }: Props) {
             </View>
           ) : (
             <View style={styles.header}>
-              <Text style={styles.username}>{displayUsername}</Text>
+              {/*<Text style={styles.username}>{displayUsername}</Text>*/}
               <View style={styles.headerIcons}>
                 <TouchableOpacity
                   style={styles.iconButton}
@@ -296,9 +303,9 @@ export default function Profile({ navigation }: Props) {
                 >
                   <Wallet size={20} color={COLORS.gray700} />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton}>
-                  <Share2 size={20} color={COLORS.gray700} />
-                </TouchableOpacity>
+                {/*<TouchableOpacity style={styles.iconButton}>*/}
+                {/*  <Share2 size={20} color={COLORS.gray700} />*/}
+                {/*</TouchableOpacity>*/}
                 <TouchableOpacity
                   style={styles.iconButton}
                   onPress={() => navigation.navigate('ProfileEdit')}
@@ -376,7 +383,15 @@ export default function Profile({ navigation }: Props) {
                   return (
                     <TouchableOpacity
                       key={tab.id}
-                      onPress={() => setActiveTab(tab.id)}
+                      onPress={() => {
+                        if (tab.id === 'favorites') {
+                          navigation.navigate('Messages' as any);
+                        } else if (tab.id === 'payments') {
+                          navigation.navigate('PaymentHistory');
+                        } else {
+                          setActiveTab(tab.id);
+                        }
+                      }}
                       style={[
                         styles.tabButton,
                         isActive && styles.activeTab,
@@ -667,7 +682,7 @@ export default function Profile({ navigation }: Props) {
                       {loadingMore ? (
                         <ActivityIndicator size="small" color={COLORS.purple} />
                       ) : (
-                        <Text style={styles.loadMoreText}>Ko'proq yuklash</Text>
+                        <Text style={styles.loadMoreText}>{t.bottomSheet.loadMore}</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -676,18 +691,7 @@ export default function Profile({ navigation }: Props) {
             </View>
           )}
 
-          {/* Favorites Tab - Empty State */}
-          {!loading && activeTab === 'favorites' && (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyStateIcon}>
-                <Heart size={40} color={COLORS.accent} />
-                <View style={[styles.dot, styles.dotTopRight]} />
-                <View style={[styles.dot, styles.dotBottomLeft]} />
-                <View style={[styles.dot, styles.dotTopLeft]} />
-              </View>
-              <Text style={styles.emptyStateText}>{t.favorites.noFavorites}</Text>
-            </View>
-          )}
+          {/* Favorites and Payments tabs navigate to their screens */}
         </View>
       </ScrollView>
 
@@ -702,6 +706,7 @@ export default function Profile({ navigation }: Props) {
             setMenuVisible(false);
             setLanguageModalVisible(true);
           }}
+          adminPhone={adminPhone}
         />
       )}
 
@@ -729,7 +734,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,

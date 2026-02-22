@@ -14,14 +14,15 @@ import { COLORS } from '../constants';
 interface LanguageModalProps {
   visible: boolean;
   onClose: () => void;
-  currentLanguage?: 'uz' | 'ru' | 'en';
-  onLanguageSelect: (language: 'uz' | 'ru' | 'en') => void;
+  currentLanguage?: 'uz' | 'ru' | 'en' | 'kaa' | 'kaa';
+  onLanguageSelect: (language: 'uz' | 'ru' | 'en' | 'kaa' | 'kaa') => void;
 }
 
 const languages = [
   { id: 'uz', name: 'O\'zbek', flag: '🇺🇿', nativeName: 'O\'zbek' },
   { id: 'ru', name: 'Русский', flag: '🇷🇺', nativeName: 'Русский' },
   { id: 'en', name: 'English', flag: '🇺🇸', nativeName: 'English' },
+  { id: 'kaa', name: 'Qaraqalpaq', flag: '🇺🇿', nativeName: 'Qaraqalpaqsha' },
 ];
 
 export default function LanguageModal({
@@ -30,7 +31,7 @@ export default function LanguageModal({
   currentLanguage = 'uz',
   onLanguageSelect,
 }: LanguageModalProps) {
-  const [selectedLanguage, setSelectedLanguage] = useState<'uz' | 'ru' | 'en'>(
+  const [selectedLanguage, setSelectedLanguage] = useState<'uz' | 'ru' | 'en' | 'kaa'>(
     currentLanguage
   );
   const [slideAnim] = useState(new Animated.Value(0));
@@ -56,7 +57,7 @@ export default function LanguageModal({
     outputRange: [500, 0],
   });
 
-  const handleSelect = (language: 'uz' | 'ru' | 'en') => {
+  const handleSelect = (language: 'uz' | 'ru' | 'en' | 'kaa') => {
     setSelectedLanguage(language);
     Animated.timing(slideAnim, {
       toValue: 0,
@@ -277,16 +278,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginHorizontal: 16,
-    marginVertical: 16,
+    marginTop: 16,
+    marginBottom: 36,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     backgroundColor: COLORS.secondary,
     borderRadius: 12,
   },
   infoText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.gray700,
     fontWeight: '500',
+    lineHeight: 18,
   },
 });

@@ -1,12 +1,13 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type Language = 'uz' | 'ru' | 'en';
+export type Language = 'uz' | 'ru' | 'en' | 'kaa';
 
 // Import JSON translations
 import uzTranslations from './uz.json';
 import ruTranslations from './ru.json';
 import enTranslations from './en.json';
+import kaaTranslations from './kaa.json';
 
 export type TranslationKeys = typeof uzTranslations;
 
@@ -20,6 +21,7 @@ const translations: Record<Language, TranslationKeys> = {
   uz: uzTranslations,
   ru: ruTranslations,
   en: enTranslations,
+  kaa: kaaTranslations as TranslationKeys,
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -37,7 +39,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const loadLanguage = async () => {
     try {
       const savedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-      if (savedLanguage && (savedLanguage === 'uz' || savedLanguage === 'ru' || savedLanguage === 'en')) {
+      if (savedLanguage && (savedLanguage === 'uz' || savedLanguage === 'ru' || savedLanguage === 'en' || savedLanguage === 'kaa')) {
         setLanguageState(savedLanguage as Language);
       }
     } catch (error) {

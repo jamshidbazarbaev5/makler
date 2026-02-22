@@ -27,6 +27,7 @@ interface RouteParams {
   announcementId: string;
   paymentType: PaymentType;
   amount?: number;
+  durationDays?: number;
 }
 
 const PaymentScreen = () => {
@@ -34,7 +35,7 @@ const PaymentScreen = () => {
   const route = useRoute<any>();
   const { t } = useLanguage();
 
-  const { announcementId, paymentType, amount } = route.params as RouteParams;
+  const { announcementId, paymentType, amount, durationDays } = route.params as RouteParams;
 
   // Payment state
   const [step, setStep] = useState<PaymentStep>('card_input');
@@ -328,7 +329,7 @@ const PaymentScreen = () => {
       {/* Payme Logo and Terms - Required by Paycom */}
       <View style={styles.paymeSection}>
         <Image
-          source={{ uri: 'https://cdn.payme.uz/logo/payme_01.svg' }}
+          source={{ uri: 'https://cdn.payme.uz/logos/payme_01.png' }}
           style={styles.paymeLogo}
           resizeMode="contain"
         />
@@ -515,6 +516,11 @@ const PaymentScreen = () => {
           <Text style={styles.amountValue}>
             {amount.toLocaleString()} {t?.payment?.currency || 'so\'m'}
           </Text>
+          {durationDays && (
+            <Text style={styles.durationText}>
+              {t?.payment?.durationLabel || 'Amal qilish muddati'}: {durationDays} {t?.payment?.days || 'kun'}
+            </Text>
+          )}
         </View>
       )}
 
@@ -587,6 +593,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: COLORS.gray900,
+  },
+  durationText: {
+    fontSize: 14,
+    color: COLORS.gray600,
+    marginTop: 4,
   },
   stepIndicator: {
     flexDirection: 'row',
