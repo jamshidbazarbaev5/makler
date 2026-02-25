@@ -7,6 +7,8 @@ import {
 } from 'react-native';
 import { Home, MapPin, PlusCircle, HeartIcon, User } from 'lucide-react-native';
 import { useTheme, useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 import { useLanguage } from '../localization';
 import { COLORS } from '../constants';
 
@@ -20,6 +22,7 @@ const BottomNav = () => {
   const { colors } = useTheme();
   const navigation = useNavigation<any>();
   const { t } = useLanguage();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [activeTab, setActiveTab] = useState<string | null>(null);
 
   // Find the tab navigator by walking up the parent chain
@@ -88,7 +91,11 @@ const BottomNav = () => {
             style={styles.navItem}
             onPress={() => {
               if (item.route) {
-                navigation.navigate(item.route as never);
+                if (item.labelKey === 'add' && !isAuthenticated) {
+                  navigation.navigate('Profile' as never);
+                } else {
+                  navigation.navigate(item.route as never);
+                }
               }
             }}
           >

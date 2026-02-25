@@ -114,7 +114,19 @@
     "uploadPhoto": "Upload Photo",
     "saveChanges": "Save Changes",
     "discardChanges": "Discard",
-    "profileUpdated": "Profile Updated"
+    "profileUpdated": "Profile Updated",
+    "phoneNumber": "Phone Number",
+    "avatarHint": "Change Avatar",
+    "usernameRequired": "Username is required",
+    "updateSuccess": "Profile updated successfully",
+    "updateError": "Error updating profile",
+    "changeAvatarTitle": "Change Avatar",
+    "changeAvatarMessage": "How would you like to choose a photo?",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "avatarUpdated": "Avatar updated",
+    "avatarError": "Error updating avatar",
+    "infoText": "Your personal information is stored securely"
   },
 
   "addListing": {
@@ -137,7 +149,15 @@
     "selectAmenities": "Select Amenities",
     "publish": "Publish",
     "saveDraft": "Save as Draft",
-    "preview": "Preview"
+    "preview": "Preview",
+    "screenTitle": "Add Listing",
+    "dailyRent": "Daily Rent",
+    "dailyRentDesc": "Rent out by the day",
+    "monthlyRent": "Monthly Rent",
+    "monthlyRentDesc": "Rent out monthly",
+    "sell": "Sell",
+    "sellDesc": "Sell your property",
+    "selectOption": "SELECT LISTING TYPE"
   },
 
   "listingDetail": {
@@ -242,7 +262,44 @@
     "priceHighToLow": "Price: High to Low",
     "mostViewed": "Most Viewed",
     "applyFilters": "Apply Filters",
-    "clearFilters": "Clear Filters"
+    "clearFilters": "Clear Filters",
+    "listingType": "Listing Type",
+    "buildingType": "Building Type",
+    "condition": "Condition",
+    "rooms": "Rooms",
+    "floor": "Floor",
+    "minFloor": "Min Floor",
+    "maxFloor": "Max Floor",
+    "minRooms": "Min Rooms",
+    "maxRooms": "Max Rooms",
+    "district": "District",
+    "ordering": "Sort",
+    "all": "All",
+    "sale": "Sale",
+    "rent": "Rent",
+    "rentDaily": "Daily Rent",
+    "newBuilding": "New Building",
+    "oldBuilding": "Old Building",
+    "conditionNeedsRepair": "Needs Repair",
+    "conditionNoRepair": "No Repair",
+    "conditionCosmetic": "Cosmetic",
+    "conditionEuro": "Euro Repair",
+    "conditionDesign": "Design",
+    "conditionCapital": "Capital",
+    "apartment": "Apartment",
+    "house": "House",
+    "commercial": "Commercial",
+    "land": "Land",
+    "orderNewest": "Newest",
+    "orderOldest": "Oldest",
+    "orderPriceAsc": "Price: Low to High",
+    "orderPriceDesc": "Price: High to Low",
+    "orderViewsDesc": "Most Viewed",
+    "usd": "USD",
+    "uzs": "UZS",
+    "from": "From",
+    "to": "To",
+    "selectDistrict": "Select district"
   },
 
   "propertyTypes": {
@@ -293,7 +350,14 @@
     "alreadyHaveAccount": "Already have an account?",
     "createAccount": "Create Account",
     "welcomeBack": "Welcome Back!",
-    "createYourAccount": "Create Your Account"
+    "createYourAccount": "Create Your Account",
+    "loginTagline": "Real estate in Karakalpakstan",
+    "loginDescription": "Find your perfect property or list your own in minutes",
+    "feature1": "Browse thousands of listings",
+    "feature2": "Post your property for free",
+    "feature3": "Connect directly with owners",
+    "whyTelegram": "We use Telegram for secure, fast login — no passwords needed",
+    "selectLanguage": "Select language"
   },
 
   "errors": {
@@ -550,6 +614,19 @@
     "successTitle": "Success",
     "successMessage": "Listing created successfully!",
     "submitError": "Error creating listing"
+  },
+
+  "propertyTypeScreen": {
+    "title": "Property Type",
+    "selectType": "SELECT PROPERTY TYPE",
+    "apartment": "Apartment",
+    "apartmentDesc": "Residential apartment",
+    "house": "House/Cottage/Dacha",
+    "houseDesc": "Private housing",
+    "land": "Land",
+    "landDesc": "Land for construction",
+    "commercial": "Commercial",
+    "commercialDesc": "Commercial property"
   },
 
   "bottomSheet": {

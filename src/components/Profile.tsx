@@ -26,7 +26,7 @@ import SkeletonLoader from './SkeletonLoader';
 import {useSelector, useDispatch} from 'react-redux';
 import {RootState, AppDispatch} from '../redux/store';
 import {fetchProfile, logout} from '../redux/slices/authSlice';
-import api from '../services/api';
+import api, { AppSettings } from '../services/api';
 import { useLanguage } from '../localization/LanguageContext';
 
 type Props = NativeStackScreenProps<any, 'Profile'>;
@@ -98,7 +98,7 @@ export default function Profile({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
-  const [adminPhone, setAdminPhone] = useState<string | undefined>(undefined);
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
 
   const { width } = useWindowDimensions();
   const numColumns = 2;
@@ -106,11 +106,22 @@ export default function Profile({ navigation }: Props) {
 
   useEffect(() => {
     dispatch(fetchProfile());
-    // Fetch admin phone from app settings
+    // Fetch app settings (admin phone, etc.)
     api.getAppSettings()
-      .then(settings => setAdminPhone(settings.admin_phone))
+      .then(settings => setAppSettings(settings))
       .catch(err => console.error('Error fetching app settings:', err));
   }, [dispatch]);
+
+  // Reset filter labels when language changes
+  useEffect(() => {
+    setSelectedFilters({
+      status: t.myListings?.all || 'All',
+      saralash: t.filter?.sortBy?.replace(':', '') || 'Sort',
+      elon_maqsadi: t.addListing?.category || 'Category',
+      mulk_toifasi: t.addListing?.propertyType || 'Property Type',
+    });
+    setSelectedStatus(undefined);
+  }, [language]);
 
   // Refresh listings and counts when screen comes into focus (after delete/edit)
   useFocusEffect(
@@ -706,7 +717,7 @@ export default function Profile({ navigation }: Props) {
             setMenuVisible(false);
             setLanguageModalVisible(true);
           }}
-          adminPhone={adminPhone}
+          appSettings={appSettings}
         />
       )}
 

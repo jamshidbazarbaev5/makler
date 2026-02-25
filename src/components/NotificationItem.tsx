@@ -34,7 +34,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   onSwipe,
 }) => {
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const animatedValue = React.useRef(new Animated.Value(0)).current;
 
   // Translate notification message while preserving the property title
@@ -104,6 +104,17 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     return colors.background;
   };
 
+  // Map app language to locale code for date formatting
+  const getLocaleCode = (lang: string): string => {
+    const localeMap: Record<string, string> = {
+      uz: 'uz-UZ',
+      ru: 'ru-RU',
+      en: 'en-US',
+      kaa: 'kk-KZ',
+    };
+    return localeMap[lang] || 'en-US';
+  };
+
   // Format timestamp
   const formatTime = (timestamp: string) => {
     const now = new Date();
@@ -122,7 +133,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     } else if (diffDays < 7) {
       return `${diffDays} ${t.notifications.daysAgo}`;
     } else {
-      return date.toLocaleDateString(undefined, {
+      return date.toLocaleDateString(getLocaleCode(language), {
         month: 'short',
         day: 'numeric',
       });

@@ -10,10 +10,12 @@ import {
   PanResponder,
   Alert,
   Linking,
+  ScrollView,
 } from 'react-native';
-import { Globe, HelpCircle, Code2, LogOut, ChevronRight, ChevronLeft, Trash2, Phone, Send, Mail } from 'lucide-react-native';
+import { Globe, HelpCircle, Code2, LogOut, ChevronRight, ChevronLeft, Trash2, Phone, Send, Mail, Settings } from 'lucide-react-native';
 import { COLORS } from '../constants';
 import { useLanguage } from '../localization/LanguageContext';
+import { AppSettings } from '../services/api';
 
 interface BottomSheetMenuProps {
   visible: boolean;
@@ -21,12 +23,12 @@ interface BottomSheetMenuProps {
   onLogout: () => void;
   onLanguagePress: () => void;
   onDeleteAccount: () => void;
-  adminPhone?: string;
+  appSettings?: AppSettings | null;
 }
 
 const { height: screenHeight } = Dimensions.get('window');
 
-type Screen = 'menu' | 'help';
+type Screen = 'menu' | 'help' | 'settings';
 
 export default function BottomSheetMenu({
   visible,
@@ -34,7 +36,7 @@ export default function BottomSheetMenu({
   onLogout,
   onLanguagePress,
   onDeleteAccount,
-  adminPhone,
+  appSettings,
 }: BottomSheetMenuProps) {
   const { t } = useLanguage();
   const [pan] = useState(new Animated.ValueXY());
@@ -95,7 +97,7 @@ export default function BottomSheetMenu({
     Linking.openURL('https://softium.uz');
   };
 
-  const phone = adminPhone || '+998970953905';
+  const phone = appSettings?.admin_phone || '+998970953905';
 
   const formatPhone = (p: string) => {
     const digits = p.replace(/\D/g, '');
@@ -112,7 +114,7 @@ export default function BottomSheetMenu({
 
   const handleTelegram = () => {
     onClose();
-    Linking.openURL(`https://t.me/${phone}`);
+    Linking.openURL(`https://t.me/${phone.replace(/\D/g, '')}`);
   };
 
   const handleEmail = () => {
@@ -150,7 +152,7 @@ export default function BottomSheetMenu({
         </View>
 
         {/* Content */}
-        <View style={styles.content}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {screen === 'menu' ? (
             <>
               <Text style={styles.menuTitle}>{t.bottomSheet.menu}</Text>
@@ -187,6 +189,24 @@ export default function BottomSheetMenu({
                   <View>
                     <Text style={styles.menuItemTitle}>{t.bottomSheet.help}</Text>
                     <Text style={styles.menuItemSubtitle}>{t.bottomSheet.helpSubtitle}</Text>
+                  </View>
+                </View>
+                <ChevronRight size={20} color={COLORS.gray400} />
+              </TouchableOpacity>
+
+              {/* Settings */}
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => setScreen('settings')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.iconContainer, { backgroundColor: '#FFF4E6' }]}>
+                    <Settings size={20} color={COLORS.warning} />
+                  </View>
+                  <View>
+                    <Text style={styles.menuItemTitle}>Settings</Text>
+                    <Text style={styles.menuItemSubtitle}>App settings</Text>
                   </View>
                 </View>
                 <ChevronRight size={20} color={COLORS.gray400} />
@@ -243,7 +263,7 @@ export default function BottomSheetMenu({
                 <Text style={styles.logoutButtonText}>{t.bottomSheet.logout}</Text>
               </TouchableOpacity>
             </>
-          ) : (
+          ) : screen === 'help' ? (
             <>
               {/* Help Screen */}
               <View style={styles.helpHeader}>
@@ -253,7 +273,6 @@ export default function BottomSheetMenu({
                 <Text style={styles.menuTitle}>{t.bottomSheet.help}</Text>
                 <View style={{ width: 24 }} />
               </View>
-              {/*<Text style={styles.helpSubtitle}>Biz bilan bog'laning</Text>*/}
               <View style={styles.divider} />
 
               {/* Phone */}
@@ -286,7 +305,7 @@ export default function BottomSheetMenu({
                   </View>
                   <View>
                     <Text style={styles.menuItemTitle}>Telegram</Text>
-                    <Text style={styles.menuItemSubtitle}>@maklerapp</Text>
+                    <Text style={styles.menuItemSubtitle}>{formatPhone(phone)}</Text>
                   </View>
                 </View>
                 <ChevronRight size={20} color={COLORS.gray400} />
@@ -310,8 +329,100 @@ export default function BottomSheetMenu({
                 <ChevronRight size={20} color={COLORS.gray400} />
               </TouchableOpacity>
             </>
-          )}
-        </View>
+          ) : screen === 'settings' ? (
+            <>
+              {/* Settings Screen */}
+              <View style={styles.helpHeader}>
+                <TouchableOpacity onPress={() => setScreen('menu')} style={styles.backButton}>
+                  <ChevronLeft size={24} color={COLORS.gray900} />
+                </TouchableOpacity>
+                <Text style={styles.menuTitle}>Settings</Text>
+                <View style={{ width: 24 }} />
+              </View>
+              <View style={styles.divider} />
+
+              {appSettings ? (
+                <>
+                  {/* Admin Phone */}
+                  <View style={styles.settingItem}>
+                    <Text style={styles.settingLabel}>Admin Phone</Text>
+                    <Text style={styles.settingValue}>{formatPhone(appSettings.admin_phone)}</Text>
+                  </View>
+
+                  {/* Payment Settings */}
+                  <View style={styles.settingsSection}>
+                    <Text style={styles.sectionTitle}>Payment</Text>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Payment Enabled</Text>
+                      <Text style={styles.settingValue}>{appSettings.payment_enabled ? 'Yes' : 'No'}</Text>
+                    </View>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Post Price</Text>
+                      <Text style={styles.settingValue}>{appSettings.post_price} UZS</Text>
+                    </View>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Featured Price</Text>
+                      <Text style={styles.settingValue}>{appSettings.featured_price} UZS</Text>
+                    </View>
+                  </View>
+
+                  {/* Duration & Featured */}
+                  <View style={styles.settingsSection}>
+                    <Text style={styles.sectionTitle}>Duration</Text>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Featured Enabled</Text>
+                      <Text style={styles.settingValue}>{appSettings.featured_enabled ? 'Yes' : 'No'}</Text>
+                    </View>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Post Duration</Text>
+                      <Text style={styles.settingValue}>{appSettings.post_duration_days} days</Text>
+                    </View>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Featured Duration</Text>
+                      <Text style={styles.settingValue}>{appSettings.featured_duration_days} days</Text>
+                    </View>
+                  </View>
+
+                  {/* General Settings */}
+                  <View style={styles.settingsSection}>
+                    <Text style={styles.sectionTitle}>General</Text>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Max Images Per Post</Text>
+                      <Text style={styles.settingValue}>{appSettings.max_images_per_post}</Text>
+                    </View>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Max Draft Announcements</Text>
+                      <Text style={styles.settingValue}>{appSettings.max_draft_announcements}</Text>
+                    </View>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Require Moderation</Text>
+                      <Text style={styles.settingValue}>{appSettings.require_moderation ? 'Yes' : 'No'}</Text>
+                    </View>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Auto Deactivate Expired</Text>
+                      <Text style={styles.settingValue}>{appSettings.auto_deactivate_expired ? 'Yes' : 'No'}</Text>
+                    </View>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Notify Expiring Days</Text>
+                      <Text style={styles.settingValue}>{appSettings.notify_expiring_days}</Text>
+                    </View>
+                  </View>
+
+                  {/* Info */}
+                  <View style={styles.settingsSection}>
+                    <Text style={styles.sectionTitle}>Info</Text>
+                    <View style={styles.settingItem}>
+                      <Text style={styles.settingLabel}>Last Updated</Text>
+                      <Text style={styles.settingValue}>{new Date(appSettings.updated_at).toLocaleString()}</Text>
+                    </View>
+                  </View>
+                </>
+              ) : (
+                <Text style={styles.noSettingsText}>Loading settings...</Text>
+              )}
+            </>
+          ) : null}
+        </ScrollView>
       </Animated.View>
     </Modal>
   );
@@ -425,5 +536,41 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
+  },
+  settingItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
+  },
+  settingLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.gray600,
+    marginBottom: 4,
+  },
+  settingValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gray900,
+  },
+  settingsSection: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.gray900,
+    marginLeft: 12,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  noSettingsText: {
+    fontSize: 14,
+    color: COLORS.gray500,
+    textAlign: 'center',
+    marginTop: 24,
   },
 });

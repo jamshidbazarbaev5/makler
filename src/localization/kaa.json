@@ -114,7 +114,19 @@
     "uploadPhoto": "Su'wret ju'klew",
     "saveChanges": "O'zgerislerdi saqlaw",
     "discardChanges": "Biykar etiw",
-    "profileUpdated": "Profil jan'alandi"
+    "profileUpdated": "Profil jan'alandi",
+    "phoneNumber": "Telefon nomeri",
+    "avatarHint": "Avatardı o'zgertiw",
+    "usernameRequired": "Paydalanıwshı atı kerek",
+    "updateSuccess": "Profil wa'tipli jan'alandi",
+    "updateError": "Profildı jan'alawda qa'telik",
+    "changeAvatarTitle": "Avatardı o'zgertiw",
+    "changeAvatarMessage": "Su'wretti qanday usılda tan'laysız?",
+    "camera": "Kamera",
+    "gallery": "Galereya",
+    "avatarUpdated": "Avatar jan'alandi",
+    "avatarError": "Avatardı jan'alawda qa'telik",
+    "infoText": "Sha'xsiy mag'lıwmatların'ız xawfsız saqlanadi"
   },
 
   "addListing": {
@@ -137,7 +149,15 @@
     "selectAmenities": "Qolaylıqlardı tanlap'",
     "publish": "Ja'riyalaw",
     "saveDraft": "Qoralama etip saqlaw",
-    "preview": "Ko'rip shıg'ıw"
+    "preview": "Ko'rip shıg'ıw",
+    "screenTitle": "E'lan qosıw",
+    "dailyRent": "Ku'nlik ijaraga beremen",
+    "dailyRentDesc": "Ku'nlik ijaraga beriw",
+    "monthlyRent": "Ijaraga beremen",
+    "monthlyRentDesc": "Aylıq ijaraga beriw",
+    "sell": "Sataman",
+    "sellDesc": "Mu'lkti satiw",
+    "selectOption": "E'LAN TU'RIN TAN'LAN'"
   },
 
   "listingDetail": {
@@ -242,7 +262,44 @@
     "priceHighToLow": "Baha: Joqarıdan to'menge",
     "mostViewed": "En' ko'p ko'rilgen",
     "applyFilters": "Filterdi qollanıw",
-    "clearFilters": "Filterdi tazalaw"
+    "clearFilters": "Filterdi tazalaw",
+    "listingType": "Mámile tu'ri",
+    "buildingType": "Bina tu'ri",
+    "condition": "Jaydayı",
+    "rooms": "Bo'lmeler",
+    "floor": "Qabat",
+    "minFloor": "Min qabat",
+    "maxFloor": "Max qabat",
+    "minRooms": "Min bo'lme",
+    "maxRooms": "Max bo'lme",
+    "district": "Rayon",
+    "ordering": "Saralaw",
+    "all": "Barlıǵı",
+    "sale": "Satiw",
+    "rent": "Ijara",
+    "rentDaily": "Ku'nlik ijara",
+    "newBuilding": "Jan'a bina",
+    "oldBuilding": "Ekinshi ret",
+    "conditionNeedsRepair": "Remont kerek",
+    "conditionNoRepair": "Remontsız",
+    "conditionCosmetic": "Kosmetik",
+    "conditionEuro": "Evro remont",
+    "conditionDesign": "Dizayn",
+    "conditionCapital": "Kapital",
+    "apartment": "Pa'ter",
+    "house": "U'y",
+    "commercial": "Sawda",
+    "land": "Jer",
+    "orderNewest": "Jan'aları aldı",
+    "orderOldest": "Eskileri aldı",
+    "orderPriceAsc": "Bahasına ko're: o'siw",
+    "orderPriceDesc": "Bahasına ko're: kemeyiw",
+    "orderViewsDesc": "Ko'p ko'rilgenler",
+    "usd": "USD",
+    "uzs": "UZS",
+    "from": "Dan",
+    "to": "Shekem",
+    "selectDistrict": "Rayondı tan'lan'"
   },
 
   "propertyTypes": {
@@ -293,7 +350,14 @@
     "alreadyHaveAccount": "Akkauntın'ız barma?",
     "createAccount": "Akkaunt jaratıw",
     "welcomeBack": "Qosh keldin'iz!",
-    "createYourAccount": "Akkauntın'ızdı jaratın'"
+    "createYourAccount": "Akkauntın'ızdı jaratın'",
+    "loginTagline": "Qaraqalpaqstanda ko'shpes mu'lk",
+    "loginDescription": "Ideal mu'lkti tabilın' ya'ki o'z e'lanın'ızdı minutlarda jaylastırın'",
+    "feature1": "Min'legen e'lanlar",
+    "feature2": "Tegin jaylastırıw",
+    "feature3": "Iyelerge tuwrıdan-tuwrı baylanıs",
+    "whyTelegram": "Xawfsız kiriw ushın Telegram qollanamız — parol kerek emes",
+    "selectLanguage": "Tildi tan'lan'"
   },
 
   "errors": {
@@ -550,6 +614,19 @@
     "successTitle": "Sa'tlilik",
     "successMessage": "E'lan sa'tli jaratıldı!",
     "submitError": "E'lan jaratıwda qa'telik ju'z berdi"
+  },
+
+  "propertyTypeScreen": {
+    "title": "Mulk tu'ri",
+    "selectType": "MULK TU'RIN TAN'LAN'",
+    "apartment": "Pa'ter",
+    "apartmentDesc": "Tu'raq jay pa'teri",
+    "house": "U'y/Kottej/Dacha",
+    "houseDesc": "Ja'maatshılıq u'y-jay",
+    "land": "Jer",
+    "landDesc": "Qurılıs ushın jer",
+    "commercial": "Sawda",
+    "commercialDesc": "Sawda ko'shpes mu'lki"
   },
 
   "bottomSheet": {

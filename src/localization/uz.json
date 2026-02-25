@@ -114,7 +114,19 @@
     "uploadPhoto": "Surat yuklash",
     "saveChanges": "O'zgarishlarni saqlash",
     "discardChanges": "Bekor qilish",
-    "profileUpdated": "Profil yangilandi"
+    "profileUpdated": "Profil yangilandi",
+    "phoneNumber": "Telefon raqami",
+    "avatarHint": "Avatarni o'zgartirish",
+    "usernameRequired": "Foydalanuvchi nomi kiritilishi shart",
+    "updateSuccess": "Profil muvaffaqiyatli yangilandi",
+    "updateError": "Profilni yangilashda xato yuz berdi",
+    "changeAvatarTitle": "Avatar o'zgartirish",
+    "changeAvatarMessage": "Qanday usul bilan rasmni tanlaysiz?",
+    "camera": "Kamera",
+    "gallery": "Galereya",
+    "avatarUpdated": "Avatar yangilandi",
+    "avatarError": "Avatar yangilashda xato yuz berdi",
+    "infoText": "Shaxsiy ma'lumotlaringiz xavfsiz saqlangan"
   },
 
   "addListing": {
@@ -137,7 +149,15 @@
     "selectAmenities": "Qulayliklarni tanlang",
     "publish": "Nashr qilish",
     "saveDraft": "Qoralama sifatida saqlash",
-    "preview": "Ko'rib chiqish"
+    "preview": "Ko'rib chiqish",
+    "screenTitle": "E'lon qo'shish",
+    "dailyRent": "Kunlik ijaraga beraman",
+    "dailyRentDesc": "Kunlik ijaraga berish",
+    "monthlyRent": "Ijaraga beraman",
+    "monthlyRentDesc": "Oylik ijaraga berish",
+    "sell": "Sotaman",
+    "sellDesc": "Mulkni sotish",
+    "selectOption": "E'LON TURINI TANLANG"
   },
 
   "listingDetail": {
@@ -242,7 +262,44 @@
     "priceHighToLow": "Narx: Yuqoridan pastga",
     "mostViewed": "Eng ko'p ko'rilgan",
     "applyFilters": "Filterni qo'llash",
-    "clearFilters": "Filterni tozalash"
+    "clearFilters": "Filterni tozalash",
+    "listingType": "Bitim turi",
+    "buildingType": "Bino turi",
+    "condition": "Holati",
+    "rooms": "Xonalar",
+    "floor": "Qavat",
+    "minFloor": "Min qavat",
+    "maxFloor": "Max qavat",
+    "minRooms": "Min xona",
+    "maxRooms": "Max xona",
+    "district": "Tuman",
+    "ordering": "Saralash",
+    "all": "Hammasi",
+    "sale": "Sotish",
+    "rent": "Ijara",
+    "rentDaily": "Kunlik ijara",
+    "newBuilding": "Yangi bino",
+    "oldBuilding": "Ikkilamchi",
+    "conditionNeedsRepair": "Ta'mirlash kerak",
+    "conditionNoRepair": "Ta'mirsiz",
+    "conditionCosmetic": "Kosmetik",
+    "conditionEuro": "Evro ta'mir",
+    "conditionDesign": "Dizayn",
+    "conditionCapital": "Kapital",
+    "apartment": "Kvartira",
+    "house": "Uy",
+    "commercial": "Tijorat",
+    "land": "Yer",
+    "orderNewest": "Yangilari avval",
+    "orderOldest": "Eskilari avval",
+    "orderPriceAsc": "Narx: o'sish bo'yicha",
+    "orderPriceDesc": "Narx: kamayish bo'yicha",
+    "orderViewsDesc": "Mashhurlar",
+    "usd": "USD",
+    "uzs": "UZS",
+    "from": "Dan",
+    "to": "Gacha",
+    "selectDistrict": "Tumanni tanlang"
   },
 
   "propertyTypes": {
@@ -293,7 +350,14 @@
     "alreadyHaveAccount": "Hisobingiz bormi?",
     "createAccount": "Hisob yaratish",
     "welcomeBack": "Xush kelibsiz!",
-    "createYourAccount": "Hisobingizni yarating"
+    "createYourAccount": "Hisobingizni yarating",
+    "loginTagline": "Qoraqalpog'istonda ko'chmas mulk",
+    "loginDescription": "Ideal mulkni toping yoki o'z e'loningizni daqiqalar ichida joylashtiring",
+    "feature1": "Minglab e'lonlar",
+    "feature2": "Bepul joylash",
+    "feature3": "Egalar bilan to'g'ridan-to'g'ri aloqa",
+    "whyTelegram": "Xavfsiz kirish uchun Telegram ishlatamiz — parol shart emas",
+    "selectLanguage": "Tilni tanlang"
   },
 
   "errors": {
@@ -551,6 +615,19 @@
     "successTitle": "Muvaffaqiyat",
     "successMessage": "E'lon muvaffaqiyatli yaratildi!",
     "submitError": "E'lon yaratishda xatolik yuz berdi"
+  },
+
+  "propertyTypeScreen": {
+    "title": "Mulk turi",
+    "selectType": "MULK TURINI TANLANG",
+    "apartment": "Kvartira",
+    "apartmentDesc": "Turar-joy kvartirasi",
+    "house": "Uy/Kottej/Dacha",
+    "houseDesc": "Shaxsiy uy-joy",
+    "land": "Yer",
+    "landDesc": "Qurilish uchun yer",
+    "commercial": "Tijorat",
+    "commercialDesc": "Tijorat ko'chmas mulki"
   },
 
   "bottomSheet": {

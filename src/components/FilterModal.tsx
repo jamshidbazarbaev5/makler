@@ -1,701 +1,504 @@
-import React, {useState, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  Animated,
-  Easing,
+  Modal,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
-  Modal,
   StyleSheet,
+  TextInput,
+  SafeAreaView,
 } from 'react-native';
-import {ChevronDown, ArrowLeft, Clock, Home, Check} from 'lucide-react-native';
-import {FilterState} from '../types';
-import {SelectBox, ToggleChip, NumberInput} from './UiComponent';
-import {
-  COLORS,
-  REGIONS,
-  COUNTRIES,
-  POSTED_BY_OPTIONS,
-} from '../constants';
+import { X, ChevronDown, ChevronUp, Check } from 'lucide-react-native';
+import { COLORS } from '../constants';
+import { FilterState, EMPTY_FILTERS } from '../types/filter';
+import { useLanguage } from '../localization';
+import api from '../services/api';
 
 interface FilterModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** fired when user taps Apply (or when modal is closed) */
   onApply: (filters: FilterState) => void;
+  /** optional callback invoked on every change; parent can use it to fetch immediately */
+  onChange?: (filters: FilterState) => void;
+  initialFilters?: FilterState;
 }
 
-const {height: screenHeight} = Dimensions.get('window');
-const COLLAPSED_HEIGHT = 420;
-const EXPANDED_HEIGHT = screenHeight * 0.85;
-
-const INITIAL_STATE: FilterState = {
-  category: 'Kunlik',
-  propertyType: 'Kvartira',
-  country: "O'zbekiston",
-  region: '',
-  apartmentType: 'Ikkilamchi',
-  roomCountStart: 2,
-  roomCountEnd: 3,
-  renovation: "O'rtacha",
-  priceMin: '100',
-  priceMax: '200',
-  currency: 'UZS',
-  postedBy: 'Agasi',
-};
-
-// Listing type categories from AddListingScreen
-const LISTING_CATEGORIES = ['Kunlik', 'Oylik', 'Sotuv'];
-
-// Property types from PropertyTypeScreen
-const PROPERTY_TYPE_OPTIONS = ['Kvartira', 'Hovli/Kottej/Dacha', 'Mehmonxona'];
+interface District {
+  id: number;
+  name: string;
+}
 
 export const FilterModal: React.FC<FilterModalProps> = ({
   isOpen,
   onClose,
   onApply,
+  onChange,
+  initialFilters,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [filters, setFilters] = useState<FilterState>(INITIAL_STATE);
-  const sheetHeight = useRef(new Animated.Value(COLLAPSED_HEIGHT)).current;
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const { t } = useLanguage();
+  const [filters, setFilters] = useState<FilterState>(initialFilters || EMPTY_FILTERS);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
-  const toggleExpand = () => {
-    const toValue = !isExpanded ? EXPANDED_HEIGHT : COLLAPSED_HEIGHT;
-    Animated.timing(sheetHeight, {
-      toValue,
-      duration: 400,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false,
-    }).start();
-    setIsExpanded(!isExpanded);
+  useEffect(() => {
+    if (isOpen) {
+      setFilters(initialFilters || EMPTY_FILTERS);
+      api.getDistricts().then(data => {
+        setDistricts(data.map((d: any) => ({
+          id: d.id,
+          name: d.translations?.ru?.name || d.name || `District ${d.id}`,
+        })));
+      }).catch(() => {});
+    }
+  }, [isOpen]);
+
+  const set = (key: keyof FilterState, value: string) => {
+    const updated = { ...filters, [key]: value };
+    setFilters(updated);
+    if (onChange) {
+      onChange(updated);
+    }
   };
 
-  const updateFilter = <K extends keyof FilterState>(
-    key: K,
-    value: FilterState[K],
-  ) => {
-    setFilters(prev => ({...prev, [key]: value}));
+  const toggle = (key: keyof FilterState, value: string) => {
+    const updated = { ...filters, [key]: filters[key] === value ? '' : value };
+    setFilters(updated);
+    if (onChange) {
+      onChange(updated);
+    }
   };
+
+  const toggleSection = (section: string) => {
+    setOpenSection(prev => prev === section ? null : section);
+  };
+
+  // previously we auto-applied within the sheet; that's no longer needed
+  // because the parent now receives every modification via onChange.
+  // the apply button still exists and will call onApply when pressed.
 
   const handleApply = () => {
+    console.log('✅ FilterModal handleApply, filters:', JSON.stringify(filters));
     onApply(filters);
     onClose();
-    setIsExpanded(false);
   };
 
-  const handleClose = () => {
-    onClose();
-    setIsExpanded(false);
-    setOpenDropdown(null);
+  const handleClear = () => {
+    setFilters(EMPTY_FILTERS);
   };
 
-  const openPicker = (
-    key: keyof FilterState,
-    title: string,
-    items: string[],
-  ) => {
-    setOpenDropdown(openDropdown === key ? null : key);
+  const activeCount = Object.values(filters).filter(v => v !== '').length;
+
+  // ---- Option chips ----
+  const ChipGroup = ({
+    filterKey,
+    options,
+  }: {
+    filterKey: keyof FilterState;
+    options: { label: string; value: string }[];
+  }) => (
+    <View style={styles.chipRow}>
+      {options.map(opt => (
+        <TouchableOpacity
+          key={opt.value}
+          style={[styles.chip, filters[filterKey] === opt.value && styles.chipActive]}
+          onPress={() => toggle(filterKey, opt.value)}
+        >
+          <Text style={[styles.chipText, filters[filterKey] === opt.value && styles.chipTextActive]}>
+            {opt.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  // ---- Section header ----
+  const Section = ({ id, label, children }: { id: string; label: string; children: React.ReactNode }) => {
+    const open = openSection === id;
+    return (
+      <View style={styles.section}>
+        <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection(id)}>
+          <Text style={styles.sectionLabel}>{label}</Text>
+          {open ? <ChevronUp size={18} color={COLORS.gray500} /> : <ChevronDown size={18} color={COLORS.gray500} />}
+        </TouchableOpacity>
+        {open && <View style={styles.sectionBody}>{children}</View>}
+      </View>
+    );
   };
 
-  if (!isOpen) return null;
+  // ---- Range inputs ----
+  const RangeInput = ({
+    minKey, maxKey, minPlaceholder, maxPlaceholder,
+  }: {
+    minKey: keyof FilterState;
+    maxKey: keyof FilterState;
+    minPlaceholder: string;
+    maxPlaceholder: string;
+  }) => (
+    <View style={styles.rangeRow}>
+      <TextInput
+        style={styles.rangeInput}
+        value={filters[minKey]}
+        onChangeText={v => set(minKey, v)}
+        placeholder={minPlaceholder}
+        placeholderTextColor={COLORS.gray400}
+        keyboardType="numeric"
+      />
+      <View style={styles.rangeDash} />
+      <TextInput
+        style={styles.rangeInput}
+        value={filters[maxKey]}
+        onChangeText={v => set(maxKey, v)}
+        placeholder={maxPlaceholder}
+        placeholderTextColor={COLORS.gray400}
+        keyboardType="numeric"
+      />
+    </View>
+  );
+
+  const propertyTypes = [
+    { label: t.filter.apartment, value: 'apartment' },
+    { label: t.filter.house, value: 'house' },
+    { label: t.filter.commercial, value: 'commercial' },
+    { label: t.filter.land, value: 'land' },
+  ];
+
+  const listingTypes = [
+    { label: t.filter.sale, value: 'sale' },
+    { label: t.filter.rent, value: 'rent' },
+    { label: t.filter.rentDaily, value: 'rent_daily' },
+  ];
+
+  const buildingTypes = [
+    { label: t.filter.newBuilding, value: 'new' },
+    { label: t.filter.oldBuilding, value: 'old' },
+  ];
+
+  const conditions = [
+    { label: t.filter.conditionNeedsRepair, value: 'needs_repair' },
+    { label: t.filter.conditionNoRepair, value: 'no_repair' },
+    { label: t.filter.conditionCosmetic, value: 'cosmetic' },
+    { label: t.filter.conditionEuro, value: 'euro_repair' },
+    { label: t.filter.conditionDesign, value: 'design' },
+    { label: t.filter.conditionCapital, value: 'capital' },
+  ];
+
+  const orderings = [
+    { label: t.filter.orderNewest, value: '-posted_at' },
+    { label: t.filter.orderOldest, value: 'posted_at' },
+    { label: t.filter.orderPriceAsc, value: 'price' },
+    { label: t.filter.orderPriceDesc, value: '-price' },
+    { label: t.filter.orderViewsDesc, value: '-views_count' },
+  ];
+
+  const currencies = [
+    { label: t.filter.usd, value: 'usd' },
+    { label: t.filter.uzs, value: 'uzs' },
+  ];
 
   return (
-    <>
-      <Modal
-        visible={isOpen}
-        transparent
-        animationType="none"
-        onRequestClose={handleClose}>
-        {/* Backdrop */}
-        <TouchableOpacity
-          style={styles.backdrop}
-          activeOpacity={1}
-          onPress={handleClose}
-        />
+    <Modal
+      visible={isOpen}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.overlay}>
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+        <SafeAreaView style={styles.sheet}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>
+              {t.filter.title}
+              {activeCount > 0 && (
+                <Text style={styles.headerCount}> ({activeCount})</Text>
+              )}
+            </Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity onPress={handleClear} style={styles.clearBtn}>
+                <Text style={styles.clearBtnText}>{t.filter.clearFilters}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                <X size={20} color={COLORS.gray600} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-        {/* Bottom Sheet */}
-        <Animated.View style={[styles.bottomSheet, {height: sheetHeight}]}>
-          {/* Handle Bar */}
-          <View style={styles.handleBar} />
+          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-          {!isExpanded ? (
-            // COLLAPSED STATE
-            <>
-              {/* Header */}
-              <View style={styles.header}>
-                <Text style={styles.headerTitle}>Filtrlar</Text>
-                <TouchableOpacity onPress={handleClose}>
-                  <Text style={styles.cancelButton}>Bekor qilish</Text>
-                </TouchableOpacity>
-              </View>
+            {/* Property Type */}
+            <Section id="property_type" label={t.filter.propertyType}>
+              <ChipGroup filterKey="property_type" options={propertyTypes} />
+            </Section>
 
-              {/* Short Content */}
-              <ScrollView style={styles.shortContent} scrollEnabled={true}>
-                {/* Category Field */}
-                <View style={styles.field}>
-                  <Text style={styles.fieldLabel}>Toifasi</Text>
-                  <TouchableOpacity
-                    style={styles.selectBox}
-                    onPress={() =>
-                      setOpenDropdown(openDropdown === 'category' ? null : 'category')
-                    }>
-                    <Text style={styles.selectText}>{filters.category}</Text>
-                    <ChevronDown size={20} color={COLORS.gray400} />
-                  </TouchableOpacity>
-                  {openDropdown === 'category' && (
-                    <View style={styles.inlineDropdown}>
-                      {LISTING_CATEGORIES.map((item) => (
-                        <TouchableOpacity
-                          key={item}
-                          style={styles.dropdownItem}
-                          onPress={() => {
-                            updateFilter('category', item);
-                            setOpenDropdown(null);
-                          }}>
-                          <Text style={styles.dropdownItemText}>{item}</Text>
-                          {filters.category === item && <Check size={20} color={COLORS.primary} />}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
+            {/* Listing Type */}
+            <Section id="listing_type" label={t.filter.listingType}>
+              <ChipGroup filterKey="listing_type" options={listingTypes} />
+            </Section>
 
-                {/* Property Type Field */}
-                <View style={styles.field}>
-                  <Text style={styles.fieldLabel}>Ko'chmas mulk turi</Text>
-                  <TouchableOpacity
-                    style={styles.selectBox}
-                    onPress={() =>
-                      setOpenDropdown(openDropdown === 'propertyType' ? null : 'propertyType')
-                    }>
-                    <Text style={styles.selectText}>
-                      {filters.propertyType}
-                    </Text>
-                    <ChevronDown size={20} color={COLORS.gray400} />
-                  </TouchableOpacity>
-                  {openDropdown === 'propertyType' && (
-                    <View style={styles.inlineDropdown}>
-                      {PROPERTY_TYPE_OPTIONS.map((item) => (
-                        <TouchableOpacity
-                          key={item}
-                          style={styles.dropdownItem}
-                          onPress={() => {
-                            updateFilter('propertyType', item);
-                            setOpenDropdown(null);
-                          }}>
-                          <Text style={styles.dropdownItemText}>{item}</Text>
-                          {filters.propertyType === item && <Check size={20} color={COLORS.primary} />}
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
+            {/* Building Type */}
+            <Section id="building_type" label={t.filter.buildingType}>
+              <ChipGroup filterKey="building_type" options={buildingTypes} />
+            </Section>
 
-                {/* Posted By Field */}
-              </ScrollView>
+            {/* Condition */}
+            <Section id="condition" label={t.filter.condition}>
+              <ChipGroup filterKey="condition" options={conditions} />
+            </Section>
 
-              {/* Action Buttons */}
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={styles.moreButton}
-                  onPress={toggleExpand}>
-                  <Text style={styles.moreButtonText}>Ko'proq</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.applyButton}
-                  onPress={handleApply}>
-                  <Text style={styles.applyButtonText}>Qo'llash</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            // EXPANDED STATE
-            <>
-              {/* Expanded Header */}
-              <View style={styles.expandedHeader}>
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={toggleExpand}>
-                  <ArrowLeft size={24} color={COLORS.gray900} />
-                </TouchableOpacity>
-                <Text style={styles.backTitle}>Orqaga</Text>
-                <TouchableOpacity onPress={() => setFilters(INITIAL_STATE)}>
-                  <Text style={styles.clearButton}>Tozalash</Text>
-                </TouchableOpacity>
-              </View>
+            {/* Price */}
+            <Section id="price" label={t.filter.priceRange}>
+              {/* Currency */}
+              <ChipGroup filterKey="currency" options={currencies} />
+              <View style={{ height: 10 }} />
+              <RangeInput
+                minKey="price_min"
+                maxKey="price_max"
+                minPlaceholder={t.filter.from}
+                maxPlaceholder={t.filter.to}
+              />
+            </Section>
 
-              {/* Breadcrumbs */}
-              <View style={styles.breadcrumbs}>
-                <View style={styles.breadcrumbItem}>
-                  <Clock size={16} color={COLORS.gray400} />
-                  <Text style={styles.breadcrumbText}>{filters.category}</Text>
-                </View>
-                <Text style={styles.breadcrumbSeparator}>/</Text>
-                <View style={styles.breadcrumbItem}>
-                  <Home size={16} color={COLORS.gray400} />
-                  <Text style={styles.breadcrumbText}>
-                    {filters.propertyType}
-                  </Text>
-                </View>
-              </View>
+            {/* Area */}
+            <Section id="area" label={t.filter.area}>
+              <RangeInput
+                minKey="area_min"
+                maxKey="area_max"
+                minPlaceholder={t.filter.minArea}
+                maxPlaceholder={t.filter.maxArea}
+              />
+            </Section>
 
-              {/* Expanded Content */}
-              <ScrollView
-                style={styles.expandedContent}
-                showsVerticalScrollIndicator={false}>
-                {/* Country */}
-                <SelectBox
-                  label="Davlat"
-                  value={filters.country}
-                  onPress={() => openPicker('country', 'Davlat', COUNTRIES)}
-                />
+            {/* Rooms */}
+            <Section id="rooms" label={t.filter.rooms}>
+              <RangeInput
+                minKey="rooms_min"
+                maxKey="rooms_max"
+                minPlaceholder={t.filter.minRooms}
+                maxPlaceholder={t.filter.maxRooms}
+              />
+            </Section>
 
-                {/* Region */}
-                <SelectBox
-                  label="Viloyat"
-                  value={filters.region}
-                  placeholder="Tanlang"
-                  onPress={() => openPicker('region', 'Viloyat', REGIONS)}
-                />
+            {/* Floor */}
+            <Section id="floor" label={t.filter.floor}>
+              <RangeInput
+                minKey="floor_min"
+                maxKey="floor_max"
+                minPlaceholder={t.filter.minFloor}
+                maxPlaceholder={t.filter.maxFloor}
+              />
+            </Section>
 
-                {/* Apartment Type */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Kvartira turi</Text>
-                  <View style={styles.toggleRow}>
-                    <ToggleChip
-                      label="Ikkilamchi"
-                      isActive={filters.apartmentType === 'Ikkilamchi'}
-                      onPress={() =>
-                        updateFilter('apartmentType', 'Ikkilamchi')
-                      }
-                      fullWidth
-                    />
-                    <ToggleChip
-                      label="Yangi bino"
-                      isActive={filters.apartmentType === 'Yangi bino'}
-                      onPress={() =>
-                        updateFilter('apartmentType', 'Yangi bino')
-                      }
-                      fullWidth
-                    />
-                  </View>
-                </View>
-
-                {/* Room Count */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Xonalar soni</Text>
-                  <View style={styles.numberRow}>
-                    <NumberInput
-                      style={{flex: 1}}
-                      value={String(filters.roomCountStart)}
-                      onChangeText={v =>
-                        updateFilter('roomCountStart', parseInt(v) || 0)
-                      }
-                      placeholder="dan"
-                    />
-                    <NumberInput
-                      style={{flex: 1}}
-                      value={String(filters.roomCountEnd)}
-                      onChangeText={v =>
-                        updateFilter('roomCountEnd', parseInt(v) || 0)
-                      }
-                      placeholder="gacha"
-                    />
-                  </View>
-                </View>
-
-                {/* Renovation */}
-                <SelectBox
-                  label="Ta'mirlash"
-                  value={filters.renovation}
-                  onPress={() =>
-                    openPicker('renovation', "Ta'mirlash", [
-                      "O'rtacha",
-                      'Yaxshi',
-                      'Yangi remont',
-                    ])
-                  }
-                />
-
-                {/* Price */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Narx</Text>
-                  <View style={styles.numberRow}>
-                    <NumberInput
-                      style={{flex: 1}}
-                      value={filters.priceMin}
-                      onChangeText={v => updateFilter('priceMin', v)}
-                      placeholder="dan"
-                    />
-                    <NumberInput
-                      style={{flex: 1}}
-                      value={filters.priceMax}
-                      onChangeText={v => updateFilter('priceMax', v)}
-                      placeholder="gacha"
-                    />
-                  </View>
-
-                  {/* Currency Toggle */}
-                  <View style={styles.currencyToggle}>
+            {/* District */}
+            {districts.length > 0 && (
+              <Section id="district" label={t.filter.district}>
+                <View style={styles.districtList}>
+                  {districts.map(d => (
                     <TouchableOpacity
-                      style={[
-                        styles.currencyButton,
-                        filters.currency === 'UZS' &&
-                          styles.currencyButtonActive,
-                      ]}
-                      onPress={() => updateFilter('currency', 'UZS')}>
-                      <Text
-                        style={[
-                          styles.currencyButtonText,
-                          filters.currency === 'UZS' &&
-                            styles.currencyButtonTextActive,
-                        ]}>
-                        UZS
+                      key={d.id}
+                      style={styles.districtItem}
+                      onPress={() => toggle('district', String(d.id))}
+                    >
+                      <Text style={[
+                        styles.districtText,
+                        filters.district === String(d.id) && styles.districtTextActive,
+                      ]}>
+                        {d.name}
                       </Text>
+                      {filters.district === String(d.id) && (
+                        <Check size={16} color={COLORS.purple} />
+                      )}
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.currencyButton,
-                        filters.currency === 'Y.E' &&
-                          styles.currencyButtonActive,
-                      ]}
-                      onPress={() => updateFilter('currency', 'Y.E')}>
-                      <Text
-                        style={[
-                          styles.currencyButtonText,
-                          filters.currency === 'Y.E' &&
-                            styles.currencyButtonTextActive,
-                        ]}>
-                        Y.E
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  ))}
                 </View>
+              </Section>
+            )}
 
-                {/* Posted By */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Kim joylashtirdi</Text>
-                  <View style={styles.toggleRow}>
-                    <ToggleChip
-                      label="Rieltor"
-                      isActive={filters.postedBy === 'Rieltor'}
-                      onPress={() => updateFilter('postedBy', 'Rieltor')}
-                      fullWidth
-                    />
-                    <ToggleChip
-                      label="Agasi"
-                      isActive={filters.postedBy === 'Agasi'}
-                      onPress={() => updateFilter('postedBy', 'Agasi')}
-                      fullWidth
-                    />
-                  </View>
-                </View>
+            {/* Ordering */}
+            <Section id="ordering" label={t.filter.ordering}>
+              <ChipGroup filterKey="ordering" options={orderings} />
+            </Section>
 
-                {/* Bottom Padding */}
-                <View style={styles.bottomPadding} />
-              </ScrollView>
+            <View style={{ height: 24 }} />
+          </ScrollView>
 
-              {/* Sticky Apply Button */}
-              <View style={styles.stickyBottom}>
-                <TouchableOpacity
-                  style={styles.applyButton}
-                  onPress={handleApply}>
-                  <Text style={styles.applyButtonText}>Qo'llash</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </Animated.View>
-      </Modal>
-    </>
+          {/* Apply Button */}
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.applyBtn} onPress={handleApply}>
+              <Text style={styles.applyBtnText}>{t.filter.applyFilters}</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </View>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 40,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  bottomSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    zIndex: 50,
-    overflow: 'hidden',
+  sheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -10,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 25,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 12,
   },
-  handleBar: {
-    width: 40,
-    height: 4,
-    backgroundColor: COLORS.gray300,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginVertical: 8,
-  },
-
-  // COLLAPSED STATE STYLES
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 4,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.gray900,
-  },
-  cancelButton: {
-    color: COLORS.error,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  shortContent: {
-    marginBottom: 24,
-  },
-  field: {
-    marginBottom: 16,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.gray900,
-    marginBottom: 8,
-  },
-  selectBox: {
-    width: '100%',
-    height: 48,
-    backgroundColor: COLORS.gray50,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  selectText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.gray900,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingBottom: 40,
-  },
-  moreButton: {
-    flex: 1,
-    height: 48,
-    backgroundColor: COLORS.gray100,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  moreButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.gray900,
-  },
-  applyButton: {
-    flex: 1,
-    height: 48,
-    backgroundColor: COLORS.primary,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.gray900,
-  },
-
-  // EXPANDED STATE STYLES
-  expandedHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  backTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.gray900,
-  },
-  clearButton: {
-    color: COLORS.error,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  breadcrumbs: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 24,
-    paddingHorizontal: 4,
-  },
-  breadcrumbItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  breadcrumbText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: COLORS.gray400,
-  },
-  breadcrumbSeparator: {
-    fontSize: 12,
-    color: COLORS.gray300,
-    fontWeight: 'bold',
-  },
-  expandedContent: {
-    flex: 1,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.gray900,
-    marginBottom: 12,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  numberRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  currencyToggle: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.gray100,
-    padding: 4,
-    borderRadius: 12,
-    marginTop: 12,
-    gap: 4,
-  },
-  currencyButton: {
-    flex: 1,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  currencyButtonActive: {
-    backgroundColor: COLORS.white,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  currencyButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: COLORS.gray500,
-  },
-  currencyButtonTextActive: {
-    color: COLORS.gray900,
-  },
-  bottomPadding: {
-    height: 20,
-  },
-  stickyBottom: {
-    paddingHorizontal: 4,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.gray100,
-    backgroundColor: COLORS.white,
-  },
-
-  // INLINE DROPDOWN STYLES
-  inlineDropdown: {
-    backgroundColor: COLORS.gray50,
-    borderRadius: 12,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: COLORS.gray200,
-    overflow: 'hidden',
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.gray100,
   },
-  dropdownItemText: {
-    fontSize: 16,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: COLORS.gray900,
-    fontWeight: '500',
   },
-
-  // PICKER STYLES (removed - using inline dropdowns now)
-  pickerContainer: {
-    flex: 1,
-    backgroundColor: COLORS.white,
+  headerCount: {
+    color: COLORS.purple,
   },
-  pickerHeader: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  clearBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  clearBtnText: {
+    fontSize: 13,
+    color: COLORS.error,
+    fontWeight: '600',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  scroll: {
+    paddingHorizontal: 20,
+  },
+  section: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 50,
+    paddingVertical: 14,
+  },
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.gray800,
+  },
+  sectionBody: {
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gray200,
   },
-  pickerCancel: {
-    fontSize: 16,
-    color: COLORS.error,
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  pickerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.gray900,
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.gray200,
+    backgroundColor: COLORS.gray50,
   },
-  placeholder: {
-    width: 50,
+  chipActive: {
+    borderColor: COLORS.purple,
+    backgroundColor: '#f5f3ff',
   },
-  pickerScroll: {
+  chipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.gray600,
+  },
+  chipTextActive: {
+    color: COLORS.purple,
+    fontWeight: '600',
+  },
+  rangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rangeInput: {
     flex: 1,
+    height: 44,
+    borderWidth: 1.5,
+    borderColor: COLORS.gray200,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    color: COLORS.gray900,
+    backgroundColor: COLORS.gray50,
   },
-  pickerItemText: {
-    fontSize: 16,
+  rangeDash: {
+    width: 12,
+    height: 2,
+    backgroundColor: COLORS.gray300,
+    borderRadius: 1,
+  },
+  districtList: {
+    gap: 2,
+  },
+  districtItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray100,
+  },
+  districtText: {
+    fontSize: 14,
     color: COLORS.gray700,
+  },
+  districtTextActive: {
+    color: COLORS.purple,
+    fontWeight: '600',
+  },
+  footer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray100,
+  },
+  applyBtn: {
+    backgroundColor: COLORS.purple,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    shadowColor: COLORS.purple,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  applyBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
 

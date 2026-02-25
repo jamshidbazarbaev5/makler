@@ -20,6 +20,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChevronLeft, User, Mail, Phone, MessageSquare, Camera, Check, Info, ArrowLeft } from 'lucide-react-native';
 import { COLORS } from '../constants';
+import { useLanguage } from '../localization';
 
 type Props = NativeStackScreenProps<any, 'ProfileEdit'>;
 
@@ -36,6 +37,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const isDarkMode = false;
 
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -86,7 +88,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
 
   const handleSave = async () => {
     if (!profileData.username.trim()) {
-      Alert.alert('Xato', 'Foydalanuvchi nomi kiritilishi shart');
+      Alert.alert(t.common.error, t.profileEdit.usernameRequired);
       return;
     }
 
@@ -107,25 +109,25 @@ export default function ProfileEditScreen({ navigation }: Props) {
       dispatch(setUser(updated));
 
       setIsLoading(false);
-      Alert.alert('Muvaffaqiyat', 'Profil muvaffaqiyatli yangilandi', [
+      Alert.alert(t.profileEdit.profileUpdated, t.profileEdit.updateSuccess, [
         {
-          text: 'OK',
+          text: t.common.ok,
           onPress: () => navigation.goBack(),
         },
       ]);
     } catch (error: any) {
       setIsLoading(false);
-      Alert.alert('Xato', 'Profilni yangilashda xato yuz berdi');
+      Alert.alert(t.common.error, t.profileEdit.updateError);
     }
   };
 
   const handleChangeAvatar = () => {
     Alert.alert(
-      "Avatar o'zgartirish",
-      "Qanday usul bilan rasmni tanlaysiz?",
+      t.profileEdit.changeAvatarTitle,
+      t.profileEdit.changeAvatarMessage,
       [
         {
-          text: 'Kamera',
+          text: t.profileEdit.camera,
           onPress: async () => {
             try {
               const result = await launchCamera({mediaType: 'photo', quality: 0.8});
@@ -150,17 +152,17 @@ export default function ProfileEditScreen({ navigation }: Props) {
               dispatch(setUser(updated));
               setProfileData(prev => ({...prev, avatar: updated.avatar ?? prev.avatar}));
               setIsLoading(false);
-              Alert.alert('Muvaffaqiyat', 'Avatar yangilandi');
+              Alert.alert(t.profileEdit.profileUpdated, t.profileEdit.avatarUpdated);
             } catch (err: any) {
               console.error('Avatar upload error (camera):', err?.response?.data ?? err.message ?? err);
               setIsLoading(false);
-              const msg = err?.response?.data?.detail ?? err?.response?.data?.message ?? err?.message ?? 'Avatar yangilashda xato yuz berdi';
-              Alert.alert('Xato', msg);
+              const msg = err?.response?.data?.detail ?? err?.response?.data?.message ?? err?.message ?? t.profileEdit.avatarError;
+              Alert.alert(t.common.error, msg);
             }
           },
         },
         {
-          text: 'Galereya',
+          text: t.profileEdit.gallery,
           onPress: async () => {
             try {
               const result = await launchImageLibrary({mediaType: 'photo', quality: 0.8});
@@ -185,17 +187,17 @@ export default function ProfileEditScreen({ navigation }: Props) {
               dispatch(setUser(updated));
               setProfileData(prev => ({...prev, avatar: updated.avatar ?? prev.avatar}));
               setIsLoading(false);
-              Alert.alert('Muvaffaqiyat', 'Avatar yangilandi');
+              Alert.alert(t.profileEdit.profileUpdated, t.profileEdit.avatarUpdated);
             } catch (err: any) {
               console.error('Avatar upload error (gallery):', err?.response?.data ?? err.message ?? err);
               setIsLoading(false);
-              const msg = err?.response?.data?.detail ?? err?.response?.data?.message ?? err?.message ?? 'Avatar yangilashda xato yuz berdi';
-              Alert.alert('Xato', msg);
+              const msg = err?.response?.data?.detail ?? err?.response?.data?.message ?? err?.message ?? t.profileEdit.avatarError;
+              Alert.alert(t.common.error, msg);
             }
           },
         },
         {
-          text: 'Bekor qilish',
+          text: t.common.cancel,
           style: 'cancel',
         },
       ],
@@ -225,7 +227,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
         >
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Profilni tahrirlash</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.profileEdit.title}</Text>
       </View>
 
       <ScrollView
@@ -259,7 +261,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
                 <Camera size={16} color={COLORS.white} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.avatarHint}>Avatarni o'zgartirish</Text>
+            <Text style={styles.avatarHint}>{t.profileEdit.avatarHint}</Text>
           </View>
 
           {/* Form Fields */}
@@ -267,7 +269,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
           
             <View style={styles.nameRow}>
               <View style={[styles.inputContainer, { flex: 1 }]}>
-                <Text style={styles.label}>Ism</Text>
+                <Text style={styles.label}>{t.profileEdit.firstName}</Text>
                 <View
                   style={[
                     styles.inputWrapper,
@@ -302,7 +304,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
             </View>
 
             <View style={[styles.inputContainer]}>
-              <Text style={styles.label}>Telefon raqami</Text>
+              <Text style={styles.label}>{t.profileEdit.phoneNumber}</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -336,7 +338,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
 
          
             <View style={[styles.inputContainer]}>
-              <Text style={styles.label}>Bio</Text>
+              <Text style={styles.label}>{t.profileEdit.bio}</Text>
               <View
                 style={[
                   styles.inputWrapper,
@@ -376,9 +378,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
               size={20}
               color={COLORS.purple}
             />
-            <Text style={styles.infoText}>
-              Shaxsiy ma'lumotlaringiz xavfsiz saqlangan
-            </Text>
+            <Text style={styles.infoText}>{t.profileEdit.infoText}</Text>
           </View>
         </View>
       </ScrollView>
@@ -390,7 +390,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
           onPress={() => navigation.goBack()}
           disabled={isLoading}
         >
-          <Text style={styles.cancelButtonText}>Bekor qilish</Text>
+          <Text style={styles.cancelButtonText}>{t.common.cancel}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -406,7 +406,7 @@ export default function ProfileEditScreen({ navigation }: Props) {
           ) : (
             <>
               <Check size={20} color={COLORS.white} />
-              <Text style={styles.saveButtonText}>Saqlash</Text>
+              <Text style={styles.saveButtonText}>{t.common.save}</Text>
             </>
           )}
         </TouchableOpacity>

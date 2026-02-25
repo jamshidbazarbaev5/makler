@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { ChevronDown, SlidersHorizontal, Star, Flame } from 'lucide-react-native';
+import { SlidersHorizontal, Star, Flame } from 'lucide-react-native';
 import ListingCard from './ListingCard'
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
@@ -20,6 +20,8 @@ import { useAppSelector, useAppDispatch } from '../redux/hooks';
 import { loadFavoritesAsync, addToFavoritesAsync, removeFromFavoritesAsync } from '../redux/slices/likesSlice';
 import LinearGradient from 'react-native-linear-gradient';
 import { useLanguage } from '../localization/LanguageContext';
+import { FilterModal } from './FilterModal';
+import { FilterState, EMPTY_FILTERS } from '../types/filter';
 
 interface Announcement {
   id: string;
@@ -51,7 +53,17 @@ interface Announcement {
 const GAP = 10;
 const PADDING = 16;
 
-const AllListingsSection = () => {
+interface AllListingsSectionProps {
+  /** filters coming from a parent modal (e.g. HomeScreen) */
+  externalFilters?: FilterState | null;
+  /** notified when filters change inside this component */
+  onFiltersChange?: (filters: FilterState) => void;
+}
+
+const AllListingsSection: React.FC<AllListingsSectionProps> = ({
+  externalFilters = null,
+  onFiltersChange,
+}) => {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const dispatch = useAppDispatch();
@@ -68,27 +80,31 @@ const AllListingsSection = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterState>(externalFilters || EMPTY_FILTERS);
+  const activeFiltersRef = useRef<FilterState>(externalFilters || EMPTY_FILTERS);
 
   const numColumns = 2;
   const itemWidth = useMemo(() => (width - PADDING * 2 - GAP) / numColumns, [width]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchData(1);
+      fetchData(1, activeFiltersRef.current, true);
       dispatch(loadFavoritesAsync());
     }, [])
   );
 
-  const fetchData = async (page = 1) => {
+  const fetchData = async (page = 1, filters: FilterState = activeFilters, initialLoad = false) => {
     try {
-      if (page === 1) {
+      if (page === 1 && initialLoad) {
         setLoading(true);
-      } else {
+      } else if (page > 1) {
         setLoadingMore(true);
       }
       setError(null);
 
-      const requests: [Promise<any>, Promise<any>?] = [api.getAnnouncements(page)];
+      console.log('🟡 fetchData called with filters:', JSON.stringify(filters));
+      const requests: [Promise<any>, Promise<any>?] = [api.getAnnouncements(page, 20, filters as any)];
       if (page === 1) {
         requests.push(api.getFeaturedAnnouncements());
       }
@@ -122,14 +138,65 @@ const AllListingsSection = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchData(1);
+    fetchData(1, activeFilters);
   };
 
   const handleLoadMore = () => {
     if (!loadingMore && hasNextPage) {
-      fetchData(currentPage + 1);
+      fetchData(currentPage + 1, activeFilters);
     }
   };
+
+  const filterDebounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // central application logic, performs the actual request and state update
+  const applyFilters = useCallback((filters: FilterState) => {
+    console.log('✅ applyFilters (network) called', JSON.stringify(filters, null, 2));
+    activeFiltersRef.current = filters;
+    setActiveFilters(filters);
+    setRefreshing(true);  // use refreshing instead of loading so UI stays visible
+    fetchData(1, filters);
+    if (onFiltersChange) {
+      onFiltersChange(filters);
+    }
+  }, [onFiltersChange]);
+
+  // if the parent supplies new filters, re-fetch
+  useEffect(() => {
+    if (externalFilters) {
+      // shallow comparison might suffice here
+      const eq = JSON.stringify(externalFilters) === JSON.stringify(activeFilters);
+      if (!eq) {
+        console.log('📥 externalFilters changed, applying', JSON.stringify(externalFilters));
+        activeFiltersRef.current = externalFilters;
+        setActiveFilters(externalFilters);
+        fetchData(1, externalFilters, true);
+      }
+    }
+  }, [externalFilters]);
+
+  // invoked by the modal on every single change; debounced to avoid spamming
+  const handleFiltersChange = useCallback((filters: FilterState) => {
+    console.log('🔄 handleFiltersChange', JSON.stringify(filters, null, 2));
+    if (filterDebounceTimer.current) {
+      clearTimeout(filterDebounceTimer.current);
+    }
+    filterDebounceTimer.current = setTimeout(() => {
+      applyFilters(filters);
+    }, 300);
+  }, [applyFilters]);
+
+  // user pressed the "apply" button or we need an immediate apply (e.g. closing)
+  const handleApplyFilters = useCallback((filters: FilterState) => {
+    console.log('🔔 handleApplyFilters invoked', JSON.stringify(filters, null, 2));
+    if (filterDebounceTimer.current) {
+      clearTimeout(filterDebounceTimer.current);
+      filterDebounceTimer.current = null;
+    }
+    applyFilters(filters);
+  }, [applyFilters]);
+
+  const activeFilterCount = Object.values(activeFilters).filter(v => v !== '').length;
 
   const handleToggleFavorite = (announcementId: string) => {
     const id = String(announcementId);
@@ -184,34 +251,43 @@ const AllListingsSection = () => {
     </View>
   );
 
-  if (loading) {
-    return (
-      <View style={[styles.section, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color={COLORS.purple} />
-        <Text style={styles.loadingText}>{t.allListings.loading}</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={[styles.section, styles.errorContainer]}>
-        <Text style={styles.errorEmoji}>:(</Text>
-        <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
-        <TouchableOpacity onPress={() => fetchData(1)} style={styles.retryButton}>
-          <Text style={styles.retryText}>{t.allListings.retry}</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   const FEATURED_CARD_WIDTH = 240;
 
   return (
     <View style={styles.section}>
-      {/* Featured Carousel */}
-      {featuredListings.length > 0 && (
-        <View style={styles.featuredSection}>
+      <FilterModal
+        isOpen={filterModalOpen}
+        onClose={() => setFilterModalOpen(false)}
+        onApply={filters => {
+          handleApplyFilters(filters);
+          setFilterModalOpen(false);
+        }}
+        onChange={handleFiltersChange}
+        initialFilters={activeFilters}
+      />
+
+      {loading && (
+        <View style={[styles.loadingContainer]}>
+          <ActivityIndicator size="large" color={COLORS.purple} />
+          <Text style={styles.loadingText}>{t.allListings.loading}</Text>
+        </View>
+      )}
+
+      {!loading && error && (
+        <View style={[styles.errorContainer]}>
+          <Text style={styles.errorEmoji}>:(</Text>
+          <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>
+          <TouchableOpacity onPress={() => fetchData(1, EMPTY_FILTERS, true)} style={styles.retryButton}>
+            <Text style={styles.retryText}>{t.allListings.retry}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!loading && !error && (
+        <>
+          {/* Featured Carousel */}
+          {featuredListings.length > 0 && (
+            <View style={styles.featuredSection}>
           <View style={styles.featuredHeader}>
             <LinearGradient
               colors={['#fbbf24', '#f59e0b']}
@@ -257,18 +333,91 @@ const AllListingsSection = () => {
           </View>
         </View>
 
-        {/* Filter Chips */}
+        {/* Filter Button */}
         <View style={styles.filterRow}>
-          <TouchableOpacity style={styles.filterChip} activeOpacity={0.7}>
-            <SlidersHorizontal size={14} color={COLORS.purple} />
-            <Text style={styles.filterText}>{t.allListings.filter}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.sortChip} activeOpacity={0.7}>
-            <Text style={styles.sortText}>{t.allListings.sort}</Text>
-            <ChevronDown size={14} color="#64748b" />
+          <TouchableOpacity
+            style={[styles.filterChip, activeFilterCount > 0 && styles.filterChipActive]}
+            activeOpacity={0.7}
+            onPress={() => setFilterModalOpen(true)}
+          >
+            <SlidersHorizontal size={14} color={activeFilterCount > 0 ? '#fff' : COLORS.purple} />
+            <Text style={[styles.filterText, activeFilterCount > 0 && styles.filterTextActive]}>
+              {t.allListings.filter}{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Active filter pills */}
+        {activeFilterCount > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.activePillsScroll}
+            contentContainerStyle={styles.activePillsContent}
+          >
+            {Object.entries(activeFilters)
+              .filter(([_, v]) => v !== '')
+              .map(([key, value]) => {
+                const labelMap: Record<string, string> = {
+                  property_type: t.filter.propertyType,
+                  listing_type: t.filter.listingType,
+                  building_type: t.filter.buildingType,
+                  condition: t.filter.condition,
+                  currency: value.toUpperCase(),
+                  price_min: `${t.filter.minPrice}: ${value}`,
+                  price_max: `${t.filter.maxPrice}: ${value}`,
+                  area_min: `${t.filter.minArea}: ${value}`,
+                  area_max: `${t.filter.maxArea}: ${value}`,
+                  rooms_min: `${t.filter.minRooms}: ${value}`,
+                  rooms_max: `${t.filter.maxRooms}: ${value}`,
+                  floor_min: `${t.filter.minFloor}: ${value}`,
+                  floor_max: `${t.filter.maxFloor}: ${value}`,
+                  district: `${t.filter.district}: ${value}`,
+                  ordering: t.filter.ordering,
+                };
+                const valueMap: Record<string, string> = {
+                  apartment: t.filter.apartment,
+                  house: t.filter.house,
+                  commercial: t.filter.commercial,
+                  land: t.filter.land,
+                  sale: t.filter.sale,
+                  rent: t.filter.rent,
+                  rent_daily: t.filter.rentDaily,
+                  new: t.filter.newBuilding,
+                  old: t.filter.oldBuilding,
+                  needs_repair: t.filter.conditionNeedsRepair,
+                  no_repair: t.filter.conditionNoRepair,
+                  cosmetic: t.filter.conditionCosmetic,
+                  euro_repair: t.filter.conditionEuro,
+                  design: t.filter.conditionDesign,
+                  capital: t.filter.conditionCapital,
+                  '-posted_at': t.filter.orderNewest,
+                  posted_at: t.filter.orderOldest,
+                  price: t.filter.orderPriceAsc,
+                  '-price': t.filter.orderPriceDesc,
+                  '-views_count': t.filter.orderViewsDesc,
+                };
+                const isRangeOrDistrict = ['price_min','price_max','area_min','area_max','rooms_min','rooms_max','floor_min','floor_max','district'].includes(key);
+                const label = isRangeOrDistrict
+                  ? labelMap[key]
+                  : `${labelMap[key] || key}: ${valueMap[value] || value}`;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={styles.activePill}
+                    onPress={() => {
+                      const updated = { ...activeFilters, [key]: '' };
+                      activeFiltersRef.current = updated;
+                      setActiveFilters(updated);
+                      fetchData(1, updated);
+                    }}
+                  >
+                    <Text style={styles.activePillText}>{label} ✕</Text>
+                  </TouchableOpacity>
+                );
+              })}
+          </ScrollView>
+        )}
       </View>
 
       <View style={{ paddingHorizontal: PADDING }}>
@@ -313,6 +462,8 @@ const AllListingsSection = () => {
           </TouchableOpacity>
         )}
       </View>
+        </>
+      )}
     </View>
   );
 };
@@ -448,10 +599,39 @@ const styles = StyleSheet.create({
     borderColor: '#e9e5ff',
     gap: 6,
   },
+  filterChipActive: {
+    backgroundColor: COLORS.purple,
+    borderColor: COLORS.purple,
+  },
+  activePillsScroll: {
+    marginTop: 10,
+  },
+  activePillsContent: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+  activePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#ede9fe',
+    borderWidth: 1,
+    borderColor: COLORS.purple,
+  },
+  activePillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.purple,
+  },
   filterText: {
     fontSize: 13,
     fontWeight: '600',
     color: COLORS.purple,
+  },
+  filterTextActive: {
+    color: '#fff',
   },
   sortChip: {
     flexDirection: 'row',

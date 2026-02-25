@@ -34,7 +34,10 @@ const HomeScreen = () => {
        
           <View>
             {/* <VIPSection /> */}
-            <AllListingsSection />
+            <AllListingsSection
+              externalFilters={appliedFilters}
+              onFiltersChange={filters => setAppliedFilters(filters)}
+            />
           </View>
        
       </ScrollView>
@@ -46,6 +49,11 @@ const HomeScreen = () => {
           setAppliedFilters(filters);
           setFilterModalVisible(false);
         }}
+        onChange={(filters) => {
+          // update parent state immediately; AllListingsSection will react via prop
+          setAppliedFilters(filters);
+        }}
+        initialFilters={appliedFilters || undefined}
       />
     </SafeAreaView>
   );

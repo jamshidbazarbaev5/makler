@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@react-navigation/native';
 import { ArrowLeft, Clock, FileText, TrendingUp } from 'lucide-react-native';
 import BottomNav from '../components/BottomNav';
+import { useLanguage } from '../localization';
 
 interface NavigationProp {
   navigate: (screen: string, params?: object) => void;
@@ -21,25 +22,26 @@ interface NavigationProp {
 const AddListingScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const { colors } = useTheme();
+  const { t } = useLanguage();
 
-  const sotuvchiSifatida = [
+  const listingOptions = [
     {
       id: 'daily-rent',
       icon: Clock,
-      title: 'Kunlik ijaraga beraman',
-      description: 'Kunlik ijaraga berish',
+      title: t.addListing.dailyRent,
+      description: t.addListing.dailyRentDesc,
     },
     {
       id: 'monthly-rent',
       icon: FileText,
-      title: 'Ijaraga beraman',
-      description: 'Oylik ijaraga berish',
+      title: t.addListing.monthlyRent,
+      description: t.addListing.monthlyRentDesc,
     },
     {
       id: 'sell',
       icon: TrendingUp,
-      title: 'Sotaman',
-      description: 'Mulkni sotish',
+      title: t.addListing.sell,
+      description: t.addListing.sellDesc,
     },
   ];
 
@@ -75,14 +77,14 @@ const AddListingScreen = () => {
         >
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>E'lon Qo'shish</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t.addListing.screenTitle}</Text>
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>SOTUVCHI SIFATIDA</Text>
+          <Text style={styles.sectionLabel}>{t.addListing.selectOption}</Text>
           <View style={styles.optionsContainer}>
-            {sotuvchiSifatida.map((item) => (
+            {listingOptions.map((item) => (
               <OptionCard key={item.id} item={item} />
             ))}
           </View>

@@ -114,7 +114,19 @@
     "uploadPhoto": "Загрузить фото",
     "saveChanges": "Сохранить изменения",
     "discardChanges": "Отменить",
-    "profileUpdated": "Профиль обновлен"
+    "profileUpdated": "Профиль обновлен",
+    "phoneNumber": "Номер телефона",
+    "avatarHint": "Изменить аватар",
+    "usernameRequired": "Имя пользователя обязательно",
+    "updateSuccess": "Профиль успешно обновлён",
+    "updateError": "Ошибка обновления профиля",
+    "changeAvatarTitle": "Изменить аватар",
+    "changeAvatarMessage": "Как вы хотите выбрать фото?",
+    "camera": "Камера",
+    "gallery": "Галерея",
+    "avatarUpdated": "Аватар обновлён",
+    "avatarError": "Ошибка обновления аватара",
+    "infoText": "Ваши личные данные хранятся в безопасности"
   },
 
   "addListing": {
@@ -137,7 +149,15 @@
     "selectAmenities": "Выберите удобства",
     "publish": "Опубликовать",
     "saveDraft": "Сохранить как черновик",
-    "preview": "Предпросмотр"
+    "preview": "Предпросмотр",
+    "screenTitle": "Добавить объявление",
+    "dailyRent": "Посуточная аренда",
+    "dailyRentDesc": "Сдать посуточно",
+    "monthlyRent": "Аренда",
+    "monthlyRentDesc": "Сдать в аренду",
+    "sell": "Продать",
+    "sellDesc": "Продать недвижимость",
+    "selectOption": "ВЫБЕРИТЕ ТИП ОБЪЯВЛЕНИЯ"
   },
 
   "listingDetail": {
@@ -242,7 +262,44 @@
     "priceHighToLow": "Цена: По убыванию",
     "mostViewed": "Самые просматриваемые",
     "applyFilters": "Применить фильтры",
-    "clearFilters": "Очистить фильтры"
+    "clearFilters": "Очистить фильтры",
+    "listingType": "Тип сделки",
+    "buildingType": "Тип здания",
+    "condition": "Состояние",
+    "rooms": "Комнаты",
+    "floor": "Этаж",
+    "minFloor": "Мин этаж",
+    "maxFloor": "Макс этаж",
+    "minRooms": "Мин комнат",
+    "maxRooms": "Макс комнат",
+    "district": "Район",
+    "ordering": "Сортировка",
+    "all": "Все",
+    "sale": "Продажа",
+    "rent": "Аренда",
+    "rentDaily": "Посуточно",
+    "newBuilding": "Новостройка",
+    "oldBuilding": "Вторичка",
+    "conditionNeedsRepair": "Требует ремонта",
+    "conditionNoRepair": "Без ремонта",
+    "conditionCosmetic": "Косметический",
+    "conditionEuro": "Евроремонт",
+    "conditionDesign": "Дизайнерский",
+    "conditionCapital": "Капитальный",
+    "apartment": "Квартира",
+    "house": "Дом",
+    "commercial": "Коммерческая",
+    "land": "Земля",
+    "orderNewest": "Сначала новые",
+    "orderOldest": "Сначала старые",
+    "orderPriceAsc": "Цена: по возрастанию",
+    "orderPriceDesc": "Цена: по убыванию",
+    "orderViewsDesc": "Популярные",
+    "usd": "USD",
+    "uzs": "UZS",
+    "from": "От",
+    "to": "До",
+    "selectDistrict": "Выберите район"
   },
 
   "propertyTypes": {
@@ -293,7 +350,14 @@
     "alreadyHaveAccount": "Уже есть аккаунт?",
     "createAccount": "Создать аккаунт",
     "welcomeBack": "С возвращением!",
-    "createYourAccount": "Создайте свой аккаунт"
+    "createYourAccount": "Создайте свой аккаунт",
+    "loginTagline": "Недвижимость в Каракалпакстане",
+    "loginDescription": "Найдите идеальную недвижимость или разместите своё объявление за минуты",
+    "feature1": "Тысячи объявлений",
+    "feature2": "Бесплатное размещение",
+    "feature3": "Прямая связь с владельцами",
+    "whyTelegram": "Мы используем Telegram для безопасного входа — без паролей",
+    "selectLanguage": "Выберите язык"
   },
 
   "errors": {
@@ -550,6 +614,19 @@
     "successTitle": "Успешно",
     "successMessage": "Объявление успешно создано!",
     "submitError": "Ошибка при создании объявления"
+  },
+
+  "propertyTypeScreen": {
+    "title": "Тип недвижимости",
+    "selectType": "ВЫБЕРИТЕ ТИП НЕДВИЖИМОСТИ",
+    "apartment": "Квартира",
+    "apartmentDesc": "Жилая квартира",
+    "house": "Дом/Коттедж/Дача",
+    "houseDesc": "Частное жильё",
+    "land": "Земля",
+    "landDesc": "Земля под строительство",
+    "commercial": "Коммерческая",
+    "commercialDesc": "Коммерческая недвижимость"
   },
 
   "bottomSheet": {

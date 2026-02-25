@@ -5,6 +5,24 @@ import {refreshToken, clearAuth} from '../redux/slices/authSlice';
 
 const API_BASE_URL = 'https://makler-qaraqalpaq.uz/api/mobile';
 
+export interface AppSettings {
+  id: number;
+  payment_enabled: boolean;
+  featured_enabled: boolean;
+  post_price: string;
+  featured_price: string;
+  post_duration_days: number;
+  featured_duration_days: number;
+  require_moderation: boolean;
+  auto_deactivate_expired: boolean;
+  notify_expiring_days: number;
+  max_images_per_post: number;
+  max_draft_announcements: number;
+  admin_phone: string;
+  created_at: string;
+  updated_at: string;
+}
+
 class ApiClient {
   private client: AxiosInstance;
   private isRefreshing = false;
@@ -219,9 +237,14 @@ class ApiClient {
     await this.client.delete('/users/profile/me/delete/');
   }
 
-  async getAnnouncements(page = 1, limit = 20): Promise<{ results: any[]; count: number; next: string | null }> {
+  async getAnnouncements(page = 1, limit = 20, filters: Record<string, string> = {}): Promise<{ results: any[]; count: number; next: string | null }> {
+    // Strip empty values before sending
+    const cleanFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, v]) => v !== '' && v !== undefined)
+    );
+    console.log('📡 getAnnouncements params:', { page, limit, ...cleanFilters });
     const response = await this.client.get('/announcements/', {
-      params: { page, limit },
+      params: { page, limit, ...cleanFilters },
     });
     return response.data;
   }
@@ -478,11 +501,7 @@ class ApiClient {
    * Get app settings (admin phone, etc.)
    * GET /api/admin/settings/app/
    */
-  async getAppSettings(): Promise<{
-    admin_phone: string;
-    max_images_per_post: number;
-    max_draft_announcements: number;
-  }> {
+  async getAppSettings(): Promise<AppSettings> {
     const response = await axios.get('https://makler-qaraqalpaq.uz/api/admin/settings/app/');
     return response.data;
   }

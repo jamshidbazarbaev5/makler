@@ -31,7 +31,7 @@ import { useLanguage } from '../localization/LanguageContext';
 
 const NotificationsScreen: React.FC = () => {
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
   const { notifications, unreadCount, loading, error } = useAppSelector(
@@ -185,6 +185,17 @@ const NotificationsScreen: React.FC = () => {
         : [...prev, id]
     );
   }, []);
+
+  // Map app language to locale code for date formatting
+  const getLocaleCode = (lang: string): string => {
+    const localeMap: Record<string, string> = {
+      uz: 'uz-UZ',
+      ru: 'ru-RU',
+      en: 'en-US',
+      kaa: 'kk-KZ',
+    };
+    return localeMap[lang] || 'en-US';
+  };
 
   // Render empty state
   const renderEmptyState = () => (
@@ -430,26 +441,27 @@ const NotificationsScreen: React.FC = () => {
                 styles.modalIconBox,
                 {
                   backgroundColor: selectedNotification.notification_type === 'post_approved'
-                    ? '#dcfce7' : '#fef3c7',
+                    ? '#dcfce7'
+                    : selectedNotification.notification_type === 'payment_success'
+                    ? '#dbeafe'
+                    : '#fef3c7',
                 },
               ]}>
                 {selectedNotification.notification_type === 'post_approved' ? (
                   <CheckCircle2 size={28} color="#22c55e" />
+                ) : selectedNotification.notification_type === 'payment_success' ? (
+                  <CheckCircle2 size={28} color="#3b82f6" />
                 ) : (
                   <FileText size={28} color="#f59e0b" />
                 )}
-              </View>
+              </View>getLocaleCode(language)
 
               <Text style={styles.modalNotifTitle}>
-                {selectedNotification.notification_type === 'post_approved'
-                  ? t.notifications.postPublished
-                  : t.notifications.postRejected}
+                {selectedNotification.title}
               </Text>
 
               <Text style={styles.modalNotifMessage}>
-                {selectedNotification.notification_type === 'post_approved'
-                  ? t.notifications.postApprovedMessage
-                  : t.notifications.postRejectedMessage}
+                {selectedNotification.message}
               </Text>
 
               <Text style={styles.modalNotifDate}>
