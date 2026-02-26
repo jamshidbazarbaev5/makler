@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -48,8 +48,8 @@ const iconMap: any = {
 const STATUS_KEYS = ['draft', 'active', 'processing', 'inactive', 'rejected', 'completed'] as const;
 
 const filters = [
-  ['status', 'saralash'],
-  ['elon_maqsadi', 'mulk_toifasi'],
+  ['status', 'ordering'],
+  ['listing_type', 'property_type'],
 ];
 
 interface TabCounts {
@@ -85,9 +85,9 @@ export default function Profile({ navigation }: Props) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [selectedFilters, setSelectedFilters] = useState({
     status: t.myListings?.all || 'All',
-    saralash: t.filter?.sortBy?.replace(':', '') || 'Sort',
-    elon_maqsadi: t.addListing?.category || 'Category',
-    mulk_toifasi: t.addListing?.propertyType || 'Property Type',
+    ordering: '',
+    listing_type: '',
+    property_type: '',
   });
   const [tabCounts, setTabCounts] = useState<TabCounts | null>(null);
   const [myListings, setMyListings] = useState<any[]>([]);
@@ -116,9 +116,9 @@ export default function Profile({ navigation }: Props) {
   useEffect(() => {
     setSelectedFilters({
       status: t.myListings?.all || 'All',
-      saralash: t.filter?.sortBy?.replace(':', '') || 'Sort',
-      elon_maqsadi: t.addListing?.category || 'Category',
-      mulk_toifasi: t.addListing?.propertyType || 'Property Type',
+      ordering: '',
+      listing_type: '',
+      property_type: '',
     });
     setSelectedStatus(undefined);
   }, [language]);
@@ -135,7 +135,7 @@ export default function Profile({ navigation }: Props) {
     try {
       const response = await api.getMyAnnouncementsCounts();
       if (response.tab_counts) {
-        setTabCounts(response.tab_counts as TabCounts);
+        setTabCounts(response.tab_counts as unknown as TabCounts);
       }
     } catch (err: any) {
       console.error('Error fetching status counts:', err);
@@ -212,6 +212,82 @@ export default function Profile({ navigation }: Props) {
     return `${num.toLocaleString()} ${t.listingCard.sum}`;
   };
 
+  const getFilterValueLabel = (key: 'ordering' | 'listing_type' | 'property_type', value: string) => {
+    if (!value) {
+      if (key === 'ordering') return t.filter.ordering;
+      if (key === 'listing_type') return t.filter.listingType;
+      return t.filter.propertyType;
+    }
+
+    if (key === 'ordering') {
+      const orderingMap: Record<string, string> = {
+        '-posted_at': t.filter.orderNewest,
+        'posted_at': t.filter.orderOldest,
+        'price': t.filter.orderPriceAsc,
+        '-price': t.filter.orderPriceDesc,
+        '-views_count': t.filter.orderViewsDesc,
+      };
+      return orderingMap[value] || value;
+    }
+
+    if (key === 'listing_type') {
+      const listingTypeMap: Record<string, string> = {
+        sale: t.filter.sale,
+        rent: t.filter.rent,
+        rent_daily: t.filter.rentDaily,
+      };
+      return listingTypeMap[value] || value;
+    }
+
+    const propertyTypeMap: Record<string, string> = {
+      apartment: t.filter.apartment,
+      house: t.filter.house,
+      commercial: t.filter.commercial,
+      land: t.filter.land,
+    };
+    return propertyTypeMap[value] || value;
+  };
+
+  const displayedListings = useMemo(() => {
+    let result = [...myListings];
+
+    if (selectedFilters.listing_type) {
+      result = result.filter(item => item.listing_type === selectedFilters.listing_type);
+    }
+
+    if (selectedFilters.property_type) {
+      result = result.filter(item => item.property_type === selectedFilters.property_type);
+    }
+
+    if (selectedFilters.ordering) {
+      result.sort((a, b) => {
+        const priceA = parseFloat(a.price || '0');
+        const priceB = parseFloat(b.price || '0');
+        const viewsA = a.views_count || 0;
+        const viewsB = b.views_count || 0;
+        const dateA = new Date(a.posted_at || a.created_at || 0).getTime();
+        const dateB = new Date(b.posted_at || b.created_at || 0).getTime();
+
+        switch (selectedFilters.ordering) {
+          case '-posted_at':
+            return dateB - dateA;
+          case 'posted_at':
+            return dateA - dateB;
+          case 'price':
+            return priceA - priceB;
+          case '-price':
+            return priceB - priceA;
+          case '-views_count':
+            return viewsB - viewsA;
+          default:
+            return 0;
+        }
+      });
+    }
+
+    return result;
+  }, [myListings, selectedFilters.listing_type, selectedFilters.property_type, selectedFilters.ordering]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return '#22c55e';
@@ -239,7 +315,7 @@ export default function Profile({ navigation }: Props) {
     ]);
   };
 
-  const handleLanguageSelect = async (lang: 'uz' | 'ru' | 'en') => {
+  const handleLanguageSelect = async (lang: 'uz' | 'ru' | 'en' | 'kaa') => {
     await setLanguage(lang);
     // Language change message will be shown in the new language after state updates
   };
@@ -449,7 +525,7 @@ export default function Profile({ navigation }: Props) {
                       style={styles.filterChip}
                       onPress={() => setOpenDropdown(openDropdown === filterKey ? null : filterKey)}
                     >
-                      <Text style={styles.filterText}>{selectedFilters[filterKey as keyof typeof selectedFilters]}</Text>
+                      <Text style={styles.filterText}>{filterKey === 'status' ? selectedFilters.status : getFilterValueLabel(filterKey as 'ordering' | 'listing_type' | 'property_type', selectedFilters[filterKey as keyof typeof selectedFilters])}</Text>
                       <ChevronDown size={16} color={COLORS.gray700} />
                     </TouchableOpacity>
                   ))}
@@ -524,79 +600,79 @@ export default function Profile({ navigation }: Props) {
                         );
                       })}
                     </>
-                  ) : openDropdown === 'saralash' ? (
+) : openDropdown === 'ordering' ? (
                     [
-                      { label: t.profileFilters?.sortNewest || 'Newest', value: 'newest' },
-                      { label: t.profileFilters?.sortCheapest || 'Cheapest', value: 'cheapest' },
-                      { label: t.profileFilters?.sortExpensive || 'Most Expensive', value: 'expensive' },
+                      { label: t.filter.orderNewest, value: '-posted_at' },
+                      { label: t.filter.orderOldest, value: 'posted_at' },
+                      { label: t.filter.orderPriceAsc, value: 'price' },
+                      { label: t.filter.orderPriceDesc, value: '-price' },
+                      { label: t.filter.orderViewsDesc, value: '-views_count' },
                     ].map((option) => (
                       <TouchableOpacity
                         key={option.value}
                         style={[
                           styles.dropdownOption,
-                          selectedFilters.saralash === option.label && styles.dropdownOptionActive,
+                          selectedFilters.ordering === option.value && styles.dropdownOptionActive,
                         ]}
                         onPress={() => {
-                          setSelectedFilters(prev => ({ ...prev, saralash: option.label }));
+                          setSelectedFilters(prev => ({ ...prev, ordering: option.value }));
                           setOpenDropdown(null);
                         }}
                       >
                         <Text style={[
                           styles.dropdownOptionText,
-                          selectedFilters.saralash === option.label && styles.dropdownOptionTextActive,
+                          selectedFilters.ordering === option.value && styles.dropdownOptionTextActive,
                         ]}>
                           {option.label}
                         </Text>
                       </TouchableOpacity>
                     ))
-                  ) : openDropdown === 'elon_maqsadi' ? (
+) : openDropdown === 'listing_type' ? (
                     [
-                      { label: t.profileFilters?.purposeAll || 'All', value: 'all' },
-                      { label: t.profileFilters?.purposeDaily || 'Daily', value: 'daily' },
-                      { label: t.profileFilters?.purposeRent || 'Rent', value: 'rent' },
-                      { label: t.profileFilters?.purposeSale || 'Sale', value: 'sale' },
+                      { label: t.filter.sale, value: 'sale' },
+                      { label: t.filter.rent, value: 'rent' },
+                      { label: t.filter.rentDaily, value: 'rent_daily' },
                     ].map((option) => (
                       <TouchableOpacity
                         key={option.value}
                         style={[
                           styles.dropdownOption,
-                          selectedFilters.elon_maqsadi === option.label && styles.dropdownOptionActive,
+                          selectedFilters.listing_type === option.value && styles.dropdownOptionActive,
                         ]}
                         onPress={() => {
-                          setSelectedFilters(prev => ({ ...prev, elon_maqsadi: option.label }));
+                          setSelectedFilters(prev => ({ ...prev, listing_type: option.value }));
                           setOpenDropdown(null);
                         }}
                       >
                         <Text style={[
                           styles.dropdownOptionText,
-                          selectedFilters.elon_maqsadi === option.label && styles.dropdownOptionTextActive,
+                          selectedFilters.listing_type === option.value && styles.dropdownOptionTextActive,
                         ]}>
                           {option.label}
                         </Text>
                       </TouchableOpacity>
                     ))
-                  ) : openDropdown === 'mulk_toifasi' ? (
+) : openDropdown === 'property_type' ? (
                     [
-                      { label: t.profileFilters?.typeAll || 'All', value: 'all' },
-                      { label: t.profileFilters?.typeApartment || 'Apartment', value: 'apartment' },
-                      { label: t.profileFilters?.typeHouse || 'House', value: 'house' },
-                      { label: t.profileFilters?.typeLand || 'Land', value: 'land' },
-                      { label: t.profileFilters?.typeCommercial || 'Commercial', value: 'commercial' },
+                      { label: t.filter.apartment, value: 'apartment' },
+                      { label: t.filter.house, value: 'house' },
+                      { label: t.filter.land, value: 'land' },
+                      { label: t.filter.commercial, value: 'commercial' },
                     ].map((option) => (
                       <TouchableOpacity
                         key={option.value}
                         style={[
                           styles.dropdownOption,
-                          selectedFilters.mulk_toifasi === option.label && styles.dropdownOptionActive,
+                          selectedFilters.property_type === option.value && styles.dropdownOptionActive,
                         ]}
                         onPress={() => {
-                          setSelectedFilters(prev => ({ ...prev, mulk_toifasi: option.label }));
+                          setSelectedFilters(prev => ({ ...prev, property_type: option.value }));
                           setOpenDropdown(null);
                         }}
                       >
                         <Text style={[
                           styles.dropdownOptionText,
-                          selectedFilters.mulk_toifasi === option.label && styles.dropdownOptionTextActive,
+                          selectedFilters.property_type === option.value && styles.dropdownOptionTextActive,
                         ]}>
                           {option.label}
                         </Text>
@@ -623,7 +699,7 @@ export default function Profile({ navigation }: Props) {
                     </View>
                   ))}
                 </View>
-              ) : myListings.length === 0 ? (
+) : displayedListings.length === 0 ? (
                 <View style={styles.emptyState}>
                   <View style={styles.emptyStateIcon}>
                     <Home size={40} color={COLORS.accent} />
@@ -636,7 +712,7 @@ export default function Profile({ navigation }: Props) {
               ) : (
                 <>
                   <View style={styles.listingsGrid}>
-                    {myListings.map((item) => (
+                    {displayedListings.map((item) => (
                       <TouchableOpacity
                         key={item.id}
                         style={[styles.listingCard, { width: cardWidth }]}

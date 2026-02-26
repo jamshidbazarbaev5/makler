@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { SlidersHorizontal, Star, Flame } from 'lucide-react-native';
+import { SlidersHorizontal, Star, Flame, Search } from 'lucide-react-native';
 import ListingCard from './ListingCard'
 import { useTheme, useFocusEffect } from '@react-navigation/native';
 import api from '../services/api';
@@ -214,6 +214,7 @@ const AllListingsSection: React.FC<AllListingsSectionProps> = ({
   }, [applyFilters]);
 
   const activeFilterCount = Object.values(activeFilters).filter(v => v !== '').length;
+  const isSearching = activeFilterCount > 0;
 
   const handleToggleFavorite = (announcementId: string) => {
     const id = String(announcementId);
@@ -303,7 +304,7 @@ const AllListingsSection: React.FC<AllListingsSectionProps> = ({
       {!loading && !error && (
         <>
           {/* Featured Carousel */}
-          {featuredListings.length > 0 && (
+          {!isSearching && featuredListings.length > 0 && (
             <View style={styles.featuredSection}>
           <View style={styles.featuredHeader}>
             <LinearGradient
@@ -341,9 +342,13 @@ const AllListingsSection: React.FC<AllListingsSectionProps> = ({
       {/* Header */}
       <View style={styles.headerContainer}>
         <View style={styles.titleRow}>
-          <Flame size={20} color={COLORS.purple} fill={COLORS.purpleLight} />
+          {isSearching ? (
+            <Search size={20} color={COLORS.purple} />
+          ) : (
+            <Flame size={20} color={COLORS.purple} fill={COLORS.purpleLight} />
+          )}
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {t.allListings.latestListings}
+            {isSearching ? (t.allListings.searchResults || 'Search results') : t.allListings.latestListings}
           </Text>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{totalCount}</Text>
@@ -494,7 +499,7 @@ const AllListingsSection: React.FC<AllListingsSectionProps> = ({
 
 const styles = StyleSheet.create({
   section: {
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
   // Featured Carousel
   featuredSection: {
@@ -676,6 +681,7 @@ const styles = StyleSheet.create({
   // Grid
   gridContainer: {
     gap: GAP,
+    paddingBottom: 100,
   },
   columnWrapper: {
     gap: GAP,

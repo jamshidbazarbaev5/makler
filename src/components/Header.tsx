@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { useTheme, useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -37,7 +38,11 @@ const Header = () => {
       ]}
     >
       <View style={styles.leftSection}>
-        <TouchableOpacity onPress={() => navigation.getParent()?.navigate('TopPostsTab' as any)}>
+        <TouchableOpacity
+          style={styles.brandButton}
+          onPress={() => navigation.getParent()?.navigate('TopPostsTab' as any)}
+        >
+          <Image source={require('../../MAINLOGO.png')} style={styles.logo} resizeMode="contain" />
           <Text
             style={[
               styles.title,
@@ -91,6 +96,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  brandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logo: {
+    width: 34,
+    height: 34,
   },
   title: {
     fontSize: 20,

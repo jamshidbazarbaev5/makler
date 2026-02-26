@@ -481,6 +481,7 @@
     "retry": "Retry",
     "featuredTitle": "Recommended",
     "latestListings": "Latest listings",
+    "searchResults": "Search results",
     "filter": "Filter",
     "sort": "Sort",
     "loadMore": "Load more"
@@ -598,6 +599,7 @@
     "region": "District",
     "location": "Location",
     "selectOnMap": "Select location on map",
+    "changeLocation": "Change location",
     "selected": "Selected",
     "phone": "Phone Number",
     "phonePlaceholder": "Enter phone number",

@@ -481,6 +481,7 @@
     "retry": "Qayta ju'klew",
     "featuredTitle": "Usınıs etilgen",
     "latestListings": "Son'g'ı e'lanlar",
+    "searchResults": "Izlew na'tiyjeleri",
     "filter": "Filter",
     "sort": "Saralaw",
     "loadMore": "Tag'ı ju'klew"
@@ -598,6 +599,7 @@
     "region": "Rayon",
     "location": "Jaylasıw",
     "selectOnMap": "Kartadan jaylasıwdı tanlap'",
+    "changeLocation": "Jaylasıwdı özgeriw",
     "selected": "Tanlang'an",
     "phone": "Telefon nomeri",
     "phonePlaceholder": "Telefon nomerin kiritin'",

@@ -343,11 +343,14 @@ class ApiClient {
     return response.data;
   }
 
-  async getMyAnnouncements(status?: string, page = 1, limit = 20): Promise<any> {
+  async getMyAnnouncements(status?: string, page = 1, limit = 20, filters: Record<string, string> = {}): Promise<any> {
     const endpoint = status ? `/announcements/my/${status}/` : '/announcements/my/';
-    const response = await this.client.get(endpoint, {
-      params: { page, limit },
-    });
+    // strip empty filter values
+    const cleanFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, v]) => v !== '' && v !== undefined)
+    );
+    const params: any = { page, limit, ...cleanFilters };
+    const response = await this.client.get(endpoint, { params });
     return response.data;
   }
 

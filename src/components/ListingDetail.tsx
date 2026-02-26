@@ -78,6 +78,7 @@ const ListingDetail = () => {
     const likedIds = useAppSelector(state => state.likes.likedIds);
     const favoriteMap = useAppSelector(state => state.likes.favoriteMap);
     const { t } = useLanguage();
+    const [isPhoneVisible, setIsPhoneVisible] = useState(false);
 
     const listingId = route.params?.listingId;
 
@@ -204,6 +205,17 @@ const ListingDetail = () => {
         if (listing?.phone) {
             Linking.openURL(`tel:${listing.phone}`);
         }
+    };
+
+    const handlePhonePress = () => {
+        if (!listing?.phone) return;
+
+        if (!isPhoneVisible) {
+            setIsPhoneVisible(true);
+            return;
+        }
+
+        handleCall();
     };
 
     const getMapHtml = (lat: number, lng: number) => `
@@ -483,9 +495,13 @@ const ListingDetail = () => {
 
             {/* Fixed Bottom Actions */}
             <View style={styles.bottomActionsContainer}>
-                <TouchableOpacity style={styles.messageButton} activeOpacity={0.7} onPress={handleCall}>
+                <TouchableOpacity style={styles.messageButton} activeOpacity={0.7} onPress={handlePhonePress}>
                     <Text style={styles.messageButtonText}>
-                        {listing?.phone ? formatPhone(listing.phone) : t.listingCard.noPhone}
+                        {!listing?.phone
+                            ? t.listingCard.noPhone
+                            : isPhoneVisible
+                                ? formatPhone(listing.phone)
+                                : 'Показать номер'}
                     </Text>
                 </TouchableOpacity>
                 <View style={styles.bottomButtonsRow}>

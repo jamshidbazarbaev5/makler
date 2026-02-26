@@ -481,6 +481,7 @@
     "retry": "Qayta yuklash",
     "featuredTitle": "Tavsiya etilgan",
     "latestListings": "So'nggi e'lonlar",
+    "searchResults": "Qidiruv natijalari",
     "filter": "Filter",
     "sort": "Saralash",
     "loadMore": "Yana yuklash"
@@ -599,6 +600,7 @@
     "region": "Viloyat",
     "location": "Joylashuv",
     "selectOnMap": "Xaritada joylashuvni tanlang",
+    "changeLocation": "Joylashuvni o'zgartirish",
     "selected": "Tanlangan",
     "phone": "Telefon raqami",
     "phonePlaceholder": "Telefon raqamini kiriting",

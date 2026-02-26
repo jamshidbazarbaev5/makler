@@ -8,12 +8,14 @@ interface MapPickerProps {
   initialLatitude?: number;
   initialLongitude?: number;
   onLocationSelect: (latitude: number, longitude: number) => void;
+  readonly?: boolean;
 }
 
 const MapPicker: React.FC<MapPickerProps> = ({
   initialLatitude = 42.4602,  // Default to Nukus, Karakalpakstan
   initialLongitude = 59.6034,
   onLocationSelect,
+  readonly = false,
 }) => {
   const webViewRef = useRef<WebView>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -142,23 +144,25 @@ const MapPicker: React.FC<MapPickerProps> = ({
           marker = L.marker([${initialLatitude}, ${initialLongitude}], { icon: markerIcon }).addTo(map);
         ` : ''}
 
-        // Handle tap to select location
-        map.on('click', function(e) {
-          var lat = e.latlng.lat;
-          var lng = e.latlng.lng;
+        // Handle tap to select location only in interactive mode
+        if (!${readonly}) {
+          map.on('click', function(e) {
+            var lat = e.latlng.lat;
+            var lng = e.latlng.lng;
 
-          if (marker) {
-            marker.setLatLng(e.latlng);
-          } else {
-            marker = L.marker(e.latlng, { icon: markerIcon }).addTo(map);
-          }
+            if (marker) {
+              marker.setLatLng(e.latlng);
+            } else {
+              marker = L.marker(e.latlng, { icon: markerIcon }).addTo(map);
+            }
 
-          window.ReactNativeWebView.postMessage(JSON.stringify({
-            type: 'locationSelected',
-            lat: lat,
-            lng: lng
-          }));
-        });
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'locationSelected',
+              lat: lat,
+              lng: lng
+            }));
+          });
+        }
       </script>
     </body>
     </html>
@@ -180,18 +184,19 @@ const MapPicker: React.FC<MapPickerProps> = ({
         overScrollMode="never"
       />
 
-      {/* Current Location Button */}
-      <TouchableOpacity
-        style={[styles.locationButton, isLocating && styles.locationButtonActive]}
-        onPress={getCurrentLocation}
-        disabled={isLocating}
-      >
-        <Navigation
-          size={22}
-          color={isLocating ? '#007AFF' : '#333'}
-          fill={isLocating ? '#007AFF' : 'transparent'}
-        />
-      </TouchableOpacity>
+      {!readonly && (
+        <TouchableOpacity
+          style={[styles.locationButton, isLocating && styles.locationButtonActive]}
+          onPress={getCurrentLocation}
+          disabled={isLocating}
+        >
+          <Navigation
+            size={22}
+            color={isLocating ? '#007AFF' : '#333'}
+            fill={isLocating ? '#007AFF' : 'transparent'}
+          />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };

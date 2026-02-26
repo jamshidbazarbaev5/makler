@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   Animated,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useTheme } from '@react-navigation/native';
@@ -86,11 +87,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             ]}
           >
             <View style={styles.logoBox}>
-              <Text style={styles.logoText}>M</Text>
+              <Image source={require('../../MAINLOGO.png')} style={styles.logoImage} resizeMode="contain" />
             </View>
-            <Text style={[styles.title, { color: colors.text }]}>MAKLER</Text>
-            <Text style={styles.tagline}>{t.auth.loginTagline}</Text>
-            <View style={styles.accentLine} />
+            <Text style={[styles.title, { color: colors.text }]}>Makler Qaraqalpaq</Text>
           </Animated.View>
 
           {/* Description + Features */}
@@ -180,29 +179,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoBox: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: '#0088cc',
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
     shadowColor: '#0088cc',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 8,
   },
-  logoText: {
-    fontSize: 40,
-    fontWeight: '900',
-    color: '#fff',
+  logoImage: {
+    width: 70,
+    height: 70,
   },
   title: {
-    fontSize: 38,
+    fontSize: 32,
     fontWeight: '800',
-    letterSpacing: 4,
+    letterSpacing: 1,
     marginBottom: 6,
+    textAlign: 'center',
   },
   tagline: {
     fontSize: 15,

@@ -30,6 +30,48 @@ interface District {
   name: string;
 }
 
+interface ChipOption {
+  label: string;
+  value: string;
+}
+
+const ChipGroup: React.FC<{
+  filterKey: keyof FilterState;
+  options: ChipOption[];
+  filters: FilterState;
+  onToggle: (key: keyof FilterState, value: string) => void;
+}> = ({ filterKey, options, filters, onToggle }) => (
+  <View style={styles.chipRow}>
+    {options.map(opt => (
+      <TouchableOpacity
+        key={opt.value}
+        style={[styles.chip, filters[filterKey] === opt.value && styles.chipActive]}
+        onPress={() => onToggle(filterKey, opt.value)}
+      >
+        <Text style={[styles.chipText, filters[filterKey] === opt.value && styles.chipTextActive]}>
+          {opt.label}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+);
+
+const Section: React.FC<{
+  id: string;
+  label: string;
+  isOpen: boolean;
+  onToggleSection: (section: string) => void;
+  children: React.ReactNode;
+}> = ({ id, label, isOpen, onToggleSection, children }) => (
+  <View style={styles.section}>
+    <TouchableOpacity style={styles.sectionHeader} onPress={() => onToggleSection(id)}>
+      <Text style={styles.sectionLabel}>{label}</Text>
+      {isOpen ? <ChevronUp size={18} color={COLORS.gray500} /> : <ChevronDown size={18} color={COLORS.gray500} />}
+    </TouchableOpacity>
+    {isOpen && <View style={styles.sectionBody}>{children}</View>}
+  </View>
+);
+
 export const FilterModal: React.FC<FilterModalProps> = ({
   isOpen,
   onClose,
@@ -41,6 +83,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   const [filters, setFilters] = useState<FilterState>(initialFilters || EMPTY_FILTERS);
   const [districts, setDistricts] = useState<District[]>([]);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const changeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -54,20 +97,41 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     }
   }, [isOpen]);
 
+  const emitChange = (updated: FilterState, immediate = false) => {
+    if (!onChange) return;
+
+    if (changeDebounceRef.current) {
+      clearTimeout(changeDebounceRef.current);
+      changeDebounceRef.current = null;
+    }
+
+    if (immediate) {
+      onChange(updated);
+      return;
+    }
+
+    changeDebounceRef.current = setTimeout(() => {
+      onChange(updated);
+    }, 250);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (changeDebounceRef.current) {
+        clearTimeout(changeDebounceRef.current);
+      }
+    };
+  }, []);
+
   const set = (key: keyof FilterState, value: string) => {
     const updated = { ...filters, [key]: value };
     setFilters(updated);
-    if (onChange) {
-      onChange(updated);
-    }
   };
 
   const toggle = (key: keyof FilterState, value: string) => {
     const updated = { ...filters, [key]: filters[key] === value ? '' : value };
     setFilters(updated);
-    if (onChange) {
-      onChange(updated);
-    }
+    emitChange(updated, true);
   };
 
   const toggleSection = (section: string) => {
@@ -86,49 +150,13 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
   const handleClear = () => {
     setFilters(EMPTY_FILTERS);
+    emitChange(EMPTY_FILTERS, true);
   };
 
   const activeCount = Object.values(filters).filter(v => v !== '').length;
 
-  // ---- Option chips ----
-  const ChipGroup = ({
-    filterKey,
-    options,
-  }: {
-    filterKey: keyof FilterState;
-    options: { label: string; value: string }[];
-  }) => (
-    <View style={styles.chipRow}>
-      {options.map(opt => (
-        <TouchableOpacity
-          key={opt.value}
-          style={[styles.chip, filters[filterKey] === opt.value && styles.chipActive]}
-          onPress={() => toggle(filterKey, opt.value)}
-        >
-          <Text style={[styles.chipText, filters[filterKey] === opt.value && styles.chipTextActive]}>
-            {opt.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
-  // ---- Section header ----
-  const Section = ({ id, label, children }: { id: string; label: string; children: React.ReactNode }) => {
-    const open = openSection === id;
-    return (
-      <View style={styles.section}>
-        <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection(id)}>
-          <Text style={styles.sectionLabel}>{label}</Text>
-          {open ? <ChevronUp size={18} color={COLORS.gray500} /> : <ChevronDown size={18} color={COLORS.gray500} />}
-        </TouchableOpacity>
-        {open && <View style={styles.sectionBody}>{children}</View>}
-      </View>
-    );
-  };
-
   // ---- Range inputs ----
-  const RangeInput = ({
+  const renderRangeInput = ({
     minKey, maxKey, minPlaceholder, maxPlaceholder,
   }: {
     minKey: keyof FilterState;
@@ -143,7 +171,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         onChangeText={v => set(minKey, v)}
         placeholder={minPlaceholder}
         placeholderTextColor={COLORS.gray400}
-        keyboardType="numeric"
+        keyboardType="number-pad"
+        blurOnSubmit={false}
       />
       <View style={styles.rangeDash} />
       <TextInput
@@ -152,7 +181,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         onChangeText={v => set(maxKey, v)}
         placeholder={maxPlaceholder}
         placeholderTextColor={COLORS.gray400}
-        keyboardType="numeric"
+        keyboardType="number-pad"
+        blurOnSubmit={false}
       />
     </View>
   );
@@ -225,74 +255,78 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             </View>
           </View>
 
-          <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
 
             {/* Property Type */}
-            <Section id="property_type" label={t.filter.propertyType}>
-              <ChipGroup filterKey="property_type" options={propertyTypes} />
+            <Section id="property_type" label={t.filter.propertyType} isOpen={openSection === "property_type"} onToggleSection={toggleSection}>
+              <ChipGroup filterKey="property_type" options={propertyTypes} filters={filters} onToggle={toggle} />
             </Section>
 
             {/* Listing Type */}
-            <Section id="listing_type" label={t.filter.listingType}>
-              <ChipGroup filterKey="listing_type" options={listingTypes} />
+            <Section id="listing_type" label={t.filter.listingType} isOpen={openSection === "listing_type"} onToggleSection={toggleSection}>
+              <ChipGroup filterKey="listing_type" options={listingTypes} filters={filters} onToggle={toggle} />
             </Section>
 
             {/* Building Type */}
-            <Section id="building_type" label={t.filter.buildingType}>
-              <ChipGroup filterKey="building_type" options={buildingTypes} />
+            <Section id="building_type" label={t.filter.buildingType} isOpen={openSection === "building_type"} onToggleSection={toggleSection}>
+              <ChipGroup filterKey="building_type" options={buildingTypes} filters={filters} onToggle={toggle} />
             </Section>
 
             {/* Condition */}
-            <Section id="condition" label={t.filter.condition}>
-              <ChipGroup filterKey="condition" options={conditions} />
+            <Section id="condition" label={t.filter.condition} isOpen={openSection === "condition"} onToggleSection={toggleSection}>
+              <ChipGroup filterKey="condition" options={conditions} filters={filters} onToggle={toggle} />
             </Section>
 
             {/* Price */}
-            <Section id="price" label={t.filter.priceRange}>
+            <Section id="price" label={t.filter.priceRange} isOpen={openSection === "price"} onToggleSection={toggleSection}>
               {/* Currency */}
-              <ChipGroup filterKey="currency" options={currencies} />
+              <ChipGroup filterKey="currency" options={currencies} filters={filters} onToggle={toggle} />
               <View style={{ height: 10 }} />
-              <RangeInput
-                minKey="price_min"
-                maxKey="price_max"
-                minPlaceholder={t.filter.from}
-                maxPlaceholder={t.filter.to}
-              />
+              {renderRangeInput({
+                minKey: "price_min",
+                maxKey: "price_max",
+                minPlaceholder: t.filter.from,
+                maxPlaceholder: t.filter.to,
+              })}
             </Section>
 
             {/* Area */}
-            <Section id="area" label={t.filter.area}>
-              <RangeInput
-                minKey="area_min"
-                maxKey="area_max"
-                minPlaceholder={t.filter.minArea}
-                maxPlaceholder={t.filter.maxArea}
-              />
+            <Section id="area" label={t.filter.area} isOpen={openSection === "area"} onToggleSection={toggleSection}>
+              {renderRangeInput({
+                minKey: "area_min",
+                maxKey: "area_max",
+                minPlaceholder: t.filter.minArea,
+                maxPlaceholder: t.filter.maxArea,
+              })}
             </Section>
 
             {/* Rooms */}
-            <Section id="rooms" label={t.filter.rooms}>
-              <RangeInput
-                minKey="rooms_min"
-                maxKey="rooms_max"
-                minPlaceholder={t.filter.minRooms}
-                maxPlaceholder={t.filter.maxRooms}
-              />
+            <Section id="rooms" label={t.filter.rooms} isOpen={openSection === "rooms"} onToggleSection={toggleSection}>
+              {renderRangeInput({
+                minKey: "rooms_min",
+                maxKey: "rooms_max",
+                minPlaceholder: t.filter.minRooms,
+                maxPlaceholder: t.filter.maxRooms,
+              })}
             </Section>
 
             {/* Floor */}
-            <Section id="floor" label={t.filter.floor}>
-              <RangeInput
-                minKey="floor_min"
-                maxKey="floor_max"
-                minPlaceholder={t.filter.minFloor}
-                maxPlaceholder={t.filter.maxFloor}
-              />
+            <Section id="floor" label={t.filter.floor} isOpen={openSection === "floor"} onToggleSection={toggleSection}>
+              {renderRangeInput({
+                minKey: "floor_min",
+                maxKey: "floor_max",
+                minPlaceholder: t.filter.minFloor,
+                maxPlaceholder: t.filter.maxFloor,
+              })}
             </Section>
 
             {/* District */}
             {districts.length > 0 && (
-              <Section id="district" label={t.filter.district}>
+              <Section id="district" label={t.filter.district} isOpen={openSection === "district"} onToggleSection={toggleSection}>
                 <View style={styles.districtList}>
                   {districts.map(d => (
                     <TouchableOpacity
@@ -316,8 +350,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
             )}
 
             {/* Ordering */}
-            <Section id="ordering" label={t.filter.ordering}>
-              <ChipGroup filterKey="ordering" options={orderings} />
+            <Section id="ordering" label={t.filter.ordering} isOpen={openSection === "ordering"} onToggleSection={toggleSection}>
+              <ChipGroup filterKey="ordering" options={orderings} filters={filters} onToggle={toggle} />
             </Section>
 
             <View style={{ height: 24 }} />

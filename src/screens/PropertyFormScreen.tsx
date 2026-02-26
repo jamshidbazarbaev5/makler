@@ -129,6 +129,7 @@ const PropertyFormScreen = () => {
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showImageSourceModal, setShowImageSourceModal] = useState(false);
+  const [useMapPreviewFallback, setUseMapPreviewFallback] = useState(false);
   const [regionOptions, setRegionOptions] = useState<string[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -147,6 +148,8 @@ const PropertyFormScreen = () => {
   } | null>(null);
 
   const currencyOptions = ['USD', 'UZS', 'EUR'];
+
+  const hasLocation = formData.latitude != null && formData.longitude != null;
 
   // Fetch districts on component mount (cached)
   useEffect(() => {
@@ -313,6 +316,13 @@ const PropertyFormScreen = () => {
     }));
   };
 
+  const getLocationPreviewImageUrl = (lat: number, lng: number, fallback = false) => {
+    if (fallback) {
+      return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=600x300&markers=color:red|${lat},${lng}`;
+    }
+    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=600x300&maptype=mapnik&markers=${lat},${lng},red-pushpin`;
+  };
+
   const handleSubmit = async () => {
     try {
       // Validation based on property type
@@ -377,8 +387,8 @@ const PropertyFormScreen = () => {
         district_id: 3,
 
         // Location coordinates (limited to 6 decimal places to stay within 9 digit limit)
-        ...(formData.latitude && { latitude: parseFloat(formData.latitude.toFixed(6)) }),
-        ...(formData.longitude && { longitude: parseFloat(formData.longitude.toFixed(6)) }),
+        ...(formData.latitude != null && { latitude: parseFloat(formData.latitude.toFixed(6)) }),
+        ...(formData.longitude != null && { longitude: parseFloat(formData.longitude.toFixed(6)) }),
       };
 
       console.log('Submitting Payload:', JSON.stringify(payload, null, 2));
@@ -406,7 +416,7 @@ const PropertyFormScreen = () => {
 
       // If payment is enabled, navigate to PaymentScreen instead of showing success modal
       if (paymentSettings?.payment_enabled) {
-        navigation.navigate('Payment', {
+        (navigation as any).navigate('Payment', {
           announcementId,
           paymentType: 'post',
           amount: parseFloat(paymentSettings.post_price),
@@ -449,7 +459,7 @@ const PropertyFormScreen = () => {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{headerTitle}</Text>
       </View>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         {/* Images Section */}
         <View style={styles.section}>
@@ -578,6 +588,7 @@ const PropertyFormScreen = () => {
               onChangeText={(text) => handleInputChange('roomsCount', text)}
               placeholderTextColor="#999"
               keyboardType="number-pad"
+              blurOnSubmit={false}
             />
           </View>
         )}
@@ -594,6 +605,7 @@ const PropertyFormScreen = () => {
               onChangeText={(text) => handleInputChange('totalArea', text)}
               placeholderTextColor="#999"
               keyboardType="decimal-pad"
+              blurOnSubmit={false}
             />
           </View>
         )}
@@ -609,6 +621,7 @@ const PropertyFormScreen = () => {
               onChangeText={(text) => handleInputChange('floor', text)}
               placeholderTextColor="#999"
               keyboardType="number-pad"
+              blurOnSubmit={false}
             />
           </View>
         )}
@@ -623,6 +636,7 @@ const PropertyFormScreen = () => {
               onChangeText={(text) => handleInputChange('totalFloors', text)}
               placeholderTextColor="#999"
               keyboardType="number-pad"
+              blurOnSubmit={false}
             />
           </View>
         )}
@@ -668,6 +682,7 @@ const PropertyFormScreen = () => {
               onChangeText={(text) => handleInputChange('price', text)}
               placeholderTextColor="#999"
               keyboardType="number-pad"
+              blurOnSubmit={false}
             />
             <TouchableOpacity
               style={styles.currencyButton}
@@ -735,15 +750,35 @@ const PropertyFormScreen = () => {
           <TouchableOpacity
             style={styles.mapContainer}
             onPress={() => setShowLocationModal(true)}
+            activeOpacity={0.85}
           >
-            <View style={styles.mapContent}>
-              <MapPin size={24} color="#999" />
-              <Text style={styles.mapPlaceholder}>
-                {formData.latitude && formData.longitude
-                  ? `${t?.propertyForm?.selected || 'Selected'}: ${formData.latitude.toFixed(4)}, ${formData.longitude.toFixed(4)}`
-                  : t?.propertyForm?.selectOnMap || 'Select location on map'}
-              </Text>
-            </View>
+            {hasLocation ? (
+              <>
+                <Image
+                  source={{ uri: getLocationPreviewImageUrl(formData.latitude!, formData.longitude!, useMapPreviewFallback) }}
+                  style={styles.mapWebView}
+                  resizeMode="cover"
+                  onError={() => {
+                    if (!useMapPreviewFallback) {
+                      setUseMapPreviewFallback(true);
+                    }
+                  }}
+                />
+                <View style={styles.mapOverlayBadge}>
+                  <MapPin size={14} color="#fff" />
+                  <Text style={styles.mapOverlayText}>
+                    {t?.propertyForm?.changeLocation || 'Change location'}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <View style={styles.mapContent}>
+                <MapPin size={24} color="#999" />
+                <Text style={styles.mapPlaceholder}>
+                  {t?.propertyForm?.selectOnMap || 'Select location on map'}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -834,6 +869,7 @@ const PropertyFormScreen = () => {
               initialLatitude={formData.latitude || 42.4602}
               initialLongitude={formData.longitude || 59.6034}
               onLocationSelect={(lat, lng) => {
+                setUseMapPreviewFallback(false);
                 setFormData(prev => ({
                   ...prev,
                   latitude: lat,
@@ -844,9 +880,9 @@ const PropertyFormScreen = () => {
           </View>
 
           <View style={styles.selectedLocationInfo}>
-            {formData.latitude && formData.longitude ? (
+            {hasLocation ? (
               <Text style={styles.selectedLocationText}>
-                {t?.propertyForm?.selected || 'Selected'}: {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
+                {t?.propertyForm?.selected || 'Selected'}: {formData.latitude!.toFixed(6)}, {formData.longitude!.toFixed(6)}
               </Text>
             ) : (
               <Text style={styles.selectedLocationText}>
@@ -1072,7 +1108,6 @@ const styles = StyleSheet.create({
   mapPlaceholder: {
     fontSize: 12,
     color: '#999',
-    marginBottom: 8,
   },
   mapContainer: {
     height: 200,
@@ -1083,6 +1118,29 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  mapWebView: {
+    width: '100%',
+    height: '100%',
+  },
+  mapOverlayBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  mapOverlayText: {
+    fontSize: 11,
+    color: '#fff',
+    fontWeight: '500',
   },
   phoneContainer: {
     flexDirection: 'row',
