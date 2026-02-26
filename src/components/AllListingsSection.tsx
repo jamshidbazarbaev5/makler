@@ -84,6 +84,9 @@ const AllListingsSection: React.FC<AllListingsSectionProps> = ({
   const [activeFilters, setActiveFilters] = useState<FilterState>(externalFilters || EMPTY_FILTERS);
   const activeFiltersRef = useRef<FilterState>(externalFilters || EMPTY_FILTERS);
 
+  // map of district id -> human readable name used in active filter pills
+  const [districtsMap, setDistrictsMap] = useState<Record<string,string>>({});
+
   const numColumns = 2;
   const itemWidth = useMemo(() => (width - PADDING * 2 - GAP) / numColumns, [width]);
 
@@ -93,6 +96,20 @@ const AllListingsSection: React.FC<AllListingsSectionProps> = ({
       dispatch(loadFavoritesAsync());
     }, [])
   );
+
+  // load districts once so we can display names instead of ids in the pills
+  useEffect(() => {
+    api.getDistricts()
+      .then(data => {
+        const map: Record<string,string> = {};
+        data.forEach((d: any) => {
+          const name = d.translations?.ru?.name || d.name || `District ${d.id}`;
+          map[String(d.id)] = name;
+        });
+        setDistrictsMap(map);
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchData = async (page = 1, filters: FilterState = activeFilters, initialLoad = false) => {
     try {
@@ -397,10 +414,17 @@ const AllListingsSection: React.FC<AllListingsSectionProps> = ({
                   '-price': t.filter.orderPriceDesc,
                   '-views_count': t.filter.orderViewsDesc,
                 };
-                const isRangeOrDistrict = ['price_min','price_max','area_min','area_max','rooms_min','rooms_max','floor_min','floor_max','district'].includes(key);
-                const label = isRangeOrDistrict
-                  ? labelMap[key]
-                  : `${labelMap[key] || key}: ${valueMap[value] || value}`;
+                const isRangeKey = ['price_min','price_max','area_min','area_max','rooms_min','rooms_max','floor_min','floor_max'].includes(key);
+                let label: string;
+                if (key === 'district') {
+                  // show the selected district name when available
+                  const name = districtsMap[value] || value;
+                  label = `${t.filter.district}: ${name}`;
+                } else if (isRangeKey) {
+                  label = labelMap[key];
+                } else {
+                  label = `${labelMap[key] || key}: ${valueMap[value] || value}`;
+                }
                 return (
                   <TouchableOpacity
                     key={key}
