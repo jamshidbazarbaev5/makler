@@ -23,6 +23,18 @@ export interface AppSettings {
   updated_at: string;
 }
 
+export interface PaymentSettings {
+  payment_enabled: boolean;
+  featured_enabled: boolean;
+  post_price: string;
+  featured_price: string;
+  post_duration_days: number;
+  featured_duration_days: number;
+  max_images_per_post?: number;
+  max_draft_announcements?: number;
+  admin_phone?: string;
+}
+
 class ApiClient {
   private client: AxiosInstance;
   private isRefreshing = false;
@@ -488,14 +500,7 @@ class ApiClient {
    * Get payment settings (prices, durations, etc.)
    * GET /payments/settings/
    */
-  async getPaymentSettings(): Promise<{
-    payment_enabled: boolean;
-    featured_enabled: boolean;
-    post_price: string;
-    featured_price: string;
-    post_duration_days: number;
-    featured_duration_days: number;
-  }> {
+  async getPaymentSettings(): Promise<PaymentSettings> {
     const response = await this.client.get('/payments/settings/');
     return response.data;
   }

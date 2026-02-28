@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Sound from 'react-native-sound';
 import {
   View,
   Text,
@@ -57,6 +58,47 @@ const PaymentScreen = () => {
   // Refs for inputs
   const expireInputRef = useRef<TextInput>(null);
   const codeInputRef = useRef<TextInput>(null);
+
+  const successSoundRef = useRef<Sound | null>(null);
+  const hasPlayedSuccessSoundRef = useRef(false);
+
+  // Success sound on paid state
+  useEffect(() => {
+    if (step !== 'success') {
+      hasPlayedSuccessSoundRef.current = false;
+      return;
+    }
+
+    if (hasPlayedSuccessSoundRef.current) {
+      return;
+    }
+
+    hasPlayedSuccessSoundRef.current = true;
+    Sound.setCategory('Playback');
+
+    const successSound = new Sound(require('../../succes.mp3'), (error) => {
+      if (error) {
+        console.log('Failed to load success sound:', error);
+        return;
+      }
+
+      successSoundRef.current = successSound;
+      successSound.play((playedSuccessfully) => {
+        if (!playedSuccessfully) {
+          console.log('Success sound playback failed');
+        }
+        successSound.release();
+        successSoundRef.current = null;
+      });
+    });
+
+    return () => {
+      if (successSoundRef.current) {
+        successSoundRef.current.release();
+        successSoundRef.current = null;
+      }
+    };
+  }, [step]);
 
   // Timer for resend code
   useEffect(() => {
@@ -329,7 +371,7 @@ const PaymentScreen = () => {
       {/* Payme Logo and Terms - Required by Paycom */}
       <View style={styles.paymeSection}>
         <Image
-          source={{ uri: 'https://cdn.payme.uz/logos/payme_01.png' }}
+          source={require('../../paymee.png')}
           style={styles.paymeLogo}
           resizeMode="contain"
         />
@@ -693,8 +735,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   paymeLogo: {
-    width: 120,
-    height: 40,
+    width: 220,
+    height: 100,
     marginBottom: 8,
   },
   termsLink: {

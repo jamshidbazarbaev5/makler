@@ -197,6 +197,62 @@ const NotificationsScreen: React.FC = () => {
     return localeMap[lang] || 'en-US';
   };
 
+  const translateNotificationTitle = (title: string, type: string): string => {
+    if (type === 'post_approved') {
+      return t.notifications.postPublished;
+    }
+    if (type === 'post_rejected') {
+      return t.notifications.postRejected;
+    }
+    if (type === 'payment_success') {
+      return (t.notifications as any).paymentSuccess || title;
+    }
+    return title;
+  };
+
+  const translateNotificationMessage = (message: string): string => {
+    const approvedPattern = /Your post "([^"]+)" has been approved and is now live!/;
+    const approvedMatch = message.match(approvedPattern);
+    if (approvedMatch) {
+      const postTitle = approvedMatch[1];
+      return (t.notifications as any).postApprovedWithTitle
+        ? (t.notifications as any).postApprovedWithTitle.replace('{title}', postTitle)
+        : message;
+    }
+
+    const rejectedPattern = /Your post "([^"]+)" was rejected\. Reason: (.+)/;
+    const rejectedMatch = message.match(rejectedPattern);
+    if (rejectedMatch) {
+      const postTitle = rejectedMatch[1];
+      const reason = rejectedMatch[2];
+      return (t.notifications as any).postRejectedWithTitle
+        ? (t.notifications as any).postRejectedWithTitle
+            .replace('{title}', postTitle)
+            .replace('{reason}', reason)
+        : message;
+    }
+
+    const paymentRuPattern = /Платеж за "([^"]+)" принят\. Объявление отправлено на модерацию\.?/i;
+    const paymentRuMatch = message.match(paymentRuPattern);
+    if (paymentRuMatch) {
+      const postTitle = paymentRuMatch[1];
+      return (t.notifications as any).paymentSuccessWithTitle
+        ? (t.notifications as any).paymentSuccessWithTitle.replace('{title}', postTitle)
+        : message;
+    }
+
+    const paymentEnPattern = /Payment for "([^"]+)" (was )?successful\.?/i;
+    const paymentEnMatch = message.match(paymentEnPattern);
+    if (paymentEnMatch) {
+      const postTitle = paymentEnMatch[1];
+      return (t.notifications as any).paymentSuccessWithTitle
+        ? (t.notifications as any).paymentSuccessWithTitle.replace('{title}', postTitle)
+        : message;
+    }
+
+    return message;
+  };
+
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -258,7 +314,6 @@ const NotificationsScreen: React.FC = () => {
           </View>
         )}
       </View>
-
       <View style={styles.headerActions}>
         <TouchableOpacity
           style={[styles.headerActionButton, { marginRight: 12 }]}
@@ -454,18 +509,18 @@ const NotificationsScreen: React.FC = () => {
                 ) : (
                   <FileText size={28} color="#f59e0b" />
                 )}
-              </View>getLocaleCode(language)
+              </View>
 
               <Text style={styles.modalNotifTitle}>
-                {selectedNotification.title}
+                {translateNotificationTitle(selectedNotification.title, selectedNotification.notification_type)}
               </Text>
 
               <Text style={styles.modalNotifMessage}>
-                {selectedNotification.message}
+                {translateNotificationMessage(selectedNotification.message)}
               </Text>
 
               <Text style={styles.modalNotifDate}>
-                {new Date(selectedNotification.created_at).toLocaleDateString(undefined, {
+                {new Date(selectedNotification.created_at).toLocaleDateString(getLocaleCode(language), {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',

@@ -1,0 +1,6 @@
+<resources>
+    <!-- Keep v31+ compatible without androidx core-splashscreen dependency -->
+    <style name="LaunchTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+</resources>

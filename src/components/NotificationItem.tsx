@@ -39,23 +39,22 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
   // Translate notification message while preserving the property title
   const translateMessage = (message: string): string => {
-    // Pattern for approved posts: Your post "TITLE" has been approved and is now live!
-    const approvedPattern = /Your post "([^"]+)" has been approved and is now live!/;
-    const approvedMatch = message.match(approvedPattern);
-    if (approvedMatch) {
-      const postTitle = approvedMatch[1];
+    // EN approved
+    const approvedEnPattern = /Your post "([^"]+)" has been approved and is now live!/;
+    const approvedEnMatch = message.match(approvedEnPattern);
+    if (approvedEnMatch) {
+      const postTitle = approvedEnMatch[1];
       return (t.notifications as any).postApprovedWithTitle
-        ? (t.notifications as any).postApprovedWithTitle
-            .replace('{title}', postTitle)
+        ? (t.notifications as any).postApprovedWithTitle.replace('{title}', postTitle)
         : message;
     }
 
-    // Pattern for rejected posts: Your post "TITLE" was rejected. Reason: REASON
-    const rejectedPattern = /Your post "([^"]+)" was rejected\. Reason: (.+)/;
-    const rejectedMatch = message.match(rejectedPattern);
-    if (rejectedMatch) {
-      const postTitle = rejectedMatch[1];
-      const reason = rejectedMatch[2];
+    // EN rejected
+    const rejectedEnPattern = /Your post "([^"]+)" was rejected\. Reason: (.+)/;
+    const rejectedEnMatch = message.match(rejectedEnPattern);
+    if (rejectedEnMatch) {
+      const postTitle = rejectedEnMatch[1];
+      const reason = rejectedEnMatch[2];
       return (t.notifications as any).postRejectedWithTitle
         ? (t.notifications as any).postRejectedWithTitle
             .replace('{title}', postTitle)
@@ -63,7 +62,26 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         : message;
     }
 
-    // If no pattern matches, return original message
+    // RU payment success
+    const paymentRuPattern = /Платеж за "([^"]+)" принят\. Объявление отправлено на модерацию\.?/i;
+    const paymentRuMatch = message.match(paymentRuPattern);
+    if (paymentRuMatch) {
+      const postTitle = paymentRuMatch[1];
+      return (t.notifications as any).paymentSuccessWithTitle
+        ? (t.notifications as any).paymentSuccessWithTitle.replace('{title}', postTitle)
+        : message;
+    }
+
+    // EN payment success
+    const paymentEnPattern = /Payment for "([^"]+)" (was )?successful\.?/i;
+    const paymentEnMatch = message.match(paymentEnPattern);
+    if (paymentEnMatch) {
+      const postTitle = paymentEnMatch[1];
+      return (t.notifications as any).paymentSuccessWithTitle
+        ? (t.notifications as any).paymentSuccessWithTitle.replace('{title}', postTitle)
+        : message;
+    }
+
     return message;
   };
 
@@ -73,6 +91,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       return t.notifications.postPublished;
     } else if (type === 'post_rejected') {
       return t.notifications.postRejected;
+    } else if (type === 'payment_success') {
+      return (t.notifications as any).paymentSuccess || title;
     }
     return title;
   };
@@ -84,6 +104,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         return <CheckCircle size={24} color="#10b981" />;
       case 'post_rejected':
         return <AlertCircle size={24} color="#ef4444" />;
+      case 'payment_success':
+        return <CheckCircle size={24} color="#3b82f6" />;
       default:
         return <Info size={24} color="#6b7280" />;
     }
@@ -97,6 +119,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           return '#f0fdf4';
         case 'post_rejected':
           return '#fef2f2';
+        case 'payment_success':
+          return '#eff6ff';
         default:
           return '#f9fafb';
       }

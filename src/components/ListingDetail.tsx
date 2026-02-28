@@ -181,9 +181,14 @@ const ListingDetail = () => {
         }
         if (listing.condition) {
             const conditions: Record<string, string> = {
+                euro_repair: t.listingCard.conditionEuro,
+                cosmetic: t.listingCard.conditionCosmetic,
+                needs_repair: t.listingCard.conditionRepair,
+                capital: t.listingCard.conditionCapital,
+                no_repair: t.listingCard.conditionNoRepair,
+                design: t.listingCard.conditionDesign,
                 euro: t.listingCard.conditionEuro,
                 good: t.listingCard.conditionGood,
-                needs_repair: t.listingCard.conditionRepair,
             };
             details.push({ label: t.listingCard.condition, value: conditions[listing.condition] || listing.condition });
         }
@@ -501,7 +506,7 @@ const ListingDetail = () => {
                             ? t.listingCard.noPhone
                             : isPhoneVisible
                                 ? formatPhone(listing.phone)
-                                : 'Показать номер'}
+                                : (t.listingCard.showNumber || 'Show number')}
                     </Text>
                 </TouchableOpacity>
                 <View style={styles.bottomButtonsRow}>

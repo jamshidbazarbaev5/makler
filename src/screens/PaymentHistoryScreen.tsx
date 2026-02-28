@@ -97,8 +97,25 @@ const PaymentHistoryScreen = () => {
     return map[purpose] || fallback;
   };
 
+  const handlePaymentPress = (item: PaymentItem) => {
+    if (!item.announcement) return;
+
+    navigation.navigate('MyListingDetail', {
+      listingId: item.announcement,
+    });
+  };
+
   const renderPaymentItem = ({ item }: { item: PaymentItem }) => (
-    <View style={[styles.paymentCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      disabled={!item.announcement}
+      onPress={() => handlePaymentPress(item)}
+      style={[
+        styles.paymentCard,
+        { backgroundColor: colors.card, borderColor: colors.border },
+        !item.announcement && styles.paymentCardDisabled,
+      ]}
+    >
       <View style={styles.cardHeader}>
         <Text style={[styles.purposeText, { color: colors.text }]}>
           {getPurposeLabel(item.purpose, item.purpose_display)}
@@ -112,6 +129,9 @@ const PaymentHistoryScreen = () => {
         <Text style={[styles.announcementTitle, { color: colors.text }]} numberOfLines={1}>
           {item.announcement_title}
         </Text>
+      )}
+      {!!item.announcement && (
+        <Text style={styles.openListingHint}>{ph?.openListing || "Open listing details"}</Text>
       )}
 
       <View style={styles.cardDetails}>
@@ -128,7 +148,7 @@ const PaymentHistoryScreen = () => {
           {ph?.paidAt || 'Paid'}: {formatDate(item.paid_at)}
         </Text>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -231,6 +251,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
   },
+  paymentCardDisabled: {
+    opacity: 0.75,
+  },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -254,7 +277,13 @@ const styles = StyleSheet.create({
   announcementTitle: {
     fontSize: 14,
     opacity: 0.7,
+    marginBottom: 4,
+  },
+  openListingHint: {
+    fontSize: 12,
+    color: COLORS.purple,
     marginBottom: 8,
+    fontWeight: '600',
   },
   cardDetails: {
     flexDirection: 'row',

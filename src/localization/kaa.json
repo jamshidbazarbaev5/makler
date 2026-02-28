@@ -25,7 +25,6 @@
     "upload": "Ju'klew",
     "download": "Ju'klep alıw"
   },
-
   "notifications": {
     "title": "Xabarnamalar",
     "markAllAsRead": "Barlıg'ın oqılg'an dep belgilew",
@@ -58,9 +57,10 @@
     "postApprovedMessage": "E'lanın'ız tastıyıqlandi ha'm ja'riyalandi!",
     "postRejectedMessage": "E'lanın'ız ret etildi.",
     "postApprovedWithTitle": "E'lanın'ız \"{title}\" tastıyıqlandi ha'm ja'riyalandi!",
-    "postRejectedWithTitle": "E'lanın'ız \"{title}\" ret etildi. Sebebi: {reason}"
+    "postRejectedWithTitle": "E'lanın'ız \"{title}\" ret etildi. Sebebi: {reason}",
+    "paymentSuccess": "To'lem tabıslı",
+    "paymentSuccessWithTitle": "\"{title}\" ushın to'lem qabul etildi. E'lan moderatsiyag'a jiberildi."
   },
-
   "home": {
     "title": "Bas bet",
     "search": "Izlew...",
@@ -72,7 +72,6 @@
     "noResults": "Na'tiyje tabılmadı",
     "tryAgain": "Qayta urınıp ko'rin'"
   },
-
   "search": {
     "title": "Izlew",
     "searchPlaceholder": "Izlew...",
@@ -83,7 +82,6 @@
     "resultsFor": "Na'tiyjeler:",
     "noResultsFound": "Na'tiyje tabılmadı"
   },
-
   "profile": {
     "title": "Profil",
     "editProfile": "Profildı o'zgertiw",
@@ -101,7 +99,6 @@
     "noListingsYet": "Ha'zirge e'lanlar joq",
     "noFavoritesYet": "Ha'zirge saylandilar joq"
   },
-
   "profileEdit": {
     "title": "Profildı o'zgertiw",
     "firstName": "Atı",
@@ -128,7 +125,6 @@
     "avatarError": "Avatardı jan'alawda qa'telik",
     "infoText": "Sha'xsiy mag'lıwmatların'ız xawfsız saqlanadi"
   },
-
   "addListing": {
     "title": "Jan'a e'lan",
     "propertyType": "Mu'lk tu'ri",
@@ -159,7 +155,6 @@
     "sellDesc": "Mu'lkti satiw",
     "selectOption": "E'LAN TU'RIN TAN'LAN'"
   },
-
   "listingDetail": {
     "title": "E'lan mag'lıwmatları",
     "overview": "Umumiy mag'lıwmat",
@@ -175,7 +170,6 @@
     "callNow": "Ha'zir qon'ıraw etiw",
     "sendMessage": "Xabar jiberiw"
   },
-
   "myListings": {
     "title": "Menin' e'lanlarım",
     "active": "Aktiv",
@@ -195,9 +189,10 @@
     "markAsSold": "Satılg'an dep belgilew",
     "markAsRented": "Ijaraga berilgen dep belgilew",
     "views": "Ko'riwler",
-    "likes": "Un'atıwlar"
+    "likes": "Un'atıwlar",
+    "pending": "Moderatsiya ku'tilmekte",
+    "sold": "Satılg'an"
   },
-
   "favorites": {
     "title": "Saylandilar",
     "noFavorites": "Saylandilar joq",
@@ -205,7 +200,6 @@
     "removeFromFavorites": "Saylandilardı alıp taslaw",
     "removeConfirm": "Saylandilardı alıp taslawdı qa'leysizbe?"
   },
-
   "messages": {
     "title": "Xabarlar",
     "noMessages": "Xabarlar joq",
@@ -219,7 +213,6 @@
     "deleteConversation": "So'ylesiwdi o'shiriw",
     "deleteConfirm": "So'ylesiwdi o'shiriwdi qa'leysizbe?"
   },
-
   "map": {
     "title": "Karta",
     "searchArea": "Bul aymaqta izlew",
@@ -239,7 +232,6 @@
     "commercial": "Sawda",
     "listingsOnMap": "e'lan kartada"
   },
-
   "filter": {
     "title": "Filter",
     "priceRange": "Baha diapazonı",
@@ -301,7 +293,6 @@
     "to": "Shekem",
     "selectDistrict": "Rayondı tan'lan'"
   },
-
   "propertyTypes": {
     "apartment": "Kvartira",
     "house": "U'y",
@@ -312,13 +303,11 @@
     "shop": "Du'kan",
     "warehouse": "Qoyma"
   },
-
   "categories": {
     "sale": "Satıw",
     "rent": "Ijara",
     "daily": "Ku'nlik"
   },
-
   "amenities": {
     "parking": "Toqtaw ornı",
     "wifi": "Wi-Fi",
@@ -333,7 +322,6 @@
     "furnished": "Mebellengen",
     "petFriendly": "U'y haywanları ushin"
   },
-
   "auth": {
     "login": "Kiriw",
     "register": "Dizimnen o'tiw",
@@ -359,7 +347,6 @@
     "whyTelegram": "Xawfsız kiriw ushın Telegram qollanamız — parol kerek emes",
     "selectLanguage": "Tildi tan'lan'"
   },
-
   "errors": {
     "required": "Ma'jbu'riy maydansha",
     "invalidEmail": "Nadurıs email",
@@ -372,7 +359,6 @@
     "somethingWentWrong": "Birnar'se nadurıs boldı",
     "tryAgainLater": "Keyinrek qayta urınıp ko'rin'"
   },
-
   "success": {
     "saved": "Saqlandı",
     "updated": "Jan'alandı",
@@ -382,7 +368,6 @@
     "added": "Qosıldı",
     "removed": "Alıp taslandi"
   },
-
   "payment": {
     "postTitle": "E'lan ushin to'lem",
     "featuredTitle": "E'landı joqarıg'a shıg'arıw",
@@ -423,7 +408,6 @@
     "durationLabel": "Jaramlılıq mu'ddeti",
     "days": "ku'n"
   },
-
   "paymentHistory": {
     "title": "To'lemler tariyxı",
     "noPayments": "To'lemler joq",
@@ -436,9 +420,9 @@
     "statusFailed": "A'melge aspadi",
     "statusPending": "Ku'tilip atır",
     "purposeFeatured": "TOP qa shıg'arıw",
-    "purposePost": "E'lan jaylastırıw"
+    "purposePost": "E'lan jaylastırıw",
+    "openListing": "E'lan tafsilatların ashiw"
   },
-
   "bottomNav": {
     "home": "Bas bet",
     "map": "Karta",
@@ -446,7 +430,6 @@
     "favorites": "Saylandilar",
     "profile": "Profil"
   },
-
   "profileFilters": {
     "all": "Barlıg'ı",
     "sortNewest": "En' jan'a",
@@ -474,7 +457,6 @@
     "noImage": "Su'wret joq",
     "loadMore": "Ko'birek ju'klew"
   },
-
   "allListings": {
     "loading": "Ju'klenip atır...",
     "errorMessage": "E'lanlardı ju'klep bolmadı",
@@ -486,7 +468,6 @@
     "sort": "Saralaw",
     "loadMore": "Tag'ı ju'klew"
   },
-
   "listingCard": {
     "noImage": "Su'wret joq",
     "rooms": "xana",
@@ -523,9 +504,13 @@
     "noLocation": "Jaylasıw ko'rsetilmegen",
     "openOnMap": "Kartada ashıw",
     "callNow": "Qon'ıraw etin'",
-    "noPhone": "Telefon joq"
+    "noPhone": "Telefon joq",
+    "showNumber": "Nomerdi ko'rsetiw",
+    "conditionCosmetic": "Kosmetikalıq remont",
+    "conditionCapital": "Kapitallıq remont",
+    "conditionNoRepair": "Remont kerek emes",
+    "conditionDesign": "Dizaynerlik remont"
   },
-
   "likedPosts": {
     "title": "Saylandilar",
     "listings": "e'lan",
@@ -543,20 +528,18 @@
     "noPrice": "Bahasız",
     "sortArea": "Maydanı"
   },
-
   "propertyTypeScreen": {
-    "title": "Mu'lk tu'ri",
-    "selectType": "MU'LK TU'RIN TANLAN'",
-    "apartment": "Kvartira",
-    "apartmentDesc": "Turaq jay kvartirası",
-    "house": "Hovlı/Kottej/Dacha",
-    "houseDesc": "Jeke turaq jay",
+    "title": "Mulk tu'ri",
+    "selectType": "MULK TU'RIN TAN'LAN'",
+    "apartment": "Pa'ter",
+    "apartmentDesc": "Tu'raq jay pa'teri",
+    "house": "U'y/Kottej/Dacha",
+    "houseDesc": "Ja'maatshılıq u'y-jay",
     "land": "Jer",
-    "landDesc": "Qurılıs ushin jer",
+    "landDesc": "Qurılıs ushın jer",
     "commercial": "Sawda",
-    "commercialDesc": "Sawda mu'lki"
+    "commercialDesc": "Sawda ko'shpes mu'lki"
   },
-
   "propertyForm": {
     "dailyRent": "Ku'nlik Ijara",
     "monthlyRent": "Aylıq Ijara",
@@ -615,22 +598,13 @@
     "galleryError": "Galereya qa'teligi",
     "successTitle": "Sa'tlilik",
     "successMessage": "E'lan sa'tli jaratıldı!",
-    "submitError": "E'lan jaratıwda qa'telik ju'z berdi"
+    "submitError": "E'lan jaratıwda qa'telik ju'z berdi",
+    "submitting": "Jiberilip atır...",
+    "districtRequired": "Rayon ma'jbu'riy",
+    "instagramVideoUrl": "Instagram video siltemesi",
+    "instagramVideoPlaceholder": "https://www.instagram.com/reel/...",
+    "mapPreviewError": "Karta preview ju'klenbedi"
   },
-
-  "propertyTypeScreen": {
-    "title": "Mulk tu'ri",
-    "selectType": "MULK TU'RIN TAN'LAN'",
-    "apartment": "Pa'ter",
-    "apartmentDesc": "Tu'raq jay pa'teri",
-    "house": "U'y/Kottej/Dacha",
-    "houseDesc": "Ja'maatshılıq u'y-jay",
-    "land": "Jer",
-    "landDesc": "Qurılıs ushın jer",
-    "commercial": "Sawda",
-    "commercialDesc": "Sawda ko'shpes mu'lki"
-  },
-
   "bottomSheet": {
     "menu": "Menyu",
     "language": "Til",

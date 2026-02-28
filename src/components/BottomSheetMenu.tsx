@@ -12,10 +12,10 @@ import {
   Linking,
   ScrollView,
 } from 'react-native';
-import { Globe, HelpCircle, Code2, LogOut, ChevronRight, ChevronLeft, Trash2, Phone, Send, Mail, Settings } from 'lucide-react-native';
+import { Globe, HelpCircle, Code2, LogOut, ChevronRight, ChevronLeft, Trash2, Phone } from 'lucide-react-native';
 import { COLORS } from '../constants';
 import { useLanguage } from '../localization/LanguageContext';
-import { AppSettings } from '../services/api';
+import api, { PaymentSettings } from '../services/api';
 
 interface BottomSheetMenuProps {
   visible: boolean;
@@ -23,12 +23,12 @@ interface BottomSheetMenuProps {
   onLogout: () => void;
   onLanguagePress: () => void;
   onDeleteAccount: () => void;
-  appSettings?: AppSettings | null;
+  paymentSettings?: PaymentSettings | null;
 }
 
 const { height: screenHeight } = Dimensions.get('window');
 
-type Screen = 'menu' | 'help' | 'settings';
+type Screen = 'menu' | 'help';
 
 export default function BottomSheetMenu({
   visible,
@@ -36,7 +36,7 @@ export default function BottomSheetMenu({
   onLogout,
   onLanguagePress,
   onDeleteAccount,
-  appSettings,
+  paymentSettings,
 }: BottomSheetMenuProps) {
   const { t } = useLanguage();
   const [pan] = useState(new Animated.ValueXY());
@@ -97,7 +97,32 @@ export default function BottomSheetMenu({
     Linking.openURL('https://softium.uz');
   };
 
-  const phone = appSettings?.admin_phone || '+998970953905';
+  // use admin_phone from server; no hardcoded fallback so we don't display a mock number
+  const phoneFromProps = paymentSettings?.admin_phone ?? '';
+  const [phone, setPhone] = useState<string>(phoneFromProps);
+
+  useEffect(() => {
+    // keep local phone in sync when props update
+    if (phoneFromProps && phoneFromProps !== phone) {
+      setPhone(phoneFromProps);
+    }
+  }, [phoneFromProps]);
+
+  useEffect(() => {
+    // if bottom sheet is opened and we don't yet have a number, fetch settings directly
+    if (visible && !phone) {
+      api.getPaymentSettings()
+        .then(settings => {
+          console.log('Payment settings from /payments/settings/:', settings);
+          if (settings.admin_phone) {
+            setPhone(settings.admin_phone);
+          }
+        })
+        .catch(() => {
+          // ignore errors, number will remain blank
+        });
+    }
+  }, [visible, phone]);
 
   const formatPhone = (p: string) => {
     const digits = p.replace(/\D/g, '');
@@ -108,19 +133,14 @@ export default function BottomSheetMenu({
   };
 
   const handleCall = () => {
+    if (!phone) {
+      // no number available yet
+      return;
+    }
     onClose();
     Linking.openURL(`tel:${phone}`);
   };
 
-  const handleTelegram = () => {
-    onClose();
-    Linking.openURL(`https://t.me/${phone.replace(/\D/g, '')}`);
-  };
-
-  const handleEmail = () => {
-    onClose();
-    Linking.openURL('mailto:support@softium.uz');
-  };
 
   return (
     <Modal
@@ -194,23 +214,7 @@ export default function BottomSheetMenu({
                 <ChevronRight size={20} color={COLORS.gray400} />
               </TouchableOpacity>
 
-              {/* Settings */}
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => setScreen('settings')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemLeft}>
-                  <View style={[styles.iconContainer, { backgroundColor: '#FFF4E6' }]}>
-                    <Settings size={20} color={COLORS.warning} />
-                  </View>
-                  <View>
-                    <Text style={styles.menuItemTitle}>Settings</Text>
-                    <Text style={styles.menuItemSubtitle}>App settings</Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color={COLORS.gray400} />
-              </TouchableOpacity>
+
 
               {/* Developers */}
               <TouchableOpacity
@@ -287,139 +291,12 @@ export default function BottomSheetMenu({
                   </View>
                   <View>
                     <Text style={styles.menuItemTitle}>{t.bottomSheet.phone}</Text>
-                    <Text style={styles.menuItemSubtitle}>{formatPhone(phone)}</Text>
+                    <Text style={styles.menuItemSubtitle}>{phone ? formatPhone(phone) : ''}</Text>
                   </View>
                 </View>
                 <ChevronRight size={20} color={COLORS.gray400} />
               </TouchableOpacity>
 
-              {/* Telegram */}
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={handleTelegram}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemLeft}>
-                  <View style={[styles.iconContainer, { backgroundColor: '#E8F5FF' }]}>
-                    <Send size={20} color="#0088cc" />
-                  </View>
-                  <View>
-                    <Text style={styles.menuItemTitle}>Telegram</Text>
-                    <Text style={styles.menuItemSubtitle}>{formatPhone(phone)}</Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color={COLORS.gray400} />
-              </TouchableOpacity>
-
-              {/* Email */}
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={handleEmail}
-                activeOpacity={0.7}
-              >
-                <View style={styles.menuItemLeft}>
-                  <View style={[styles.iconContainer, { backgroundColor: '#FFF4E6' }]}>
-                    <Mail size={20} color={COLORS.warning} />
-                  </View>
-                  <View>
-                    <Text style={styles.menuItemTitle}>Email</Text>
-                    <Text style={styles.menuItemSubtitle}>support@softium.uz</Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} color={COLORS.gray400} />
-              </TouchableOpacity>
-            </>
-          ) : screen === 'settings' ? (
-            <>
-              {/* Settings Screen */}
-              <View style={styles.helpHeader}>
-                <TouchableOpacity onPress={() => setScreen('menu')} style={styles.backButton}>
-                  <ChevronLeft size={24} color={COLORS.gray900} />
-                </TouchableOpacity>
-                <Text style={styles.menuTitle}>Settings</Text>
-                <View style={{ width: 24 }} />
-              </View>
-              <View style={styles.divider} />
-
-              {appSettings ? (
-                <>
-                  {/* Admin Phone */}
-                  <View style={styles.settingItem}>
-                    <Text style={styles.settingLabel}>Admin Phone</Text>
-                    <Text style={styles.settingValue}>{formatPhone(appSettings.admin_phone)}</Text>
-                  </View>
-
-                  {/* Payment Settings */}
-                  <View style={styles.settingsSection}>
-                    <Text style={styles.sectionTitle}>Payment</Text>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Payment Enabled</Text>
-                      <Text style={styles.settingValue}>{appSettings.payment_enabled ? 'Yes' : 'No'}</Text>
-                    </View>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Post Price</Text>
-                      <Text style={styles.settingValue}>{appSettings.post_price} UZS</Text>
-                    </View>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Featured Price</Text>
-                      <Text style={styles.settingValue}>{appSettings.featured_price} UZS</Text>
-                    </View>
-                  </View>
-
-                  {/* Duration & Featured */}
-                  <View style={styles.settingsSection}>
-                    <Text style={styles.sectionTitle}>Duration</Text>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Featured Enabled</Text>
-                      <Text style={styles.settingValue}>{appSettings.featured_enabled ? 'Yes' : 'No'}</Text>
-                    </View>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Post Duration</Text>
-                      <Text style={styles.settingValue}>{appSettings.post_duration_days} days</Text>
-                    </View>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Featured Duration</Text>
-                      <Text style={styles.settingValue}>{appSettings.featured_duration_days} days</Text>
-                    </View>
-                  </View>
-
-                  {/* General Settings */}
-                  <View style={styles.settingsSection}>
-                    <Text style={styles.sectionTitle}>General</Text>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Max Images Per Post</Text>
-                      <Text style={styles.settingValue}>{appSettings.max_images_per_post}</Text>
-                    </View>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Max Draft Announcements</Text>
-                      <Text style={styles.settingValue}>{appSettings.max_draft_announcements}</Text>
-                    </View>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Require Moderation</Text>
-                      <Text style={styles.settingValue}>{appSettings.require_moderation ? 'Yes' : 'No'}</Text>
-                    </View>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Auto Deactivate Expired</Text>
-                      <Text style={styles.settingValue}>{appSettings.auto_deactivate_expired ? 'Yes' : 'No'}</Text>
-                    </View>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Notify Expiring Days</Text>
-                      <Text style={styles.settingValue}>{appSettings.notify_expiring_days}</Text>
-                    </View>
-                  </View>
-
-                  {/* Info */}
-                  <View style={styles.settingsSection}>
-                    <Text style={styles.sectionTitle}>Info</Text>
-                    <View style={styles.settingItem}>
-                      <Text style={styles.settingLabel}>Last Updated</Text>
-                      <Text style={styles.settingValue}>{new Date(appSettings.updated_at).toLocaleString()}</Text>
-                    </View>
-                  </View>
-                </>
-              ) : (
-                <Text style={styles.noSettingsText}>Loading settings...</Text>
-              )}
             </>
           ) : null}
         </ScrollView>

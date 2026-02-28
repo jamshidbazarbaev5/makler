@@ -25,7 +25,6 @@
     "upload": "Upload",
     "download": "Download"
   },
-
   "notifications": {
     "title": "Notifications",
     "markAllAsRead": "Mark all as read",
@@ -58,9 +57,10 @@
     "postApprovedMessage": "Your post has been approved and is now live!",
     "postRejectedMessage": "Your post was rejected.",
     "postApprovedWithTitle": "Your post \"{title}\" has been approved and is now live!",
-    "postRejectedWithTitle": "Your post \"{title}\" was rejected. Reason: {reason}"
+    "postRejectedWithTitle": "Your post \"{title}\" was rejected. Reason: {reason}",
+    "paymentSuccess": "Payment successful",
+    "paymentSuccessWithTitle": "Payment for \"{title}\" accepted. Listing sent for moderation."
   },
-
   "home": {
     "title": "Home",
     "search": "Search...",
@@ -72,7 +72,6 @@
     "noResults": "No results found",
     "tryAgain": "Try again"
   },
-
   "search": {
     "title": "Search",
     "searchPlaceholder": "Search...",
@@ -83,7 +82,6 @@
     "resultsFor": "Results for:",
     "noResultsFound": "No results found"
   },
-
   "profile": {
     "title": "Profile",
     "editProfile": "Edit Profile",
@@ -101,7 +99,6 @@
     "noListingsYet": "No listings yet",
     "noFavoritesYet": "No favorites yet"
   },
-
   "profileEdit": {
     "title": "Edit Profile",
     "firstName": "First Name",
@@ -128,7 +125,6 @@
     "avatarError": "Error updating avatar",
     "infoText": "Your personal information is stored securely"
   },
-
   "addListing": {
     "title": "New Listing",
     "propertyType": "Property Type",
@@ -159,7 +155,6 @@
     "sellDesc": "Sell your property",
     "selectOption": "SELECT LISTING TYPE"
   },
-
   "listingDetail": {
     "title": "Listing Details",
     "overview": "Overview",
@@ -175,7 +170,6 @@
     "callNow": "Call Now",
     "sendMessage": "Send Message"
   },
-
   "myListings": {
     "title": "My Listings",
     "active": "Active",
@@ -195,9 +189,10 @@
     "markAsSold": "Mark as Sold",
     "markAsRented": "Mark as Rented",
     "views": "Views",
-    "likes": "Likes"
+    "likes": "Likes",
+    "pending": "Pending moderation",
+    "sold": "Sold"
   },
-
   "favorites": {
     "title": "Favorites",
     "noFavorites": "No favorites",
@@ -205,7 +200,6 @@
     "removeFromFavorites": "Remove from favorites",
     "removeConfirm": "Remove from favorites?"
   },
-
   "messages": {
     "title": "Messages",
     "noMessages": "No messages",
@@ -219,7 +213,6 @@
     "deleteConversation": "Delete conversation",
     "deleteConfirm": "Delete conversation?"
   },
-
   "map": {
     "title": "Map",
     "searchArea": "Search in this area",
@@ -239,7 +232,6 @@
     "commercial": "Commercial",
     "listingsOnMap": "listings on map"
   },
-
   "filter": {
     "title": "Filter",
     "priceRange": "Price Range",
@@ -301,7 +293,6 @@
     "to": "To",
     "selectDistrict": "Select district"
   },
-
   "propertyTypes": {
     "apartment": "Apartment",
     "house": "House",
@@ -312,13 +303,11 @@
     "shop": "Shop",
     "warehouse": "Warehouse"
   },
-
   "categories": {
     "sale": "Sale",
     "rent": "Rent",
     "daily": "Daily"
   },
-
   "amenities": {
     "parking": "Parking",
     "wifi": "Wi-Fi",
@@ -333,7 +322,6 @@
     "furnished": "Furnished",
     "petFriendly": "Pet Friendly"
   },
-
   "auth": {
     "login": "Login",
     "register": "Register",
@@ -359,7 +347,6 @@
     "whyTelegram": "We use Telegram for secure, fast login — no passwords needed",
     "selectLanguage": "Select language"
   },
-
   "errors": {
     "required": "Required field",
     "invalidEmail": "Invalid email",
@@ -372,7 +359,6 @@
     "somethingWentWrong": "Something went wrong",
     "tryAgainLater": "Try again later"
   },
-
   "success": {
     "saved": "Saved",
     "updated": "Updated",
@@ -382,7 +368,6 @@
     "added": "Added",
     "removed": "Removed"
   },
-
   "payment": {
     "postTitle": "Payment for Listing",
     "featuredTitle": "Promote Listing",
@@ -423,7 +408,6 @@
     "durationLabel": "Validity period",
     "days": "days"
   },
-
   "paymentHistory": {
     "title": "Payment History",
     "noPayments": "No payments",
@@ -436,9 +420,9 @@
     "statusFailed": "Failed",
     "statusPending": "Pending",
     "purposeFeatured": "Promote to TOP",
-    "purposePost": "Post Publishing"
+    "purposePost": "Post Publishing",
+    "openListing": "Open listing details"
   },
-
   "bottomNav": {
     "home": "Home",
     "map": "Map",
@@ -446,7 +430,6 @@
     "favorites": "Favorites",
     "profile": "Profile"
   },
-
   "profileFilters": {
     "all": "All",
     "sortNewest": "Newest",
@@ -474,7 +457,6 @@
     "noImage": "No image",
     "loadMore": "Load More"
   },
-
   "allListings": {
     "loading": "Loading...",
     "errorMessage": "Failed to load listings",
@@ -486,7 +468,6 @@
     "sort": "Sort",
     "loadMore": "Load more"
   },
-
   "listingCard": {
     "noImage": "No image",
     "rooms": "rooms",
@@ -523,9 +504,13 @@
     "noLocation": "Location not specified",
     "openOnMap": "Open on map",
     "callNow": "Call",
-    "noPhone": "No phone"
+    "noPhone": "No phone",
+    "showNumber": "Show number",
+    "conditionCosmetic": "Cosmetic repair",
+    "conditionCapital": "Major renovation",
+    "conditionNoRepair": "No renovation needed",
+    "conditionDesign": "Designer renovation"
   },
-
   "likedPosts": {
     "title": "Favorites",
     "listings": "listing(s)",
@@ -543,7 +528,6 @@
     "noPrice": "No price",
     "sortArea": "Area"
   },
-
   "propertyTypeScreen": {
     "title": "Property Type",
     "selectType": "SELECT PROPERTY TYPE",
@@ -556,7 +540,6 @@
     "commercial": "Commercial",
     "commercialDesc": "Commercial property"
   },
-
   "propertyForm": {
     "dailyRent": "Daily Rent",
     "monthlyRent": "Monthly Rent",
@@ -615,22 +598,13 @@
     "galleryError": "Gallery error",
     "successTitle": "Success",
     "successMessage": "Listing created successfully!",
-    "submitError": "Error creating listing"
+    "submitError": "Error creating listing",
+    "submitting": "Submitting...",
+    "districtRequired": "District is required",
+    "instagramVideoUrl": "Instagram Video URL",
+    "instagramVideoPlaceholder": "https://www.instagram.com/reel/...",
+    "mapPreviewError": "Unable to load map preview"
   },
-
-  "propertyTypeScreen": {
-    "title": "Property Type",
-    "selectType": "SELECT PROPERTY TYPE",
-    "apartment": "Apartment",
-    "apartmentDesc": "Residential apartment",
-    "house": "House/Cottage/Dacha",
-    "houseDesc": "Private housing",
-    "land": "Land",
-    "landDesc": "Land for construction",
-    "commercial": "Commercial",
-    "commercialDesc": "Commercial property"
-  },
-
   "bottomSheet": {
     "menu": "Menu",
     "language": "Language",

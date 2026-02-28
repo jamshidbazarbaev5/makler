@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, Share2, ImageIcon, Navigation, CreditCard, MoreHorizontal, Power, CheckCircle, TrendingUp, X } from 'lucide-react-native';
+import { ArrowLeft, MapPin, Eye, Heart, Edit2, Trash2, ImageIcon, Navigation, CreditCard, MoreHorizontal, Power, CheckCircle, TrendingUp, X } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants';
@@ -144,15 +144,15 @@ const MyListingDetailScreen = () => {
         if (currency === 'usd') {
             return `$${num.toLocaleString()}`;
         }
-        return `${num.toLocaleString()} so'm`;
+        return `${num.toLocaleString()} ${t.listingCard.sum}`;
     };
 
     const getPropertyTypeLabel = (type: string) => {
         const types: Record<string, string> = {
-            apartment: 'Kvartira',
-            house: 'Uy',
-            land: 'Yer',
-            commercial: 'Tijorat',
+            apartment: t.listingCard.apartment,
+            house: t.listingCard.house,
+            land: t.listingCard.land,
+            commercial: t.listingCard.commercial,
         };
         return types[type] || type;
     };
@@ -170,10 +170,10 @@ const MyListingDetailScreen = () => {
         const statuses: Record<string, string> = {
             draft: t.myListings.draft,
             active: t.myListings.active,
-            pending: t.myListings.processing,
+            pending: t.myListings.pending,
             inactive: t.myListings.inactive,
             rejected: t.myListings.rejected,
-            sold: t.myListings.markAsSold,
+            sold: t.myListings.sold,
             rented: t.myListings.markAsRented,
         };
         return statuses[status] || status;
@@ -192,17 +192,18 @@ const MyListingDetailScreen = () => {
         }
     };
 
+
     const formatTimeAgo = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 0) return 'Bugun';
-        if (diffDays === 1) return 'Kecha';
-        if (diffDays < 7) return `${diffDays} kun oldin`;
-        if (diffDays < 30) return `${Math.floor(diffDays / 7)} hafta oldin`;
-        return `${Math.floor(diffDays / 30)} oy oldin`;
+        if (diffDays === 0) return t.listingCard.today;
+        if (diffDays === 1) return t.listingCard.yesterday;
+        if (diffDays < 7) return `${diffDays} ${t.listingCard.daysAgo}`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} ${t.listingCard.weeksAgo}`;
+        return `${Math.floor(diffDays / 30)} ${t.listingCard.monthsAgo}`;
     };
 
     const buildDetails = () => {
@@ -210,30 +211,34 @@ const MyListingDetailScreen = () => {
         const details: { label: string; value: string }[] = [];
 
         if (listing.area) {
-            const unit = listing.area_unit === 'sqm' ? 'm²' : 'sotix';
-            details.push({ label: 'Maydon', value: `${listing.area} ${unit}` });
+            const unit = listing.area_unit === 'sqm' ? 'm²' : t.listingCard.sotix;
+            details.push({ label: t.listingCard.area, value: `${listing.area} ${unit}` });
         }
         if (listing.rooms) {
-            details.push({ label: 'Xonalar', value: `${listing.rooms}` });
+            details.push({ label: t.listingCard.roomsLabel, value: `${listing.rooms}` });
         }
         if (listing.floor && listing.total_floors) {
-            details.push({ label: 'Qavat', value: `${listing.floor}/${listing.total_floors}` });
+            details.push({ label: t.listingCard.floor, value: `${listing.floor}/${listing.total_floors}` });
         }
         if (listing.building_type) {
             const buildingTypes: Record<string, string> = {
-                new: 'Yangi',
-                old: 'Eski',
+                new: t.listingCard.buildingNew,
+                old: t.listingCard.buildingOld,
             };
-            details.push({ label: 'Bino turi', value: buildingTypes[listing.building_type] || listing.building_type });
+            details.push({ label: t.listingCard.buildingType, value: buildingTypes[listing.building_type] || listing.building_type });
         }
         if (listing.condition) {
             const conditions: Record<string, string> = {
-                euro: 'Yevroremont',
-                good: 'Yaxshi',
-                needs_repair: "Ta'mir talab",
-                cosmetic: 'Kosmetik',
+                euro_repair: t.listingCard.conditionEuro,
+                cosmetic: t.listingCard.conditionCosmetic,
+                needs_repair: t.listingCard.conditionRepair,
+                capital: t.listingCard.conditionCapital,
+                no_repair: t.listingCard.conditionNoRepair,
+                design: t.listingCard.conditionDesign,
+                euro: t.listingCard.conditionEuro,
+                good: t.listingCard.conditionGood,
             };
-            details.push({ label: 'Holati', value: conditions[listing.condition] || listing.condition });
+            details.push({ label: t.listingCard.condition, value: conditions[listing.condition] || listing.condition });
         }
         return details;
     };
@@ -364,7 +369,7 @@ const MyListingDetailScreen = () => {
         setMoreModalVisible(true);
     };
 
-    const hasMoreActions = listing?.status === 'active' || (canPromote && listing?.promotion_type === 'standard');
+    const hasMoreActions = Boolean(listing?.status === 'active' || (canPromote && listing?.promotion_type === 'standard'));
 
     if (loading) {
         return (
@@ -466,11 +471,11 @@ const MyListingDetailScreen = () => {
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
                             <Eye size={16} color="#64748b" />
-                            <Text style={styles.statText}>{listing.views_count} ko'rishlar</Text>
+                            <Text style={styles.statText}>{listing.views_count ?? 0} {t.myListings.views}</Text>
                         </View>
                         <View style={styles.statItem}>
                             <Heart size={16} color="#64748b" />
-                            <Text style={styles.statText}>{listing.favorites_count} sevimlilar</Text>
+                            <Text style={styles.statText}>{listing.favorites_count ?? 0} {t.myListings.likes}</Text>
                         </View>
                     </View>
 
@@ -487,9 +492,23 @@ const MyListingDetailScreen = () => {
                     {/* Rejection Reason */}
                     {listing.status === 'rejected' && listing.rejection_reason && (
                         <View style={styles.rejectionBox}>
-                            <Text style={styles.rejectionTitle}>Rad etilish sababi:</Text>
+                            <Text style={styles.rejectionTitle}>{t.notifications.rejectionReason}</Text>
                             <Text style={styles.rejectionText}>{listing.rejection_reason}</Text>
                         </View>
+                    )}
+
+                    {/* Top Payment CTA */}
+                    {canPayForPost && (
+                        <TouchableOpacity
+                            style={styles.topPaymentButton}
+                            activeOpacity={0.85}
+                            onPress={handlePayForPost}
+                        >
+                            <CreditCard size={18} color="#fff" />
+                            <Text style={styles.topPaymentButtonText}>
+                                {t?.payment?.payNow || "To'lov qilish"}
+                            </Text>
+                        </TouchableOpacity>
                     )}
 
                     {/* Time Posted */}
@@ -521,11 +540,11 @@ const MyListingDetailScreen = () => {
 
                     {/* Location Section */}
                     <View style={styles.locationContainer}>
-                        <Text style={styles.locationTitle}>Joylashuv</Text>
+                        <Text style={styles.locationTitle}>{t.listingCard.location}</Text>
                         <View style={styles.locationAddress}>
                             <MapPin size={16} color="#64748b" />
                             <Text style={styles.locationText}>
-                                {listing.district?.translations?.ru?.name || "Noma'lum"}
+                                {listing.district?.translations?.ru?.name || t.listingCard.unknown}
                             </Text>
                         </View>
 
@@ -588,7 +607,7 @@ const MyListingDetailScreen = () => {
                                     }}
                                 >
                                     <Navigation size={16} color="#fff" />
-                                    <Text style={styles.openMapsButtonText}>Xaritada ochish</Text>
+                                    <Text style={styles.openMapsButtonText}>{t.listingCard.openOnMap}</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -634,20 +653,6 @@ const MyListingDetailScreen = () => {
 
             {/* Fixed Bottom Actions */}
             <View style={styles.bottomActionsContainer}>
-                {/* Payment Button - Show for draft/inactive */}
-                {canPayForPost && (
-                    <TouchableOpacity
-                        style={styles.paymentButton}
-                        activeOpacity={0.7}
-                        onPress={handlePayForPost}
-                    >
-                        <CreditCard size={20} color="#fff" />
-                        <Text style={styles.paymentButtonText}>
-                            {t?.payment?.payNow || "To'lov qilish"}
-                        </Text>
-                    </TouchableOpacity>
-                )}
-
                 {/* Compact Actions Row */}
                 <View style={styles.mainActionsRow}>
                     {listing?.status !== 'active' && (
@@ -661,9 +666,6 @@ const MyListingDetailScreen = () => {
                         </TouchableOpacity>
                     )}
                     <View style={styles.bottomButtonsRow}>
-                        <TouchableOpacity style={styles.shareButton} activeOpacity={0.7}>
-                            <Share2 size={20} color={COLORS.gray700} />
-                        </TouchableOpacity>
                         {hasMoreActions && (
                             <TouchableOpacity
                                 style={styles.moreButton}
@@ -1110,9 +1112,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    topPaymentButton: {
+        backgroundColor: '#10b981',
+        paddingVertical: 12,
+        borderRadius: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginBottom: 12,
+    },
+    topPaymentButtonText: {
+        color: '#fff',
+        fontSize: 15,
+        fontWeight: '700',
+    },
     mainActionsRow: {
         flexDirection: 'row',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         gap: 12,
     },
     editButton: {
@@ -1133,14 +1150,7 @@ const styles = StyleSheet.create({
     bottomButtonsRow: {
         flexDirection: 'row',
         gap: 12,
-    },
-    shareButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 12,
-        backgroundColor: '#f1f5f9',
-        alignItems: 'center',
-        justifyContent: 'center',
+        marginLeft: 'auto',
     },
     deleteButton: {
         width: 48,
@@ -1149,20 +1159,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#fef2f2',
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    paymentButton: {
-        backgroundColor: '#10b981',
-        paddingVertical: 14,
-        borderRadius: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-    },
-    paymentButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
     },
     modalOverlay: {
         flex: 1,

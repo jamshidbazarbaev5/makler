@@ -25,7 +25,6 @@
     "upload": "Yuklash",
     "download": "Yuklab olish"
   },
-
   "notifications": {
     "title": "Bildirishnomalar",
     "markAllAsRead": "Barchasini o'qilgan qilib belgilash",
@@ -58,9 +57,10 @@
     "postApprovedMessage": "E'loningiz tasdiqlandi va jonli efirga chiqdi!",
     "postRejectedMessage": "E'loningiz rad etildi.",
     "postApprovedWithTitle": "E'loningiz \"{title}\" tasdiqlandi va jonli efirga chiqdi!",
-    "postRejectedWithTitle": "E'loningiz \"{title}\" rad etildi. Sabab: {reason}"
+    "postRejectedWithTitle": "E'loningiz \"{title}\" rad etildi. Sabab: {reason}",
+    "paymentSuccess": "To'lov muvaffaqiyatli",
+    "paymentSuccessWithTitle": "\"{title}\" uchun to'lov qabul qilindi. E'lon moderatsiyaga yuborildi."
   },
-
   "home": {
     "title": "Bosh sahifa",
     "search": "Qidirish...",
@@ -72,7 +72,6 @@
     "noResults": "Natijalar topilmadi",
     "tryAgain": "Qayta urinib ko'ring"
   },
-
   "search": {
     "title": "Qidirish",
     "searchPlaceholder": "Qidirish...",
@@ -83,7 +82,6 @@
     "resultsFor": "Natijalar:",
     "noResultsFound": "Natijalar topilmadi"
   },
-
   "profile": {
     "title": "Profil",
     "editProfile": "Profilni tahrirlash",
@@ -101,7 +99,6 @@
     "noListingsYet": "Hali e'lonlar yo'q",
     "noFavoritesYet": "Hali sevimlilar yo'q"
   },
-
   "profileEdit": {
     "title": "Profilni tahrirlash",
     "firstName": "Ism",
@@ -128,7 +125,6 @@
     "avatarError": "Avatar yangilashda xato yuz berdi",
     "infoText": "Shaxsiy ma'lumotlaringiz xavfsiz saqlangan"
   },
-
   "addListing": {
     "title": "Yangi e'lon",
     "propertyType": "Mulk turi",
@@ -159,7 +155,6 @@
     "sellDesc": "Mulkni sotish",
     "selectOption": "E'LON TURINI TANLANG"
   },
-
   "listingDetail": {
     "title": "E'lon tafsilotlari",
     "overview": "Umumiy ma'lumot",
@@ -175,7 +170,6 @@
     "callNow": "Hozir qo'ng'iroq qilish",
     "sendMessage": "Xabar yuborish"
   },
-
   "myListings": {
     "title": "Mening e'lonlarim",
     "active": "Faol",
@@ -195,9 +189,10 @@
     "markAsSold": "Sotilgan deb belgilash",
     "markAsRented": "Ijaraga berilgan deb belgilash",
     "views": "Ko'rishlar",
-    "likes": "Yoqtirishlar"
+    "likes": "Yoqtirishlar",
+    "pending": "Moderatsiya kutilmoqda",
+    "sold": "Sotilgan"
   },
-
   "favorites": {
     "title": "Sevimlilar",
     "noFavorites": "Sevimlilar yo'q",
@@ -205,7 +200,6 @@
     "removeFromFavorites": "Sevimlilardan olib tashlash",
     "removeConfirm": "Sevimlilardan olib tashlamoqchimisiz?"
   },
-
   "messages": {
     "title": "Xabarlar",
     "noMessages": "Xabarlar yo'q",
@@ -219,7 +213,6 @@
     "deleteConversation": "Suhbatni o'chirish",
     "deleteConfirm": "Suhbatni o'chirmoqchimisiz?"
   },
-
   "map": {
     "title": "Xarita",
     "searchArea": "Bu hududda qidirish",
@@ -239,7 +232,6 @@
     "commercial": "Tijorat",
     "listingsOnMap": "ta e'lon xaritada"
   },
-
   "filter": {
     "title": "Filter",
     "priceRange": "Narx diapazoni",
@@ -301,7 +293,6 @@
     "to": "Gacha",
     "selectDistrict": "Tumanni tanlang"
   },
-
   "propertyTypes": {
     "apartment": "Kvartira",
     "house": "Uy",
@@ -312,13 +303,11 @@
     "shop": "Do'kon",
     "warehouse": "Ombor"
   },
-
   "categories": {
     "sale": "Sotuv",
     "rent": "Ijara",
     "daily": "Kunlik"
   },
-
   "amenities": {
     "parking": "To'xtash joyi",
     "wifi": "Wi-Fi",
@@ -333,7 +322,6 @@
     "furnished": "Mebelli",
     "petFriendly": "Uy hayvonlari uchun"
   },
-
   "auth": {
     "login": "Kirish",
     "register": "Ro'yxatdan o'tish",
@@ -359,7 +347,6 @@
     "whyTelegram": "Xavfsiz kirish uchun Telegram ishlatamiz — parol shart emas",
     "selectLanguage": "Tilni tanlang"
   },
-
   "errors": {
     "required": "Majburiy maydon",
     "invalidEmail": "Noto'g'ri email",
@@ -372,7 +359,6 @@
     "somethingWentWrong": "Nimadir noto'g'ri ketdi",
     "tryAgainLater": "Keyinroq qayta urinib ko'ring"
   },
-
   "success": {
     "saved": "Saqlandi",
     "updated": "Yangilandi",
@@ -382,7 +368,6 @@
     "added": "Qo'shildi",
     "removed": "Olib tashlandi"
   },
-
   "payment": {
     "postTitle": "E'lon uchun to'lov",
     "featuredTitle": "E'lonni yuqoriga chiqarish",
@@ -423,7 +408,6 @@
     "durationLabel": "Amal qilish muddati",
     "days": "kun"
   },
-
   "paymentHistory": {
     "title": "To'lovlar tarixi",
     "noPayments": "To'lovlar yo'q",
@@ -436,9 +420,9 @@
     "statusFailed": "Amalga oshmadi",
     "statusPending": "Kutilmoqda",
     "purposeFeatured": "TOP ga chiqarish",
-    "purposePost": "E'lon joylash"
+    "purposePost": "E'lon joylash",
+    "openListing": "E'lon tafsilotlarini ochish"
   },
-
   "bottomNav": {
     "home": "Bosh sahifa",
     "map": "Xarita",
@@ -446,7 +430,6 @@
     "favorites": "Sevimlilar",
     "profile": "Profil"
   },
-
   "profileFilters": {
     "all": "Barchasi",
     "sortNewest": "Eng yangi",
@@ -474,7 +457,6 @@
     "noImage": "Rasm yo'q",
     "loadMore": "Ko'proq yuklash"
   },
-
   "allListings": {
     "loading": "Yuklanmoqda...",
     "errorMessage": "E'lonlarni yuklab bo'lmadi",
@@ -486,7 +468,6 @@
     "sort": "Saralash",
     "loadMore": "Yana yuklash"
   },
-
   "listingCard": {
     "noImage": "Rasm yo'q",
     "rooms": "xona",
@@ -523,9 +504,13 @@
     "noLocation": "Joylashuv ko'rsatilmagan",
     "openOnMap": "Xaritada ochish",
     "callNow": "Qo'ng'iroq qiling",
-    "noPhone": "Telefon yo'q"
+    "noPhone": "Telefon yo'q",
+    "showNumber": "Raqamni ko'rsatish",
+    "conditionCosmetic": "Kosmetik ta'mir",
+    "conditionCapital": "Kapital ta'mir",
+    "conditionNoRepair": "Ta'mir talab qilinmaydi",
+    "conditionDesign": "Dizaynerlik ta'miri"
   },
-
   "likedPosts": {
     "title": "Sevimli",
     "listings": "e'lon",
@@ -543,20 +528,18 @@
     "noPrice": "Narxsiz",
     "sortArea": "Maydon"
   },
-
   "propertyTypeScreen": {
     "title": "Mulk turi",
     "selectType": "MULK TURINI TANLANG",
     "apartment": "Kvartira",
-    "apartmentDesc": "Xonali kvartira",
-    "house": "Hovli/Kottej/Dacha",
-    "houseDesc": "Shaxsiy turar joy",
+    "apartmentDesc": "Turar-joy kvartirasi",
+    "house": "Uy/Kottej/Dacha",
+    "houseDesc": "Shaxsiy uy-joy",
     "land": "Yer",
     "landDesc": "Qurilish uchun yer",
     "commercial": "Tijorat",
-    "commercialDesc": "Tijorat mulki"
+    "commercialDesc": "Tijorat ko'chmas mulki"
   },
-
   "propertyForm": {
     "submitting": "Yuborilmoqda",
     "dailyRent": "Kunlik Ijara",
@@ -616,22 +599,12 @@
     "galleryError": "Galereya xatosi",
     "successTitle": "Muvaffaqiyat",
     "successMessage": "E'lon muvaffaqiyatli yaratildi!",
-    "submitError": "E'lon yaratishda xatolik yuz berdi"
+    "submitError": "E'lon yaratishda xatolik yuz berdi",
+    "districtRequired": "Tuman tanlash majburiy",
+    "instagramVideoUrl": "Instagram video havolasi",
+    "instagramVideoPlaceholder": "https://www.instagram.com/reel/...",
+    "mapPreviewError": "Xarita preview yuklanmadi"
   },
-
-  "propertyTypeScreen": {
-    "title": "Mulk turi",
-    "selectType": "MULK TURINI TANLANG",
-    "apartment": "Kvartira",
-    "apartmentDesc": "Turar-joy kvartirasi",
-    "house": "Uy/Kottej/Dacha",
-    "houseDesc": "Shaxsiy uy-joy",
-    "land": "Yer",
-    "landDesc": "Qurilish uchun yer",
-    "commercial": "Tijorat",
-    "commercialDesc": "Tijorat ko'chmas mulki"
-  },
-
   "bottomSheet": {
     "menu": "Menyu",
     "language": "Til",

@@ -25,7 +25,6 @@
     "upload": "Загрузить",
     "download": "Скачать"
   },
-
   "notifications": {
     "title": "Уведомления",
     "markAllAsRead": "Отметить все как прочитанные",
@@ -58,9 +57,10 @@
     "postApprovedMessage": "Ваше объявление одобрено и опубликовано!",
     "postRejectedMessage": "Ваше объявление было отклонено.",
     "postApprovedWithTitle": "Ваше объявление \"{title}\" одобрено и опубликовано!",
-    "postRejectedWithTitle": "Ваше объявление \"{title}\" отклонено. Причина: {reason}"
+    "postRejectedWithTitle": "Ваше объявление \"{title}\" отклонено. Причина: {reason}",
+    "paymentSuccess": "Платеж успешен",
+    "paymentSuccessWithTitle": "Платеж за \"{title}\" принят. Объявление отправлено на модерацию."
   },
-
   "home": {
     "title": "Главная",
     "search": "Поиск...",
@@ -72,7 +72,6 @@
     "noResults": "Результатов не найдено",
     "tryAgain": "Попробуйте снова"
   },
-
   "search": {
     "title": "Поиск",
     "searchPlaceholder": "Поиск...",
@@ -83,7 +82,6 @@
     "resultsFor": "Результаты для:",
     "noResultsFound": "Результатов не найдено"
   },
-
   "profile": {
     "title": "Профиль",
     "editProfile": "Редактировать профиль",
@@ -101,7 +99,6 @@
     "noListingsYet": "Пока нет объявлений",
     "noFavoritesYet": "Пока нет избранного"
   },
-
   "profileEdit": {
     "title": "Редактировать профиль",
     "firstName": "Имя",
@@ -128,7 +125,6 @@
     "avatarError": "Ошибка обновления аватара",
     "infoText": "Ваши личные данные хранятся в безопасности"
   },
-
   "addListing": {
     "title": "Новое объявление",
     "propertyType": "Тип недвижимости",
@@ -159,7 +155,6 @@
     "sellDesc": "Продать недвижимость",
     "selectOption": "ВЫБЕРИТЕ ТИП ОБЪЯВЛЕНИЯ"
   },
-
   "listingDetail": {
     "title": "Детали объявления",
     "overview": "Обзор",
@@ -175,7 +170,6 @@
     "callNow": "Позвонить сейчас",
     "sendMessage": "Отправить сообщение"
   },
-
   "myListings": {
     "title": "Мои объявления",
     "active": "Активные",
@@ -195,9 +189,10 @@
     "markAsSold": "Отметить как проданное",
     "markAsRented": "Отметить как сданное",
     "views": "Просмотры",
-    "likes": "Лайки"
+    "likes": "Лайки",
+    "pending": "Ожидает модерации",
+    "sold": "Продано"
   },
-
   "favorites": {
     "title": "Избранное",
     "noFavorites": "Нет избранного",
@@ -205,7 +200,6 @@
     "removeFromFavorites": "Удалить из избранного",
     "removeConfirm": "Удалить из избранного?"
   },
-
   "messages": {
     "title": "Сообщения",
     "noMessages": "Нет сообщений",
@@ -219,7 +213,6 @@
     "deleteConversation": "Удалить разговор",
     "deleteConfirm": "Удалить разговор?"
   },
-
   "map": {
     "title": "Карта",
     "searchArea": "Искать в этой области",
@@ -239,7 +232,6 @@
     "commercial": "Коммерция",
     "listingsOnMap": "объявлений на карте"
   },
-
   "filter": {
     "title": "Фильтр",
     "priceRange": "Диапазон цен",
@@ -301,7 +293,6 @@
     "to": "До",
     "selectDistrict": "Выберите район"
   },
-
   "propertyTypes": {
     "apartment": "Квартира",
     "house": "Дом",
@@ -312,13 +303,11 @@
     "shop": "Магазин",
     "warehouse": "Склад"
   },
-
   "categories": {
     "sale": "Продажа",
     "rent": "Аренда",
     "daily": "Посуточно"
   },
-
   "amenities": {
     "parking": "Парковка",
     "wifi": "Wi-Fi",
@@ -333,7 +322,6 @@
     "furnished": "С мебелью",
     "petFriendly": "Можно с животными"
   },
-
   "auth": {
     "login": "Войти",
     "register": "Регистрация",
@@ -359,7 +347,6 @@
     "whyTelegram": "Мы используем Telegram для безопасного входа — без паролей",
     "selectLanguage": "Выберите язык"
   },
-
   "errors": {
     "required": "Обязательное поле",
     "invalidEmail": "Неверный email",
@@ -372,7 +359,6 @@
     "somethingWentWrong": "Что-то пошло не так",
     "tryAgainLater": "Попробуйте позже"
   },
-
   "success": {
     "saved": "Сохранено",
     "updated": "Обновлено",
@@ -382,7 +368,6 @@
     "added": "Добавлено",
     "removed": "Удалено"
   },
-
   "payment": {
     "postTitle": "Оплата за объявление",
     "featuredTitle": "Поднять объявление",
@@ -423,7 +408,6 @@
     "durationLabel": "Срок действия",
     "days": "дней"
   },
-
   "paymentHistory": {
     "title": "История платежей",
     "noPayments": "Нет платежей",
@@ -436,9 +420,9 @@
     "statusFailed": "Не прошёл",
     "statusPending": "Ожидание",
     "purposeFeatured": "Поднять в TOP",
-    "purposePost": "Публикация объявления"
+    "purposePost": "Публикация объявления",
+    "openListing": "Открыть детали объявления"
   },
-
   "bottomNav": {
     "home": "Главная",
     "map": "Карта",
@@ -446,7 +430,6 @@
     "favorites": "Избранное",
     "profile": "Профиль"
   },
-
   "profileFilters": {
     "all": "Все",
     "sortNewest": "Новые",
@@ -474,7 +457,6 @@
     "noImage": "Нет фото",
     "loadMore": "Загрузить ещё"
   },
-
   "allListings": {
     "loading": "Загрузка...",
     "errorMessage": "Не удалось загрузить объявления",
@@ -486,7 +468,6 @@
     "sort": "Сортировка",
     "loadMore": "Загрузить ещё"
   },
-
   "listingCard": {
     "noImage": "Нет фото",
     "rooms": "комн.",
@@ -523,9 +504,13 @@
     "noLocation": "Местоположение не указано",
     "openOnMap": "Открыть на карте",
     "callNow": "Позвонить",
-    "noPhone": "Нет телефона"
+    "noPhone": "Нет телефона",
+    "showNumber": "Показать номер",
+    "conditionCosmetic": "Косметический ремонт",
+    "conditionCapital": "Капитальный ремонт",
+    "conditionNoRepair": "Ремонт не нужен",
+    "conditionDesign": "Дизайнерский ремонт"
   },
-
   "likedPosts": {
     "title": "Избранное",
     "listings": "объявл.",
@@ -543,7 +528,6 @@
     "noPrice": "Без цены",
     "sortArea": "Площадь"
   },
-
   "propertyTypeScreen": {
     "title": "Тип недвижимости",
     "selectType": "ВЫБЕРИТЕ ТИП НЕДВИЖИМОСТИ",
@@ -552,11 +536,10 @@
     "house": "Дом/Коттедж/Дача",
     "houseDesc": "Частное жильё",
     "land": "Земля",
-    "landDesc": "Земельный участок",
+    "landDesc": "Земля под строительство",
     "commercial": "Коммерческая",
     "commercialDesc": "Коммерческая недвижимость"
   },
-
   "propertyForm": {
     "dailyRent": "Посуточная аренда",
     "monthlyRent": "Помесячная аренда",
@@ -615,22 +598,13 @@
     "galleryError": "Ошибка галереи",
     "successTitle": "Успешно",
     "successMessage": "Объявление успешно создано!",
-    "submitError": "Ошибка при создании объявления"
+    "submitError": "Ошибка при создании объявления",
+    "submitting": "Отправка...",
+    "districtRequired": "Район обязателен",
+    "instagramVideoUrl": "Ссылка на Instagram видео",
+    "instagramVideoPlaceholder": "https://www.instagram.com/reel/...",
+    "mapPreviewError": "Не удалось загрузить предпросмотр карты"
   },
-
-  "propertyTypeScreen": {
-    "title": "Тип недвижимости",
-    "selectType": "ВЫБЕРИТЕ ТИП НЕДВИЖИМОСТИ",
-    "apartment": "Квартира",
-    "apartmentDesc": "Жилая квартира",
-    "house": "Дом/Коттедж/Дача",
-    "houseDesc": "Частное жильё",
-    "land": "Земля",
-    "landDesc": "Земля под строительство",
-    "commercial": "Коммерческая",
-    "commercialDesc": "Коммерческая недвижимость"
-  },
-
   "bottomSheet": {
     "menu": "Меню",
     "language": "Язык",

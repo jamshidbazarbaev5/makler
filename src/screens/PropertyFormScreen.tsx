@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTheme } from '@react-navigation/native';
 import { ArrowLeft, MapPin, Camera, ImageIcon, X, CheckCircle, XCircle } from 'lucide-react-native';
@@ -38,6 +39,7 @@ interface FormData {
   district: string;
   address: string;
   phone: string;
+  instagramVideoUrl: string;
   images: string[];
   propertyOwner: string; // 'owner' or 'realtor'
   apartmentType: string; // 'new' or 'secondary'
@@ -50,6 +52,11 @@ interface FormData {
 interface RouteParams {
   listingType?: string;
   propertyType?: string;
+}
+
+interface DistrictOption {
+  id: number;
+  name: string;
 }
 
 const PropertyFormScreen = () => {
@@ -119,6 +126,7 @@ const PropertyFormScreen = () => {
     district: '',
     address: '',
     phone: '',
+    instagramVideoUrl: '',
     images: [],
     propertyOwner: 'owner',
     apartmentType: 'new',
@@ -129,9 +137,9 @@ const PropertyFormScreen = () => {
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showImageSourceModal, setShowImageSourceModal] = useState(false);
-  const [useMapPreviewFallback, setUseMapPreviewFallback] = useState(false);
-  const [regionOptions, setRegionOptions] = useState<string[]>([]);
+  const [regionOptions, setRegionOptions] = useState<DistrictOption[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(true);
+  const [selectedDistrictId, setSelectedDistrictId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [resultModal, setResultModal] = useState<{ visible: boolean; success: boolean; message: string }>({
     visible: false,
@@ -146,10 +154,47 @@ const PropertyFormScreen = () => {
     post_duration_days: number;
     featured_duration_days: number;
   } | null>(null);
+  // track whether the static preview image failed to load (network/DNS issues)
+  const [mapPreviewError, setMapPreviewError] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
   const currencyOptions = ['USD', 'UZS', 'EUR'];
 
   const hasLocation = formData.latitude != null && formData.longitude != null;
+
+  // clear previous error when coordinates change
+  useEffect(() => {
+    if (hasLocation) {
+      setMapPreviewError(false);
+    }
+  }, [formData.latitude, formData.longitude]);
+
+  // subscribe to network state so we can avoid trying to fetch preview when offline
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsConnected(state.isConnected);
+      if (state.isConnected === false) {
+        setMapPreviewError(true);
+      }
+    });
+    // also fetch current state once
+    NetInfo.fetch().then(state => {
+      setIsConnected(state.isConnected);
+      if (state.isConnected === false) setMapPreviewError(true);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (!mapPreviewError) {
+      console.log('🗺️ Location preview debug:', {
+        hasLocation,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        previewUrl: hasLocation ? getLocationPreviewImageUrl(formData.latitude!, formData.longitude!) : null,
+      });
+    }
+  }, [hasLocation, formData.latitude, formData.longitude, mapPreviewError]);
 
   // Fetch districts on component mount (cached)
   useEffect(() => {
@@ -157,18 +202,19 @@ const PropertyFormScreen = () => {
       try {
         setLoadingDistricts(true);
         const districts = await ApiClient.getDistricts();
-        const districtNames = districts
-          .map((district: any) => {
-            // Try to get Uzbek translation first, then Russian
-            return district.translations?.uz?.name || district.translations?.ru?.name || '';
-          })
-          .filter((name: string) => name.length > 0)
-          .sort((a: string, b: string) => a.localeCompare(b, 'uz'));
-        setRegionOptions(districtNames);
+        const options: DistrictOption[] = districts
+          .map((district: any) => ({
+            id: district.id,
+            name: district.translations?.uz?.name || district.translations?.ru?.name || '',
+          }))
+          .filter((district: DistrictOption) => district.name.length > 0)
+          .sort((a: DistrictOption, b: DistrictOption) => a.name.localeCompare(b.name, 'uz'));
+        setRegionOptions(options);
       } catch (error) {
         console.error('Failed to fetch districts:', error);
         // Fallback to empty array if fetch fails
         setRegionOptions([]);
+        setSelectedDistrictId(null);
       } finally {
         setLoadingDistricts(false);
       }
@@ -316,10 +362,7 @@ const PropertyFormScreen = () => {
     }));
   };
 
-  const getLocationPreviewImageUrl = (lat: number, lng: number, fallback = false) => {
-    if (fallback) {
-      return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=15&size=600x300&markers=color:red|${lat},${lng}`;
-    }
+  const getLocationPreviewImageUrl = (lat: number, lng: number) => {
     return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=600x300&maptype=mapnik&markers=${lat},${lng},red-pushpin`;
   };
 
@@ -334,6 +377,11 @@ const PropertyFormScreen = () => {
       // For apartment/house, rooms are required
       if ((normalizedPropertyType === 'apartment' || normalizedPropertyType === 'house') && !formData.roomsCount) {
         setResultModal({ visible: true, success: false, message: t?.propertyForm?.roomsRequired || 'Number of rooms is required' });
+        return;
+      }
+
+      if (!selectedDistrictId) {
+        setResultModal({ visible: true, success: false, message: t?.propertyForm?.districtRequired || 'District is required' });
         return;
       }
 
@@ -358,6 +406,7 @@ const PropertyFormScreen = () => {
         rooms: formData.roomsCount ? parseInt(formData.roomsCount) : null,
         area: formData.totalArea ? formData.totalArea : (formData.area || null),
         phone: formData.phone,
+        ...(formData.instagramVideoUrl.trim() && { instagram_video_url: formData.instagramVideoUrl.trim() }),
 
         // Handle specific fields based on property type
         ...(normalizedPropertyType === 'apartment' && {
@@ -378,13 +427,12 @@ const PropertyFormScreen = () => {
           area_unit: 'sqm'
         }),
 
-        ...(normalizedPropertyType !== 'land' && {
+        ...((normalizedPropertyType === 'apartment' || normalizedPropertyType === 'house') && {
           building_type: formData.apartmentType === 'secondary' ? 'old' : 'new',
           condition: renovationItems.find(r => r.label === formData.renovation)?.value || 'cosmetic',
         }),
 
-        // Mock district ID since we don't have the full map here yet
-        district_id: 3,
+        district_id: selectedDistrictId,
 
         // Location coordinates (limited to 6 decimal places to stay within 9 digit limit)
         ...(formData.latitude != null && { latitude: parseFloat(formData.latitude.toFixed(6)) }),
@@ -724,21 +772,27 @@ const PropertyFormScreen = () => {
             style={styles.dropdownButton}
             onPress={() => setDropdownOpen(dropdownOpen === 'region' ? null : 'region')}
           >
-            <Text style={styles.dropdownButtonText}>{formData.region}</Text>
+            <Text style={styles.dropdownButtonText}>{formData.region || (loadingDistricts ? (t?.common?.loading || "Loading...") : (t?.propertyForm?.region || "District"))}</Text>
             <Text style={styles.dropdownArrow}>▼</Text>
           </TouchableOpacity>
           {dropdownOpen === 'region' && (
             <View style={styles.dropdownMenu}>
-              {regionOptions.map((option, index) => (
+              {loadingDistricts && (
+                <View style={styles.dropdownItem}>
+                  <Text style={styles.dropdownItemText}>{t?.common?.loading || "Loading..."}</Text>
+                </View>
+              )}
+              {regionOptions.map((option) => (
                 <TouchableOpacity
-                  key={index}
+                  key={option.id}
                   style={styles.dropdownItem}
                   onPress={() => {
-                    handleInputChange('region', option);
+                    handleInputChange('region', option.name);
+                    setSelectedDistrictId(option.id);
                     setDropdownOpen(null);
                   }}
                 >
-                  <Text style={styles.dropdownItemText}>{option}</Text>
+                  <Text style={styles.dropdownItemText}>{option.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -752,22 +806,37 @@ const PropertyFormScreen = () => {
             onPress={() => setShowLocationModal(true)}
             activeOpacity={0.85}
           >
-            {hasLocation ? (
+            {hasLocation && isConnected !== false ? (
               <>
-                <Image
-                  source={{ uri: getLocationPreviewImageUrl(formData.latitude!, formData.longitude!, useMapPreviewFallback) }}
-                  style={styles.mapWebView}
-                  resizeMode="cover"
-                  onError={() => {
-                    if (!useMapPreviewFallback) {
-                      setUseMapPreviewFallback(true);
-                    }
-                  }}
-                />
+                {!mapPreviewError ? (
+                  <Image
+                    source={{ uri: getLocationPreviewImageUrl(formData.latitude!, formData.longitude!) }}
+                    style={styles.mapWebView}
+                    resizeMode="cover"
+                    onLoadStart={() => console.log('🗺️ Preview map load start')}
+                    onLoad={() => console.log('🗺️ Preview map loaded successfully')}
+                    onError={(event) => {
+                      console.log('🗺️ Preview map load error:', event?.nativeEvent);
+                      setMapPreviewError(true);
+                    }}
+                  />
+                ) : (
+                  <View style={styles.mapContent}>
+                    <MapPin size={24} color="#999" />
+                    <Text style={styles.mapPlaceholder}>
+                      {t?.propertyForm?.mapPreviewError || 'Unable to load preview'}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.mapOverlayBadge}>
                   <MapPin size={14} color="#fff" />
                   <Text style={styles.mapOverlayText}>
                     {t?.propertyForm?.changeLocation || 'Change location'}
+                  </Text>
+                </View>
+                <View style={styles.mapCoordsBadge}>
+                  <Text style={styles.mapCoordsText}>
+                    {formData.latitude!.toFixed(5)}, {formData.longitude!.toFixed(5)}
                   </Text>
                 </View>
               </>
@@ -780,6 +849,21 @@ const PropertyFormScreen = () => {
               </View>
             )}
           </TouchableOpacity>
+        </View>
+
+        {/* Instagram Video URL (optional) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t?.propertyForm?.instagramVideoUrl || 'Instagram Video URL'}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t?.propertyForm?.instagramVideoPlaceholder || 'https://www.instagram.com/reel/...'}
+            value={formData.instagramVideoUrl}
+            onChangeText={(text) => handleInputChange('instagramVideoUrl', text)}
+            placeholderTextColor="#999"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+          />
         </View>
 
         {/* Phone Section */}
@@ -869,7 +953,7 @@ const PropertyFormScreen = () => {
               initialLatitude={formData.latitude || 42.4602}
               initialLongitude={formData.longitude || 59.6034}
               onLocationSelect={(lat, lng) => {
-                setUseMapPreviewFallback(false);
+                console.log('🗺️ Location selected from picker:', { lat, lng });
                 setFormData(prev => ({
                   ...prev,
                   latitude: lat,
@@ -907,7 +991,7 @@ const PropertyFormScreen = () => {
         <View style={styles.submittingOverlay}>
           <View style={styles.submittingCard}>
             <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.submittingText}>{t?.propertyForm?.submitting || "E'lon yuklanmoqda..."}</Text>
+            <Text style={styles.submittingText}>{t?.propertyForm?.submitting || t?.common?.loading || "Loading..."}</Text>
           </View>
         </View>
       )}
@@ -1141,6 +1225,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#fff',
     fontWeight: '500',
+  },
+  mapCoordsBadge: {
+    position: 'absolute',
+    left: 10,
+    bottom: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  mapCoordsText: {
+    fontSize: 11,
+    color: '#1f2937',
+    fontWeight: '600',
   },
   phoneContainer: {
     flexDirection: 'row',

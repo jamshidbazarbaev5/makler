@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { Share2, Edit, Menu, Home, Handshake, Heart, ChevronDown, ImageIcon, Eye, Wallet } from 'lucide-react-native';
+import { Edit, Menu, Home, Handshake, Heart, ChevronDown, ImageIcon, Eye, Wallet } from 'lucide-react-native';
 import { COLORS } from '../constants';
 import BottomSheetMenu from './BottomSheetMenu';
 import LanguageModal from './LanguageModal';
@@ -26,7 +26,7 @@ import SkeletonLoader from './SkeletonLoader';
 import {useSelector, useDispatch} from 'react-redux';
 import {RootState, AppDispatch} from '../redux/store';
 import {fetchProfile, logout} from '../redux/slices/authSlice';
-import api, { AppSettings } from '../services/api';
+import api, { PaymentSettings } from '../services/api';
 import { useLanguage } from '../localization/LanguageContext';
 
 type Props = NativeStackScreenProps<any, 'Profile'>;
@@ -45,7 +45,7 @@ const iconMap: any = {
 };
 
 // Status mapping for API (labels will be resolved dynamically via translations)
-const STATUS_KEYS = ['draft', 'active', 'processing', 'inactive', 'rejected', 'completed'] as const;
+const STATUS_KEYS = ['draft', 'pending', 'active', 'inactive', 'rejected', 'sold'] as const;
 
 const filters = [
   ['status', 'ordering'],
@@ -54,11 +54,11 @@ const filters = [
 
 interface TabCounts {
   draft: number;
+  pending: number;
   active: number;
-  processing: number;
   inactive: number;
   rejected: number;
-  completed: number;
+  sold: number;
 }
 
 export default function Profile({ navigation }: Props) {
@@ -70,11 +70,11 @@ export default function Profile({ navigation }: Props) {
   const getStatusLabel = (key: string): string => {
     const statusMap: Record<string, string> = {
       draft: t.myListings.draft,
+      pending: t.myListings.pending,
       active: t.myListings.active,
-      processing: t.myListings.processing,
       inactive: t.myListings.inactive,
       rejected: t.myListings.rejected,
-      completed: t.myListings.completed,
+      sold: t.myListings.sold,
     };
     return statusMap[key] || key;
   };
@@ -98,7 +98,7 @@ export default function Profile({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>(undefined);
-  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
 
   const { width } = useWindowDimensions();
   const numColumns = 2;
@@ -106,10 +106,13 @@ export default function Profile({ navigation }: Props) {
 
   useEffect(() => {
     dispatch(fetchProfile());
-    // Fetch app settings (admin phone, etc.)
-    api.getAppSettings()
-      .then(settings => setAppSettings(settings))
-      .catch(err => console.error('Error fetching app settings:', err));
+    // Fetch payment settings (admin phone, etc.)
+    api.getPaymentSettings()
+      .then(settings => {
+        console.log('Payment settings:', settings);
+        setPaymentSettings(settings);
+      })
+      .catch(err => console.error('Error fetching payment settings:', err));
   }, [dispatch]);
 
   // Reset filter labels when language changes
@@ -793,7 +796,7 @@ export default function Profile({ navigation }: Props) {
             setMenuVisible(false);
             setLanguageModalVisible(true);
           }}
-          appSettings={appSettings}
+          paymentSettings={paymentSettings}
         />
       )}
 

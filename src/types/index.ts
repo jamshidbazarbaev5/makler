@@ -103,7 +103,7 @@ export interface User {
 // Notification Types
 export interface Notification {
   id: number;
-  notification_type: 'post_approved' | 'post_rejected';
+  notification_type: 'post_approved' | 'post_rejected' | 'payment_success';
   title: string;
   message: string;
   announcement: string;
