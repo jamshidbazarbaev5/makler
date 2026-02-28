@@ -134,7 +134,7 @@ const LikedPostsScreen = () => {
       views_count: ann.views_count,
       floor: ann.floor,
       total_floors: ann.total_floors,
-      area_unit: ann.area_unit === 'sqm' ? 'm²' : ann.area_unit,
+      area_unit: ann.area_unit === 'sqm' ? 'm²' : ann.area_unit, // unit conversion handled by card component as well
     };
   };
 

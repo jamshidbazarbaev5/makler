@@ -32,6 +32,13 @@ const ListingCard = ({ listing, size = 'normal', isFavorited, onToggleFavorite }
   const navigation = useNavigation<any>();
   const { t } = useLanguage();
 
+  const formatAreaUnit = (unit?: string) => {
+    if (unit === 'sqm') return 'm²';
+    if (unit === 'sotix') return t.listingCard.sotix;
+    // fall back to the raw string or default to m² if missing
+    return unit || 'm²';
+  }
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -109,7 +116,7 @@ const ListingCard = ({ listing, size = 'normal', isFavorited, onToggleFavorite }
           {listing.area ? (
             <View style={styles.detailChip}>
               <Maximize2 size={10} color="#64748b" />
-              <Text style={styles.detailText}>{listing.area} {listing.area_unit || 'm²'}</Text>
+              <Text style={styles.detailText}>{listing.area} {formatAreaUnit(listing.area_unit)}</Text>
             </View>
           ) : null}
           {listing.floor ? (

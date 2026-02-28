@@ -13,11 +13,11 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import NetInfo from '@react-native-community/netinfo';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useTheme } from '@react-navigation/native';
 import { ArrowLeft, MapPin, Camera, ImageIcon, X, CheckCircle, XCircle } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { WebView } from 'react-native-webview';
 import BottomNav from '../components/BottomNav';
 import MapPicker from '../components/MapPicker';
 import ApiClient from '../services/api';
@@ -154,47 +154,11 @@ const PropertyFormScreen = () => {
     post_duration_days: number;
     featured_duration_days: number;
   } | null>(null);
-  // track whether the static preview image failed to load (network/DNS issues)
-  const [mapPreviewError, setMapPreviewError] = useState(false);
-  const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
   const currencyOptions = ['USD', 'UZS', 'EUR'];
 
   const hasLocation = formData.latitude != null && formData.longitude != null;
 
-  // clear previous error when coordinates change
-  useEffect(() => {
-    if (hasLocation) {
-      setMapPreviewError(false);
-    }
-  }, [formData.latitude, formData.longitude]);
-
-  // subscribe to network state so we can avoid trying to fetch preview when offline
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      setIsConnected(state.isConnected);
-      if (state.isConnected === false) {
-        setMapPreviewError(true);
-      }
-    });
-    // also fetch current state once
-    NetInfo.fetch().then(state => {
-      setIsConnected(state.isConnected);
-      if (state.isConnected === false) setMapPreviewError(true);
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    if (!mapPreviewError) {
-      console.log('🗺️ Location preview debug:', {
-        hasLocation,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
-        previewUrl: hasLocation ? getLocationPreviewImageUrl(formData.latitude!, formData.longitude!) : null,
-      });
-    }
-  }, [hasLocation, formData.latitude, formData.longitude, mapPreviewError]);
 
   // Fetch districts on component mount (cached)
   useEffect(() => {
@@ -362,9 +326,46 @@ const PropertyFormScreen = () => {
     }));
   };
 
-  const getLocationPreviewImageUrl = (lat: number, lng: number) => {
-    return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=15&size=600x300&maptype=mapnik&markers=${lat},${lng},red-pushpin`;
-  };
+
+  const getLocationPreviewHtml = (lat: number, lng: number) => `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body, #map { width: 100%; height: 100%; }
+        .leaflet-control-attribution, .leaflet-control-zoom { display: none !important; }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script>
+        var map = L.map('map', {
+          zoomControl: false,
+          attributionControl: false,
+          dragging: false,
+          touchZoom: false,
+          scrollWheelZoom: false,
+          doubleClickZoom: false
+        }).setView([${lat}, ${lng}], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+        var markerIcon = L.divIcon({
+          className: 'preview-marker',
+          html: '<div style="background:#ef4444;width:22px;height:22px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        });
+
+        L.marker([${lat}, ${lng}], { icon: markerIcon }).addTo(map);
+      </script>
+    </body>
+    </html>
+  `;
 
   const handleSubmit = async () => {
     try {
@@ -806,28 +807,20 @@ const PropertyFormScreen = () => {
             onPress={() => setShowLocationModal(true)}
             activeOpacity={0.85}
           >
-            {hasLocation && isConnected !== false ? (
+            {hasLocation ? (
               <>
-                {!mapPreviewError ? (
-                  <Image
-                    source={{ uri: getLocationPreviewImageUrl(formData.latitude!, formData.longitude!) }}
-                    style={styles.mapWebView}
-                    resizeMode="cover"
-                    onLoadStart={() => console.log('🗺️ Preview map load start')}
-                    onLoad={() => console.log('🗺️ Preview map loaded successfully')}
-                    onError={(event) => {
-                      console.log('🗺️ Preview map load error:', event?.nativeEvent);
-                      setMapPreviewError(true);
-                    }}
-                  />
-                ) : (
-                  <View style={styles.mapContent}>
-                    <MapPin size={24} color="#999" />
-                    <Text style={styles.mapPlaceholder}>
-                      {t?.propertyForm?.mapPreviewError || 'Unable to load preview'}
-                    </Text>
-                  </View>
-                )}
+                <WebView
+                  source={{ html: getLocationPreviewHtml(formData.latitude!, formData.longitude!) }}
+                  style={styles.mapWebView}
+                  scrollEnabled={false}
+                  pointerEvents="none"
+                  originWhitelist={["*"]}
+                  onLoadStart={() => console.log('🗺️ Preview map load start')}
+                  onLoad={() => console.log('🗺️ Preview map loaded successfully')}
+                  onError={(event) => {
+                    console.log('🗺️ Preview map load error:', event?.nativeEvent);
+                  }}
+                />
                 <View style={styles.mapOverlayBadge}>
                   <MapPin size={14} color="#fff" />
                   <Text style={styles.mapOverlayText}>

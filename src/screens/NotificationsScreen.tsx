@@ -232,6 +232,26 @@ const NotificationsScreen: React.FC = () => {
         : message;
     }
 
+    // handle messages where listing was promoted to TOP (may come in various languages)
+    // example RU: "Ваше объявление \"Фед уп\" в TOP на 7 дней."
+    // we capture both title and optional days count
+    const topPattern = /"([^\"]+)"[^0-9]*TOP[^0-9]*(\d+)/i;
+    const topMatch = message.match(topPattern);
+    if (topMatch) {
+      const postTitle = topMatch[1];
+      const days = topMatch[2];
+      const template = (t.notifications as any).paymentSuccessTop;
+      if (template) {
+        return template
+          .replace('{title}', postTitle)
+          .replace('{days}', days);
+      }
+      // fallback to generic paymentSuccessWithTitle if new key is missing
+      return (t.notifications as any).paymentSuccessWithTitle
+        ? (t.notifications as any).paymentSuccessWithTitle.replace('{title}', postTitle)
+        : message;
+    }
+
     const paymentRuPattern = /Платеж за "([^"]+)" принят\. Объявление отправлено на модерацию\.?/i;
     const paymentRuMatch = message.match(paymentRuPattern);
     if (paymentRuMatch) {

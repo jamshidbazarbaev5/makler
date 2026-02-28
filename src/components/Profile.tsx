@@ -27,6 +27,7 @@ import {useSelector, useDispatch} from 'react-redux';
 import {RootState, AppDispatch} from '../redux/store';
 import {fetchProfile, logout} from '../redux/slices/authSlice';
 import api, { PaymentSettings } from '../services/api';
+import { FilterState, EMPTY_FILTERS } from '../types/filter';
 import { useLanguage } from '../localization/LanguageContext';
 
 type Props = NativeStackScreenProps<any, 'Profile'>;
@@ -83,12 +84,34 @@ export default function Profile({ navigation }: Props) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  // user-facing labels for filter chips/dropdowns
   const [selectedFilters, setSelectedFilters] = useState({
     status: t.myListings?.all || 'All',
     ordering: '',
     listing_type: '',
     property_type: '',
   });
+
+  // user-facing label filters reset helper
+  const resetSelectedLabels = () => {
+    setSelectedFilters({
+      status: t.myListings?.all || 'All',
+      ordering: '',
+      listing_type: '',
+      property_type: '',
+    });
+  };
+
+  const handleClearFilters = () => {
+    resetSelectedLabels();
+    setSelectedStatus(undefined);
+    setApiFilters(EMPTY_FILTERS);
+    setCurrentPage(1);
+    fetchMyAnnouncements(undefined, 1, false, EMPTY_FILTERS);
+  };
+
+  // filters that will be passed to the API (uses FilterState shape)
+  const [apiFilters, setApiFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [tabCounts, setTabCounts] = useState<TabCounts | null>(null);
   const [myListings, setMyListings] = useState<any[]>([]);
   const [listingsLoading, setListingsLoading] = useState(false);
@@ -123,15 +146,16 @@ export default function Profile({ navigation }: Props) {
       listing_type: '',
       property_type: '',
     });
+    setApiFilters(EMPTY_FILTERS);
     setSelectedStatus(undefined);
   }, [language]);
 
   // Refresh listings and counts when screen comes into focus (after delete/edit)
   useFocusEffect(
     useCallback(() => {
-      fetchMyAnnouncements(selectedStatus, 1, false);
+      fetchMyAnnouncements(selectedStatus, 1, false, apiFilters);
       fetchStatusCounts();
-    }, [selectedStatus])
+    }, [selectedStatus, apiFilters])
   );
 
   const fetchStatusCounts = async () => {
@@ -145,7 +169,12 @@ export default function Profile({ navigation }: Props) {
     }
   };
 
-  const fetchMyAnnouncements = async (status?: string, page = 1, append = false) => {
+  const fetchMyAnnouncements = async (
+    status?: string,
+    page = 1,
+    append = false,
+    filters: FilterState = apiFilters
+  ) => {
     try {
       if (page === 1) {
         setListingsLoading(true);
@@ -156,7 +185,7 @@ export default function Profile({ navigation }: Props) {
       // selectedStatus already stores the API key directly
       const apiStatus = status || undefined;
 
-      const response = await api.getMyAnnouncements(apiStatus, page, 20);
+      const response = await api.getMyAnnouncements(apiStatus, page, 20, filters as any);
 
       if (append) {
         setMyListings(prev => [...prev, ...(response.results || [])]);
@@ -181,19 +210,20 @@ export default function Profile({ navigation }: Props) {
     setSelectedFilters(prev => ({ ...prev, status: displayLabel }));
     setSelectedStatus(statusKey);
     setCurrentPage(1);
-    fetchMyAnnouncements(statusKey, 1, false);
+    // keep existing API filters when status changes
+    fetchMyAnnouncements(statusKey, 1, false, apiFilters);
   };
 
   const handleLoadMore = () => {
     if (!loadingMore && hasNextPage) {
-      fetchMyAnnouncements(selectedStatus, currentPage + 1, true);
+      fetchMyAnnouncements(selectedStatus, currentPage + 1, true, apiFilters);
     }
   };
 
   const handleRefresh = () => {
     setRefreshing(true);
     setCurrentPage(1);
-    fetchMyAnnouncements(selectedStatus, 1, false);
+    fetchMyAnnouncements(selectedStatus, 1, false, apiFilters);
   };
 
   const getTotalListingsCount = () => {
@@ -534,6 +564,12 @@ export default function Profile({ navigation }: Props) {
                   ))}
                 </View>
               ))}
+              {/* show reset button when any filter is active */}
+              {(apiFilters.ordering || apiFilters.listing_type || apiFilters.property_type || selectedStatus) && (
+                <TouchableOpacity style={styles.resetButton} onPress={handleClearFilters}>
+                  <Text style={styles.resetText}>{t.common.reset}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -618,8 +654,15 @@ export default function Profile({ navigation }: Props) {
                           selectedFilters.ordering === option.value && styles.dropdownOptionActive,
                         ]}
                         onPress={() => {
-                          setSelectedFilters(prev => ({ ...prev, ordering: option.value }));
+                          // toggle off if already selected
+                          const newOrdering = selectedFilters.ordering === option.value ? '' : option.value;
+                          const updatedSel = { ...selectedFilters, ordering: newOrdering };
+                          const updatedApi = { ...apiFilters, ordering: newOrdering };
+                          setSelectedFilters(updatedSel);
+                          setApiFilters(updatedApi);
                           setOpenDropdown(null);
+                          setCurrentPage(1);
+                          fetchMyAnnouncements(selectedStatus, 1, false, updatedApi);
                         }}
                       >
                         <Text style={[
@@ -643,8 +686,15 @@ export default function Profile({ navigation }: Props) {
                           selectedFilters.listing_type === option.value && styles.dropdownOptionActive,
                         ]}
                         onPress={() => {
-                          setSelectedFilters(prev => ({ ...prev, listing_type: option.value }));
+                          // toggle off if already selected
+                          const newVal = selectedFilters.listing_type === option.value ? '' : option.value;
+                          const updatedSel = { ...selectedFilters, listing_type: newVal };
+                          const updatedApi = { ...apiFilters, listing_type: newVal };
+                          setSelectedFilters(updatedSel);
+                          setApiFilters(updatedApi);
                           setOpenDropdown(null);
+                          setCurrentPage(1);
+                          fetchMyAnnouncements(selectedStatus, 1, false, updatedApi);
                         }}
                       >
                         <Text style={[
@@ -669,8 +719,15 @@ export default function Profile({ navigation }: Props) {
                           selectedFilters.property_type === option.value && styles.dropdownOptionActive,
                         ]}
                         onPress={() => {
-                          setSelectedFilters(prev => ({ ...prev, property_type: option.value }));
+                          // toggle off if already selected
+                          const newVal = selectedFilters.property_type === option.value ? '' : option.value;
+                          const updatedSel = { ...selectedFilters, property_type: newVal };
+                          const updatedApi = { ...apiFilters, property_type: newVal };
+                          setSelectedFilters(updatedSel);
+                          setApiFilters(updatedApi);
                           setOpenDropdown(null);
+                          setCurrentPage(1);
+                          fetchMyAnnouncements(selectedStatus, 1, false, updatedApi);
                         }}
                       >
                         <Text style={[
@@ -1004,6 +1061,18 @@ const styles = StyleSheet.create({
   filterText: {
     color: COLORS.gray700,
     fontSize: 14,
+  },
+  resetButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: COLORS.gray200,
+    borderRadius: 8,
+  },
+  resetText: {
+    fontSize: 14,
+    color: COLORS.gray700,
+    fontWeight: '600',
   },
   dropdownOverlay: {
     flex: 1,

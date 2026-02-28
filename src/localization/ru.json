@@ -59,7 +59,8 @@
     "postApprovedWithTitle": "Ваше объявление \"{title}\" одобрено и опубликовано!",
     "postRejectedWithTitle": "Ваше объявление \"{title}\" отклонено. Причина: {reason}",
     "paymentSuccess": "Платеж успешен",
-    "paymentSuccessWithTitle": "Платеж за \"{title}\" принят. Объявление отправлено на модерацию."
+    "paymentSuccessWithTitle": "Платеж за \"{title}\" принят. Объявление отправлено на модерацию.",
+    "paymentSuccessTop": "Ваше объявление \"{title}\" в TOP на {days} дней."
   },
   "home": {
     "title": "Главная",
@@ -471,7 +472,7 @@
   "listingCard": {
     "noImage": "Нет фото",
     "rooms": "комн.",
-    "sotix": "сот.",
+    "sotix": "соток",
     "minAgo": "мин назад",
     "hoursAgo": "ч назад",
     "daysAgo": "дн назад",

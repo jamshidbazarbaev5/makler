@@ -49,6 +49,12 @@ const ListingCard: React.FC<ListingCardProps> = ({
   area_unit,
 }) => {
   const { t } = useLanguage();
+
+  const formatAreaUnit = (unit?: string) => {
+    if (unit === 'sqm') return 'm²';
+    if (unit === 'sotix') return t.listingCard.sotix;
+    return unit || 'm²';
+  }
   const [scaleAnim] = useState(new Animated.Value(1));
   const [likeScaleAnim] = useState(new Animated.Value(1));
 
@@ -150,7 +156,7 @@ const ListingCard: React.FC<ListingCardProps> = ({
             {area != null && area > 0 ? (
               <View style={styles.detailChip}>
                 <Maximize2 size={10} color="#64748b" />
-                <Text style={styles.detailText}>{area} {area_unit || 'm²'}</Text>
+                <Text style={styles.detailText}>{area} {formatAreaUnit(area_unit)}</Text>
               </View>
             ) : null}
             {floor != null ? (

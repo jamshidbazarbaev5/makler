@@ -229,27 +229,36 @@ const AllListingsSection: React.FC<AllListingsSectionProps> = ({
     }
   };
 
-  const formatListing = (item: Announcement) => ({
-    id: item.id,
-    username: item.seller_name || 'Unknown',
-    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seller_name || 'default'}`,
-    price: formatPrice(item.price, item.currency),
-    title: item.title,
-    badge: (item.is_featured || featuredIds.has(item.id)) ? 'TOP' as const : null,
-    hasImage: !!item.main_image,
-    imageUrl: item.main_image || undefined,
-    location: item.district?.translations?.ru?.name || '',
-    listing_type: item.listing_type,
-    rooms: item.rooms,
-    area: item.area,
-    area_unit: item.area_unit,
-    floor: item.floor,
-    total_floors: item.total_floors,
-    views_count: item.views_count,
-    favorites_count: item.favorites_count,
-    posted_at: item.posted_at,
-    is_featured_active: item.is_featured_active || featuredIds.has(item.id),
-  });
+  const formatListing = (item: Announcement) => {
+    const convertAreaUnit = (unit: string) => {
+      if (unit === 'sqm') return 'm²';
+      if (unit === 'sotix') return t.listingCard.sotix;
+      return unit;
+    };
+
+    return {
+      id: item.id,
+      username: item.seller_name || 'Unknown',
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seller_name || 'default'}`,
+      price: formatPrice(item.price, item.currency),
+      title: item.title,
+      badge: (item.is_featured || featuredIds.has(item.id)) ? 'TOP' as const : null,
+      hasImage: !!item.main_image,
+      imageUrl: item.main_image || undefined,
+      location: item.district?.translations?.ru?.name || '',
+      listing_type: item.listing_type,
+      rooms: item.rooms,
+      area: item.area,
+      area_unit: item.area_unit ? convertAreaUnit(item.area_unit) : item.area_unit,
+      floor: item.floor,
+      total_floors: item.total_floors,
+      views_count: item.views_count,
+      favorites_count: item.favorites_count,
+      posted_at: item.posted_at,
+      is_featured_active: item.is_featured_active || featuredIds.has(item.id),
+    };
+  };
+
 
   const formatPrice = (price: string, currency: string) => {
     const num = parseFloat(price);

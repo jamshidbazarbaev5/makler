@@ -59,7 +59,8 @@
     "postApprovedWithTitle": "E'lanın'ız \"{title}\" tastıyıqlandi ha'm ja'riyalandi!",
     "postRejectedWithTitle": "E'lanın'ız \"{title}\" ret etildi. Sebebi: {reason}",
     "paymentSuccess": "To'lem tabıslı",
-    "paymentSuccessWithTitle": "\"{title}\" ushın to'lem qabul etildi. E'lan moderatsiyag'a jiberildi."
+    "paymentSuccessWithTitle": "\"{title}\" ushın to'lem qabul etildi. E'lan moderatsiyag'a jiberildi.",
+    "paymentSuccessTop": "Sizdiñ e'lanıñız \"{title}\" TOP qa {days} kün."
   },
   "home": {
     "title": "Bas bet",

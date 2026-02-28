@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {View, Text, Linking} from 'react-native';
@@ -26,6 +26,7 @@ import PaymentHistoryScreen from '../screens/PaymentHistoryScreen';
 import EditAnnouncementScreen from '../screens/EditAnnouncementScreen';
 import {LoginScreen} from '../screens/LoginScreen';
 import {TelegramLoginScreen} from '../screens/TelegramLoginScreen';
+import AnimatedSplashScreen from '../screens/AnimatedSplashScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -292,6 +293,7 @@ function MainAppNavigator() {
 
 export function RootNavigator() {
   const dispatch = useDispatch<AppDispatch>();
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
   // Handle deep links from Telegram authentication
   useEffect(() => {
@@ -380,6 +382,10 @@ export function RootNavigator() {
         });
     }
   }, [dispatch, token, user, storedRefreshToken]);
+
+  if (showAnimatedSplash) {
+    return <AnimatedSplashScreen onFinish={() => setShowAnimatedSplash(false)} />;
+  }
 
   // Always show MainApp - Login is only shown in Profile stack if not authenticated
   return (

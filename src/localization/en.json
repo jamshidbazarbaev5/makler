@@ -59,7 +59,8 @@
     "postApprovedWithTitle": "Your post \"{title}\" has been approved and is now live!",
     "postRejectedWithTitle": "Your post \"{title}\" was rejected. Reason: {reason}",
     "paymentSuccess": "Payment successful",
-    "paymentSuccessWithTitle": "Payment for \"{title}\" accepted. Listing sent for moderation."
+    "paymentSuccessWithTitle": "Payment for \"{title}\" accepted. Listing sent for moderation.",
+    "paymentSuccessTop": "Your listing \"{title}\" has been promoted to TOP for {days} days."
   },
   "home": {
     "title": "Home",

@@ -61,7 +61,24 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
             .replace('{reason}', reason)
         : message;
     }
-
+    // handle TOP promotion messages (the API may send a different format)
+    // example RU: "Ваше объявление \"Фед уп\" в TOP на 7 дней."
+    // capture title and number of days if available
+    const topPattern = /"([^\"]+)"[^0-9]*TOP[^0-9]*(\d+)/i;
+    const topMatch = message.match(topPattern);
+    if (topMatch) {
+      const postTitle = topMatch[1];
+      const days = topMatch[2];
+      const template = (t.notifications as any).paymentSuccessTop;
+      if (template) {
+        return template
+          .replace('{title}', postTitle)
+          .replace('{days}', days);
+      }
+      return (t.notifications as any).paymentSuccessWithTitle
+        ? (t.notifications as any).paymentSuccessWithTitle.replace('{title}', postTitle)
+        : message;
+    }
     // RU payment success
     const paymentRuPattern = /Платеж за "([^"]+)" принят\. Объявление отправлено на модерацию\.?/i;
     const paymentRuMatch = message.match(paymentRuPattern);

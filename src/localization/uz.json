@@ -59,7 +59,8 @@
     "postApprovedWithTitle": "E'loningiz \"{title}\" tasdiqlandi va jonli efirga chiqdi!",
     "postRejectedWithTitle": "E'loningiz \"{title}\" rad etildi. Sabab: {reason}",
     "paymentSuccess": "To'lov muvaffaqiyatli",
-    "paymentSuccessWithTitle": "\"{title}\" uchun to'lov qabul qilindi. E'lon moderatsiyaga yuborildi."
+    "paymentSuccessWithTitle": "\"{title}\" uchun to'lov qabul qilindi. E'lon moderatsiyaga yuborildi.",
+    "paymentSuccessTop": "Sizning e'loningiz \"{title}\" TOPda {days} kun."
   },
   "home": {
     "title": "Bosh sahifa",
